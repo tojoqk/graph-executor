@@ -1,7 +1,7 @@
 #lang typed/racket
 
 (provide Graph graph?
-         graph-node graph-edge graph-dom-edges graph-cod-edges
+         graph-key graph-name graph-node graph-edge graph-dom-edges graph-cod-edges
          Node node?
          node-key node-name node-attribute
          Edge edge?
@@ -14,34 +14,38 @@
   (require typed/rackunit)
 
   (define example
-    `((nodes (a (node-name "node-a"))
-             (b (node-name "node-b")
-                (desc "node of b"))
-             (c (node-name "node-c")
-                (desc "node of c")))
-      (edges (a->a (edge-name "a->a")
-                   (dom a)
-                   (cod a))
-             (a->b (edge-name "a->b")
-                   (dom a)
-                   (cod b))
-             (c->b (edge-name "c->b")
-                   (dom c)
-                   (cod b)
-                   (desc "edge of c->b"))))))
+    `(example (graph-name "graph-example")
+              (nodes (a (node-name "node-a"))
+                     (b (node-name "node-b")
+                        (desc "node of b"))
+                     (c (node-name "node-c")
+                        (desc "node of c")))
+              (edges (a->a (edge-name "a->a")
+                           (dom a)
+                           (cod a))
+                     (a->b (edge-name "a->b")
+                           (dom a)
+                           (cod b))
+                     (c->b (edge-name "c->b")
+                           (dom c)
+                           (cod b)
+                           (desc "edge of c->b"))))))
 
-(define-type Graph (List (List* 'nodes (Listof Node))
+(define-type Graph (List Symbol
+                         (List 'graph-name String)
+                         (List* 'nodes (Listof Node))
                          (List* 'edges (Listof Edge))))
 
-(define-type Node (Pairof Symbol Node-Body))
-(define-type Edge (Pairof Symbol Edge-Body))
+(define-type Node (List* Symbol
+                         (List 'node-name String)
+                         (Listof (List Symbol Value))))
 
-(define-type Node-Body (List* (List 'node-name String)
-                              (Listof (List Symbol Value))))
-(define-type Edge-Body (List* (List 'edge-name String)
-                              (List 'dom Symbol)
-                              (List 'cod Symbol)
-                              (Listof (List Symbol Value))))
+(define-type Edge (List* Symbol
+                         (List 'edge-name String)
+                         (List 'dom Symbol)
+                         (List 'cod Symbol)
+                         (Listof (List Symbol Value))))
+
 (define-type Attribute (List Symbol Value))
 (define-type Value (U Symbol Natural String Boolean))
 
@@ -69,9 +73,18 @@
 (module+ test
   (check-eq? (attribute-value '(desc "hello")) "hello"))
 
+(: graph-key (Graph -> Symbol))
+(define (graph-key g)
+  (car g))
+
+(: graph-name (Graph -> String))
+(define (graph-name g)
+  (let ((x : (List 'graph-name String) (car (cdr g))))
+    (car (cdr x))))
+
 (: graph-nodes (Graph -> (Listof Node)))
 (define (graph-nodes g)
-  (cdar g))
+  (cdaddr g))
 
 (module+ test
   (check-equal? (graph-nodes example)
@@ -92,7 +105,7 @@
 
 (: graph-edges (Graph -> (Listof Edge)))
 (define (graph-edges g)
-  (cdadr g))
+  (cdr (cadddr g)))
 
 (module+ test
   (check-equal? (graph-edges example)
