@@ -14,23 +14,24 @@
   (require typed/rackunit)
 
   (define example
-    `((nodes ((a (node-name "node-a"))
-              (b (node-name "node-b")
-                 (desc "node of b"))
-              (c (node-name "node-c")
-                 (desc "node of c"))))
-      (edges ((a->a (edge-name "a->a")
-                    (dom a)
-                    (cod a))
-              (a->b (edge-name "a->b")
-                    (dom a)
-                    (cod b))
-              (c->b (edge-name "c->b")
-                    (dom c)
-                    (cod b)
-                    (desc "edge of c->b")))))))
-(define-type Graph (List (List 'nodes (Listof Node))
-                         (List 'edges (Listof Edge))))
+    `((nodes (a (node-name "node-a"))
+             (b (node-name "node-b")
+                (desc "node of b"))
+             (c (node-name "node-c")
+                (desc "node of c")))
+      (edges (a->a (edge-name "a->a")
+                   (dom a)
+                   (cod a))
+             (a->b (edge-name "a->b")
+                   (dom a)
+                   (cod b))
+             (c->b (edge-name "c->b")
+                   (dom c)
+                   (cod b)
+                   (desc "edge of c->b"))))))
+
+(define-type Graph (List (List* 'nodes (Listof Node))
+                         (List* 'edges (Listof Edge))))
 
 (define-type Node (Pairof Symbol Node-Body))
 (define-type Edge (Pairof Symbol Edge-Body))
@@ -70,7 +71,7 @@
 
 (: graph-nodes (Graph -> (Listof Node)))
 (define (graph-nodes g)
-  (cadar g))
+  (cdar g))
 
 (module+ test
   (check-equal? (graph-nodes example)
@@ -91,7 +92,7 @@
 
 (: graph-edges (Graph -> (Listof Edge)))
 (define (graph-edges g)
-  (cadadr g))
+  (cdadr g))
 
 (module+ test
   (check-equal? (graph-edges example)
