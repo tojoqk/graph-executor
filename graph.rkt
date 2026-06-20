@@ -1,16 +1,15 @@
 #lang typed/racket
 
+(require srfi/2)
+
 (provide Graph graph?
-         graph-key graph-name graph-node graph-edge
-         Node node?
-         node-key node-name node-attribute
-         Edge edge?
-         edge-key edge-name edge-dom edge-cod edge-attribute
+         graph-key graph-name
+         graph-node-name graph-node-attribute
+         graph-edge-name graph-edge-dom graph-edge-cod graph-edge-attribute
          Attribute attribute?
          attribute-key attribute-value
          Value value?
-
-         find-graph dom-edges cod-edges)
+         find-graph dom-edges cod-edges valid-edges?)
 
 (module+ test
   (require typed/rackunit)
@@ -107,6 +106,30 @@
   (check-equal? (graph-node example 'z)
                 #f))
 
+(: graph-node-name (Graph Symbol -> (Option String)))
+(define (graph-node-name g key)
+  (cond [(graph-node g key) => (lambda ([node : Node])
+                                 (node-name node))]
+        [else #f]))
+
+(module+ test
+  (check-equal? (graph-node-name example 'b)
+                "node-b")
+  (check-equal? (graph-node-name example 'z)
+                #f))
+
+(: graph-node-attribute (Graph Symbol Symbol -> (Option Attribute)))
+(define (graph-node-attribute g node-key key)
+  (cond [(graph-node g node-key) => (lambda ([node : Node])
+                                      (node-attribute node key))]
+        [else #f]))
+
+(module+ test
+  (check-equal? (graph-node-attribute example 'b 'desc)
+                '(desc "node of b"))
+  (check-equal? (graph-node-attribute example 'a 'desc)
+                #f))
+
 (: graph-normalize-node-ref (Graph (U Symbol (List Symbol Symbol)) -> (List Symbol Symbol)))
 (define (graph-normalize-node-ref graph ref)
   (if (pair? ref)
@@ -132,6 +155,41 @@
   (check-equal? (graph-edge example 'a->b)
                 '(a->b (edge-name "a->b") (dom a) (cod b))))
 
+(: graph-edge-name (Graph Symbol -> (Option String)))
+(define (graph-edge-name g edge-key)
+  (cond [(graph-edge g edge-key) => edge-name]
+        [else #f]))
+
+(: graph-edge-dom (Graph Symbol -> (Option (List Symbol Symbol))))
+(define (graph-edge-dom g edge-key)
+  (cond [(graph-edge g edge-key)
+         => (lambda ([edge : Edge])
+              (graph-normalize-node-ref g (edge-dom edge)))]
+        [else #f]))
+
+(module+ test
+  (check-equal? (graph-edge-dom example 'a->b) '(example a)))
+
+(: graph-edge-cod (Graph Symbol -> (Option (List Symbol Symbol))))
+(define (graph-edge-cod g edge-key)
+  (cond [(graph-edge g edge-key)
+         => (lambda ([edge : Edge])
+              (graph-normalize-node-ref g (edge-cod edge)))]
+        [else #f]))
+
+(module+ test
+  (check-equal? (graph-edge-cod example 'a->b) '(example b)))
+
+(: graph-edge-attribute (Graph Symbol Symbol -> (Option Attribute)))
+(define (graph-edge-attribute g edge-key key)
+  (cond [(graph-edge g edge-key) => (lambda ([edge : Edge])
+                                      (edge-attribute edge key))]
+        [else #f]))
+
+(module+ test
+  (check-equal? (graph-edge-attribute example 'a->b 'desc) '#f)
+  (check-equal? (graph-edge-attribute example 'c->b 'desc) '(desc "edge of c->b")))
+
 (: find-graph ((Listof Graph) Symbol -> (Option Graph)))
 (define (find-graph graphs key)
   (cond [(assoc key graphs) => identity]
@@ -142,33 +200,82 @@
                 example)
   (check-false (find-graph (list example) 'example-z)))
 
-(: dom-edges ((Listof Graph) (List Symbol Symbol) -> (Listof Edge)))
+
+(: find-node ((Listof Graph) (List Symbol Symbol) -> (Option Node)))
+(define (find-node gs ref)
+  (let ([graph-key (car ref)]
+        [node-key (cadr ref)])
+    (cond [(find-graph gs graph-key)
+           => (lambda ([g : Graph])
+                (graph-node g node-key))]
+          [else #f])))
+
+(module+ test
+  (check-equal? (find-node (list example) '(example b))
+                '(b (node-name "node-b") (desc "node of b")))
+  (check-equal? (find-node (list example) '(example z))
+                #f)
+  (check-equal? (find-node (list example) '(example-z b))
+                #f))
+
+(: dom-edges ((Listof Graph) (List Symbol Symbol) -> (Listof Symbol)))
 (define (dom-edges gs ref)
   (append-map (lambda ([g : Graph])
-                (filter (lambda ([edge : Edge])
-                          (equal? (graph-normalize-node-ref g (edge-dom edge))
-                                  ref))
-                        (graph-edges g)))
+                (filter-map (lambda ([edge : Edge])
+                              (and (equal? (graph-normalize-node-ref g (edge-dom edge))
+                                           ref)
+                                   (edge-key edge)))
+                            (graph-edges g)))
               gs))
 
 (module+ test
   (check-equal? (dom-edges (list example) '(example a))
-                '((a->a (edge-name "a->a") (dom a) (cod a))
-                  (a->b (edge-name "a->b") (dom a) (cod b)))))
+                '(a->a a->b)))
 
-(: cod-edges ((Listof Graph) (List Symbol Symbol) -> (Listof Edge)))
+(: cod-edges ((Listof Graph) (List Symbol Symbol) -> (Listof Symbol)))
 (define (cod-edges gs ref)
   (append-map (lambda ([g : Graph])
-                (filter (lambda ([edge : Edge])
-                          (equal? (graph-normalize-node-ref g (edge-cod edge))
-                                  ref))
-                        (graph-edges g)))
+                (filter-map (lambda ([edge : Edge])
+                              (and (equal? (graph-normalize-node-ref g (edge-cod edge))
+                                           ref)
+                                   (edge-key edge)))
+                            (graph-edges g)))
               gs))
 
 (module+ test
   (check-equal? (cod-edges (list example) '(example b))
-                '((a->b (edge-name "a->b") (dom a) (cod b))
-                  (c->b (edge-name "c->b") (dom c) (cod b) (desc "edge of c->b")))))
+                '(a->b c->b)))
+
+(: valid-edges? ((Listof Graph) -> Boolean))
+(define (valid-edges? gs)
+  (andmap (lambda ([g : Graph])
+            (andmap (lambda ([edge : Edge])
+                      (let ([key (edge-key edge)])
+                        (and-let* ([dom (graph-edge-dom g key)]
+                                   [cod (graph-edge-cod g key)]
+                                   (find-node gs dom)
+                                   (find-node gs cod))
+                          #t)))
+                    (graph-edges g)))
+          gs))
+
+(module+ test
+  (check-true (valid-edges? (list example)))
+  (check-true (valid-edges? (list example '(test (graph-name "test")
+                                                 (nodes)
+                                                 (edges (test (edge-name "test")
+                                                              (dom (example a))
+                                                              (cod (example b))))))))
+  (check-false (valid-edges? (list example '(test (graph-name "test")
+                                                  (nodes)
+                                                  (edges (test (edge-name "test")
+                                                               (dom (example z))
+                                                               (cod (example b))))))))
+  (check-false (valid-edges? (list example '(test (graph-name "test")
+                                                  (nodes)
+                                                  (edges (test (edge-name "test")
+                                                               (dom (example a))
+                                                               (cod (example z)))))))))
 
 (: node-key (Node -> Symbol))
 (define (node-key node)
