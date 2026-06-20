@@ -1,14 +1,16 @@
 #lang typed/racket
 
 (provide Graph graph?
-         graph-key graph-name graph-node graph-edge graph-dom-edges graph-cod-edges
+         graph-key graph-name graph-node graph-edge
          Node node?
          node-key node-name node-attribute
          Edge edge?
          edge-key edge-name edge-dom edge-cod edge-attribute
          Attribute attribute?
          attribute-key attribute-value
-         Value value?)
+         Value value?
+
+         find-graph dom-edges cod-edges)
 
 (module+ test
   (require typed/rackunit)
@@ -40,14 +42,16 @@
                          (List 'node-name String)
                          (Listof (List Symbol Value))))
 
+(define-type Node-Ref (U Symbol (List Symbol Symbol)))
+
 (define-type Edge (List* Symbol
                          (List 'edge-name String)
-                         (List 'dom Symbol)
-                         (List 'cod Symbol)
+                         (List 'dom Node-Ref)
+                         (List 'cod Node-Ref)
                          (Listof (List Symbol Value))))
 
 (define-type Attribute (List Symbol Value))
-(define-type Value (U Symbol Natural String Boolean))
+(define-type Value (U Symbol Natural String Boolean Any))
 
 (define-predicate graph? Graph)
 
@@ -103,6 +107,12 @@
   (check-equal? (graph-node example 'z)
                 #f))
 
+(: graph-normalize-node-ref (Graph (U Symbol (List Symbol Symbol)) -> (List Symbol Symbol)))
+(define (graph-normalize-node-ref graph ref)
+  (if (pair? ref)
+      ref
+      (list (graph-key graph) ref)))
+
 (: graph-edges (Graph -> (Listof Edge)))
 (define (graph-edges g)
   (cdr (cadddr g)))
@@ -122,25 +132,41 @@
   (check-equal? (graph-edge example 'a->b)
                 '(a->b (edge-name "a->b") (dom a) (cod b))))
 
-(: graph-dom-edges (Graph Symbol -> (Listof Edge)))
-(define (graph-dom-edges g node-key)
-  (filter (lambda ([edge : Edge])
-            (symbol=? (edge-dom edge) node-key))
-          (graph-edges g)))
+(: find-graph ((Listof Graph) Symbol -> (Option Graph)))
+(define (find-graph graphs key)
+  (cond [(assoc key graphs) => identity]
+        [else #f]))
 
 (module+ test
-  (check-equal? (graph-dom-edges example 'a)
+  (check-equal? (find-graph (list example) 'example)
+                example)
+  (check-false (find-graph (list example) 'example-z)))
+
+(: dom-edges ((Listof Graph) (List Symbol Symbol) -> (Listof Edge)))
+(define (dom-edges gs ref)
+  (append-map (lambda ([g : Graph])
+                (filter (lambda ([edge : Edge])
+                          (equal? (graph-normalize-node-ref g (edge-dom edge))
+                                  ref))
+                        (graph-edges g)))
+              gs))
+
+(module+ test
+  (check-equal? (dom-edges (list example) '(example a))
                 '((a->a (edge-name "a->a") (dom a) (cod a))
                   (a->b (edge-name "a->b") (dom a) (cod b)))))
 
-(: graph-cod-edges (Graph Symbol -> (Listof Edge)))
-(define (graph-cod-edges g node-key)
-  (filter (lambda ([edge : Edge])
-            (symbol=? (edge-cod edge) node-key))
-          (graph-edges g)))
+(: cod-edges ((Listof Graph) (List Symbol Symbol) -> (Listof Edge)))
+(define (cod-edges gs ref)
+  (append-map (lambda ([g : Graph])
+                (filter (lambda ([edge : Edge])
+                          (equal? (graph-normalize-node-ref g (edge-cod edge))
+                                  ref))
+                        (graph-edges g)))
+              gs))
 
 (module+ test
-  (check-equal? (graph-cod-edges example 'b)
+  (check-equal? (cod-edges (list example) '(example b))
                 '((a->b (edge-name "a->b") (dom a) (cod b))
                   (c->b (edge-name "c->b") (dom c) (cod b) (desc "edge of c->b")))))
 
@@ -183,17 +209,17 @@
 (module+ test
   (check-equal? (edge-name (cast (graph-edge example 'a->b) Edge)) "a->b"))
 
-(: edge-dom (Edge -> Symbol))
+(: edge-dom (Edge -> Node-Ref))
 (define (edge-dom e)
-  (let ((x : (List 'dom Symbol) (car (cdr (cdr e))) ))
+  (let ((x : (List 'dom Node-Ref) (car (cdr (cdr e))) ))
     (car (cdr x))))
 
 (module+ test
   (check-equal? (edge-dom (cast (graph-edge example 'a->b) Edge)) 'a))
 
-(: edge-cod (Edge -> Symbol))
+(: edge-cod (Edge -> Node-Ref))
 (define (edge-cod e)
-  (let ((x : (List 'cod Symbol) (car (cdr (cdr (cdr e))))))
+  (let ((x : (List 'cod Node-Ref) (car (cdr (cdr (cdr e))))))
     (car (cdr x))))
 
 (module+ test
