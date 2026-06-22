@@ -33,13 +33,12 @@
          [s (sum-weight edges)]
          [r (random s)])
     (let loop ([edges edges]
-               [s (sum-weight edges)])
+               [r r])
       (let ([fst (car edges)]
             [rst (cdr edges)])
         (cond [(< r (edge-weight fst)) fst]
-              [(null? rst) fst]
-              [else (loop rst
-                          (- s (edge-weight fst)))])))))
+              [(null? rst) (error "auto-choose: unreachble")]
+              [else (loop rst (- r (edge-weight fst)))])))))
 
 (: repl-choose (-> (List 'choose (Pairof AnyEdge (Listof AnyEdge))) AnyEdge))
 (define (repl-choose ne)
