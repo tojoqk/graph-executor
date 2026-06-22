@@ -1,3 +1,4 @@
 graph-executor
 ==============
-README text here.
+
+A library for modeling and executing directed graph structures.
