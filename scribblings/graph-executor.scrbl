@@ -3,8 +3,8 @@
                     racket/base]]
 
 @title{graph-executor}
-@author{masaya}
+@author{tojoqk}
 
 @defmodule[graph-executor]
 
-Package Description Here
+A library for modeling and executing directed graph structures.
