@@ -1,0 +1,144 @@
+#lang racket
+
+(module vending-machine-example typed/racket
+  (require "../graph.rkt")
+  (provide vending-graph
+           Vending-State
+           v-state?
+           v-state-wallet)
+
+  (define-type Vending-Node-Type (U 'start 'normal 'terminal))
+
+  (struct v-state ([wallet : Integer]
+                   [inserted : Integer])
+    #:type-name Vending-State
+    #:transparent)
+
+  (: initial-state (-> Integer Vending-State))
+  (define (initial-state w)
+    (v-state w 0))
+
+  (: insert-money (-> Integer (-> Vending-State Vending-State)))
+  (define ((insert-money amount) st)
+    (struct-copy v-state st
+                 [wallet (- (v-state-wallet st) amount)]
+                 [inserted (+ (v-state-inserted st) amount)]))
+
+  (: purchase (-> Integer (-> Vending-State Vending-State)))
+  (define ((purchase amount) st)
+    (struct-copy v-state st
+                 [inserted (- (v-state-inserted st) amount)]))
+
+  (: reset-money (-> Vending-State Vending-State))
+  (define (reset-money st)
+    (struct-copy v-state st
+                 [wallet (+ (v-state-wallet st) (v-state-inserted st))]
+                 [inserted 0]))
+  
+  (: price-met? (-> Integer (-> Vending-State Boolean)))
+  (define ((price-met? price) st)
+    (>= (v-state-inserted st) price))
+
+  (: can-insert? (-> Integer (-> Vending-State Boolean)))
+  (define ((can-insert? price) st)
+    (<= price (v-state-wallet st)))
+
+  (: inserted? (-> Vending-State Boolean))
+  (define (inserted? st)
+    (< 0 (v-state-inserted st)))
+  
+  (: vending-graph (-> Symbol
+                       (Node Any Any)
+                       (-> Vending-State Any)
+                       (Values (Graph Vending-Node-Type Vending-State)
+                               (-> Natural Vending-State)
+                               (Node Vending-Node-Type Vending-State))))
+  (define (vending-graph g output output-edge)
+    (define v-node ((inst node-maker Vending-Node-Type Vending-State) g))
+    (define v-edge (inst make-edge Vending-Node-Type Vending-State))
+    (define v-bridge (inst make-bridge Vending-Node-Type Vending-State))
+    (define v-graph (inst make-graph Vending-Node-Type Vending-State))
+
+    (define idle       (v-node "Idle (Accepting Coins)" #:type 'start))
+    (define has-coins  (v-node "Selecting Item"         #:type 'normal))
+    (define dispensing (v-node "Dispensing Item"        #:type 'normal))
+    (define ret-change (v-node "Returning Change"       #:type 'normal))
+
+    (values
+     (v-graph
+      g
+      "Vending Machine Model"
+      #:edges
+      (list 
+       (v-edge "Insert 100 Yen" #:mode 'choose #:dom idle #:cod has-coins
+               #:when (make-condition (can-insert? 100))
+               #:trans (make-trans (insert-money 100)))
+       (v-edge "Insert More" #:mode 'choose #:dom has-coins #:cod has-coins
+               #:when (make-condition (can-insert? 100))
+               #:trans (make-trans (insert-money 100)))
+       (v-edge "Purchase Drink (150 Yen)" #:mode 'choose #:dom has-coins #:cod dispensing
+               #:when (make-condition (price-met? 150))
+               #:trans (make-trans (purchase 150)))
+       (v-edge "Dispense Done (Remaining Inserted)" #:mode 'auto #:dom dispensing #:cod has-coins
+               #:when (make-condition inserted?))
+       (v-edge "Dispense Done (Just Zero)" #:mode 'auto #:dom dispensing #:cod idle
+               #:when (make-condition (negate inserted?)))
+       (v-edge "Press Return Lever" #:mode 'choose #:dom has-coins #:cod ret-change
+               #:when (make-condition inserted?)
+               #:trans (make-trans reset-money))
+       (v-edge "Change Dispatched" #:mode 'auto #:dom ret-change #:cod idle))
+      #:bridges
+      (list
+       (v-bridge "Walk Away" #:mode 'choose #:dom idle #:cod output
+                 #:trans (make-trans output-edge))))
+     initial-state
+     idle)))
+
+(require (submod "." vending-machine-example))
+(provide (all-from-out (submod "." vending-machine-example)))
+
+(module terminal typed/racket
+  (require "../graph.rkt")
+  (provide terminal-graph
+           Terminal terminal)
+
+  (define-type Terminal-Node-Type 'terminal)
+
+  (struct terminal ([wallet : Integer])
+    #:type-name Terminal
+    #:transparent)
+
+  (: terminal-graph (-> Symbol
+                        (Values (Graph Terminal-Node-Type Terminal)
+                                (Node Terminal-Node-Type Terminal))))
+  (define (terminal-graph g)
+    (define t-node ((inst node-maker Terminal-Node-Type Terminal) g))
+    (define t-graph (inst make-graph Terminal-Node-Type Terminal))
+    (define terminal (t-node "Terminated" #:type 'terminal))
+
+    (values
+     (t-graph
+      g
+      "Terminal")
+     terminal)))
+
+(module vending-to-terminal typed/racket
+  (require (submod ".." vending-machine-example))
+  (require (submod ".." terminal))
+  (provide vending-graph->terminal-graph)
+
+  (: vending-graph->terminal-graph (-> Vending-State Terminal))
+  (define (vending-graph->terminal-graph x)
+    (terminal (v-state-wallet x))))
+
+(require (submod "." terminal))
+(require (submod "." vending-to-terminal))
+
+(module+ main
+  (require "../executor.rkt")
+
+  (define-values (t-graph t-entry)
+    (terminal-graph 'terminal))
+  (define-values (v-graph initial-state v-entry)
+    (vending-graph 'machine t-entry vending-graph->terminal-graph))
+  (repl-run (list v-graph t-graph) (initial-state 400) v-entry))
