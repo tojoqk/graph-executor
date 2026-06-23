@@ -47,7 +47,7 @@
   (define (inserted? st)
     (< 0 (v-state-inserted st)))
   
-  (: vending-graph (-> Symbol
+  (: vending-graph (-> String
                        (Node Any Any)
                        (-> Vending-State Any)
                        (Values (OpenGraph Vending-Node-Type Vending-State)
@@ -67,7 +67,6 @@
     (values
      (v-graph
       g
-      "Vending Machine Model"
       #:edges
       (list 
        (v-edge "Insert 100 Yen" #:mode 'choose #:dom idle #:cod has-coins
@@ -108,7 +107,7 @@
     #:type-name Terminal
     #:transparent)
 
-  (: terminal-graph (-> Symbol
+  (: terminal-graph (-> String
                         (Values (Graph Terminal-Node-Type Terminal)
                                 (Node Terminal-Node-Type Terminal))))
   (define (terminal-graph g)
@@ -117,9 +116,7 @@
     (define terminal (t-node "Terminated" #:type 'terminal))
 
     (values
-     (t-graph
-      g
-      "Terminal")
+     (t-graph g)
      terminal)))
 
 (module vending-to-terminal typed/racket
@@ -138,7 +135,7 @@
   (require "../executor.rkt")
 
   (define-values (t-graph t-entry)
-    (terminal-graph 'terminal))
+    (terminal-graph "Terminal"))
   (define-values (v-graph initial-state v-entry)
-    (vending-graph 'machine t-entry vending-graph->terminal-graph))
+    (vending-graph "Vending Machine Model" t-entry vending-graph->terminal-graph))
   (repl-run (list v-graph t-graph) (initial-state 400) v-entry))

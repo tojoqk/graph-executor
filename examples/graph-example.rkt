@@ -46,12 +46,12 @@
 (define (inserted? st)
   (< 0 (v-state-inserted st)))
 
-(: vending-graph (-> Symbol
+(: vending-graph (-> String
                      (Values (Graph Vending-Node-Type Vending-State)
                              (-> Natural Vending-State)
                              (Node Vending-Node-Type Vending-State))))
-(define (vending-graph g)
-  (define v-node ((inst node-maker Vending-Node-Type Vending-State) g))
+(define (vending-graph graph-name)
+  (define v-node ((inst node-maker Vending-Node-Type Vending-State) graph-name))
   (define v-edge (inst make-edge Vending-Node-Type Vending-State))
   (define v-graph (inst make-graph Vending-Node-Type Vending-State))
 
@@ -63,8 +63,7 @@
 
   (values
    (v-graph
-    g
-    "Vending Machine Model"
+    graph-name
     #:edges
     (list
      (v-edge "Insert 100 Yen" #:mode 'choose #:dom idle #:cod has-coins
@@ -90,5 +89,5 @@
 
 (module+ main
   (require "../executor.rkt")
-  (define-values (v-graph initial-state v-entry) (vending-graph 'machine))
+  (define-values (v-graph initial-state v-entry) (vending-graph "Vending Machine Model"))
   (repl-run (list v-graph) (initial-state 400) v-entry))
