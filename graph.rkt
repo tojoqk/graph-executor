@@ -8,7 +8,7 @@
          Trans make-trans
          trans-desc trans-proc
          Bridge Edge make-bridge make-edge
-         edge-name edge-mode edge-dom edge-cod edge-desc edge-when edge-trans edge-priority edge-weight
+         edge-id edge-name edge-mode edge-dom edge-cod edge-desc edge-when edge-trans edge-priority edge-weight
          Graph* OpenGraph Graph make-graph* make-open-graph make-graph
          graph-id graph-name graph-edges graph-bridges)
 
