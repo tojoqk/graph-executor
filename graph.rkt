@@ -11,6 +11,9 @@
          Graph* OpenGraph Graph make-graph* make-open-graph make-graph
          graph-id graph-name graph-edges graph-bridges)
 
+(: current-graph-node-ids (Parameterof (Immutable-HashTable Symbol (Setof Symbol))))
+(define current-graph-node-ids (make-parameter ((inst hash Symbol (Setof Symbol)))))
+
 (struct (T S) node ([graph-id : Symbol]
                     [id : Symbol]
                     [name : String]
@@ -28,7 +31,16 @@
                            [#:trans (Option (Trans S S))]
                            (Node T S)))))
 (define ((node-maker g) name #:type type #:desc [desc #f] #:trans [tr #f])
-  (node g (gensym) name type desc (or tr (make-trans (inst identity S)))))
+  (let ([id (string->symbol name)])
+    (cond [(hash-ref (current-graph-node-ids) g #f)
+           => (lambda ([id-set : (Setof Symbol)])
+                (if (set-member? id-set id)
+                    (error "node-maker: duplicate node ID" g id)
+                    (current-graph-node-ids (hash-set (current-graph-node-ids)
+                                                      g
+                                                      (set-add id-set id)))))]
+          [else (current-graph-node-ids (hash-set (current-graph-node-ids) g (set id)))])
+    (node g id name type desc (or tr (make-trans (inst identity S))))))
 
 (struct (S) condition ([proc : (-> S Any)]
                        [desc : (Option String)])
