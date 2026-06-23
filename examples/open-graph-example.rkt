@@ -50,14 +50,14 @@
   (: vending-graph (-> Symbol
                        (Node Any Any)
                        (-> Vending-State Any)
-                       (Values (Graph Vending-Node-Type Vending-State)
+                       (Values (OpenGraph Vending-Node-Type Vending-State)
                                (-> Natural Vending-State)
                                (Node Vending-Node-Type Vending-State))))
   (define (vending-graph g output output-edge)
     (define v-node ((inst node-maker Vending-Node-Type Vending-State) g))
     (define v-edge (inst make-edge Vending-Node-Type Vending-State))
     (define v-bridge (inst make-bridge Vending-Node-Type Vending-State))
-    (define v-graph (inst make-graph Vending-Node-Type Vending-State))
+    (define v-graph (inst make-open-graph Vending-Node-Type Vending-State))
 
     (define idle       (v-node "Idle (Accepting Coins)" #:type 'start))
     (define has-coins  (v-node "Selecting Item"         #:type 'normal))
