@@ -4,20 +4,21 @@
 
 (provide find-graph next-edges auto-choose step repl-choose repl-run)
 
-(: find-graph (-> (Listof AnyGraph) Symbol AnyGraph))
+(: find-graph (All (T S) (-> (Listof (Graph T S)) Symbol (Graph T S))))
 (define (find-graph gs g-id)
-  (cond [(memf (lambda ([g : AnyGraph]) (equal? (graph-id g) g-id)) gs) => car]
+  (cond [(memf (lambda ([g : (Graph T S)]) (equal? (graph-id g) g-id)) gs) => car]
         [else (error "Graph not found" gs g-id)]))
 
-(: next-edges (-> (Listof AnyGraph)
-                  Any
-                  AnyNode
-                  (U (List 'auto (Pairof AnyEdge (Listof AnyEdge)))
-                     (List 'choose (Pairof AnyEdge (Listof AnyEdge)))
-                     (List 'terminated))))
+(: next-edges (All (T S)
+                   (-> (Listof (Graph T S))
+                       S
+                       (Node T S)
+                       (U (List 'auto (Pairof (Edge T S) (Listof (Edge T S))))
+                          (List 'choose (Pairof (Edge T S) (Listof (Edge T S))))
+                          (List 'terminated)))))
 (define (next-edges gs st n)
   (cond [(find-graph gs (node-graph-id n))
-         => (lambda ([g : AnyGraph])
+         => (lambda ([g : (Graph T S)])
               (let* ([es (edge-sort (filter-state st (filter-node n (graph-all-edges g))))]
                      [aes (auto-edges es)])
                 (if (null? aes)
@@ -27,7 +28,8 @@
                     (list 'auto aes))))]
         [else (error "Graph not found" (node-graph-id n))]))
 
-(: auto-choose (-> (List 'auto (Pairof AnyEdge (Listof AnyEdge))) AnyEdge))
+(: auto-choose (All (T S)
+                    (-> (List 'auto (Pairof (Edge T S) (Listof (Edge T S)))) (Edge T S))))
 (define (auto-choose ne)
   (let* ([edges (cadr ne)]
          [s (sum-weight edges)]
@@ -40,11 +42,12 @@
               [(null? rst) (error "auto-choose: unreachble")]
               [else (loop rst (- r (edge-weight fst)))])))))
 
-(: repl-choose (-> (List 'choose (Pairof AnyEdge (Listof AnyEdge))) AnyEdge))
+(: repl-choose (All (T S)
+                    (-> (List 'choose (Pairof (Edge T S) (Listof (Edge T S)))) (Edge T S))))
 (define (repl-choose ne)
   (let ([es (cadr ne)])
     (displayln "choose:")
-    (for ([e : AnyEdge es]
+    (for ([e : (Edge T S) es]
           [i (in-naturals 0)])
       (display "  ")
       (display i)
@@ -57,14 +60,14 @@
           (list-ref es n)
           (repl-choose ne)))))
 
-(: step (-> Any AnyEdge (values Any AnyNode)))
+(: step (All (T S) (-> S (Edge T S) (values S (Node T S)))))
 (define (step st e)
   (let* ([n (edge-cod e)]
          [p1 (trans-proc (edge-trans e))]
          [p2 (trans-proc (node-trans n))])
     (values (p2 (p1 st)) n)))
 
-(: repl-run (-> (Listof AnyGraph) Any AnyNode (values Any AnyNode)))
+(: repl-run (All (T S) (-> (Listof (Graph T S)) S (Node T S) (values S (Node T S)))))
 (define (repl-run gs st n)
   (let ([g (find-graph gs (node-graph-id n))])
     (displayln (format "--- Current Node: ~a (Graph: ~a) ---"
@@ -86,35 +89,30 @@
              (repl-run gs next-st next-node)))]))))
 
 ;; --- private ---
-
-(define-type AnyGraph (Graph Any Any))
-(define-type AnyEdge (Edge Any Any Any Any))
-(define-type AnyNode (Node Any Any))
-
-(: edge-sort (-> (Listof AnyEdge) (Listof AnyEdge)))
+(: edge-sort (All (T S) (-> (Listof (Edge T S)) (Listof (Edge T S)))))
 (define (edge-sort es)
-  ((inst sort AnyEdge Integer) es > #:key edge-priority))
+  ((inst sort (Edge T S) Integer) es > #:key edge-priority))
 
-(: group-by-priority (-> (Listof AnyEdge) (Listof (Listof AnyEdge))))
+(: group-by-priority (All (T S) (-> (Listof (Edge T S)) (Listof (Listof (Edge T S))))))
 (define (group-by-priority es)
-  ((inst group-by AnyEdge Integer) edge-priority es))
+  ((inst group-by (Edge T S) Integer) edge-priority es))
 
-(: filter-state (-> Any (Listof AnyEdge) (Listof AnyEdge)))
+(: filter-state (All (T S) (-> S (Listof (Edge T S)) (Listof (Edge T S)))))
 (define (filter-state st es)
-  (filter (lambda ([e : AnyEdge])
+  (filter (lambda ([e : (Edge T S)])
             (let* ([c (edge-when e)]
                    [proc (condition-proc c)])
               (proc st)))
           es))
 
-(: filter-auto (-> (Listof AnyEdge) (Listof AnyEdge)))
+(: filter-auto (All (T S) (-> (Listof (Edge T S)) (Listof (Edge T S)))))
 (define (filter-auto es)
-  (filter (lambda ([e : AnyEdge]) (eq? (edge-mode e) 'auto))
+  (filter (lambda ([e : (Edge T S)]) (eq? (edge-mode e) 'auto))
           es))
 
-(: auto-edges (-> (Listof AnyEdge) (Listof AnyEdge)))
+(: auto-edges (All (T S) (-> (Listof (Edge T S)) (Listof (Edge T S)))))
 (define (auto-edges es)
-  (let loop ([ess : (Listof (Listof AnyEdge)) (group-by-priority es)])
+  (let loop ([ess : (Listof (Listof (Edge T S))) (group-by-priority es)])
     (if (null? ess)
         '()
         (let ([auto-es (filter-auto (car ess))])
@@ -122,21 +120,21 @@
               (loop (cdr ess))
               auto-es)))))
 
-(: sum-weight (-> (Pairof AnyEdge (Listof AnyEdge)) Positive-Integer))
+(: sum-weight (All (T S) (-> (Pairof (Edge T S) (Listof (Edge T S))) Positive-Integer)))
 (define (sum-weight es)
-  (define any-edge-foldl (inst foldl AnyEdge Exact-Positive-Integer))
-  (any-edge-foldl (lambda ([e1 : AnyEdge] [acc : Exact-Positive-Integer])
+  (define any-edge-foldl (inst foldl (Edge T S) Exact-Positive-Integer))
+  (any-edge-foldl (lambda ([e1 : (Edge T S)] [acc : Exact-Positive-Integer])
                     (+ (edge-weight e1)
                        acc))
                   (edge-weight (car es))
                   (cdr es)))
 
-(: graph-all-edges (-> AnyGraph (Listof AnyEdge)))
+(: graph-all-edges (All (T S) (-> (Graph T S) (Listof (Edge T S)))))
 (define (graph-all-edges g)
-  (append (graph-edges g) (graph-bridges g)))
+  ((inst append (Edge T S)) (graph-edges g) (graph-bridges g)))
 
-(: filter-node (-> AnyNode (Listof AnyEdge) (Listof AnyEdge)))
+(: filter-node (All (T S) (-> (Node T S) (Listof (Edge T S)) (Listof (Edge T S)))))
 (define (filter-node n es)
-  (filter (lambda ([e : AnyEdge])
+  (filter (lambda ([e : (Edge T S)])
             (eq? (node-id n) (node-id (edge-dom e))))
           es))
