@@ -1,6 +1,7 @@
 #lang typed/racket
 
-(provide Node node-maker
+(provide current-seen-ids
+         Node node-maker
          node-graph-id node-id node-name node-type node-desc node-trans
          Condition make-condition
          condition-desc condition-proc
@@ -11,8 +12,27 @@
          Graph* OpenGraph Graph make-graph* make-open-graph make-graph
          graph-id graph-name graph-edges graph-bridges)
 
-(: current-graph-node-ids (Parameterof (Immutable-HashTable Symbol (Setof Symbol))))
-(define current-graph-node-ids (make-parameter ((inst hash Symbol (Setof Symbol)))))
+(: current-seen-ids (Parameterof (Setof Symbol)))
+(define current-seen-ids (make-parameter ((inst set Symbol))))
+
+(: make-graph-id (-> String Symbol))
+(define (make-graph-id graph-name)
+  (string->symbol (format "~a_~a" (string-length graph-name) graph-name)))
+
+(: make-node-id (-> String String Symbol))
+(define (make-node-id graph-name node-name)
+  (string->symbol (format "~a_~a_~a_~a"
+                          (string-length graph-name) graph-name
+                          (string-length node-name) node-name)))
+
+(: make-edge-id (All (T1 S1 T2 S2) (-> String (Node T1 S1) (Node T2 S2) Symbol)))
+(define (make-edge-id edge-name dom cod)
+  (let ([dom-id (symbol->string (node-id dom))]
+        [cod-id (symbol->string (node-id cod))])
+    (string->symbol (format "~a_~a_~a_~a_~a_~a"
+                            (string-length dom-id) dom-id
+                            (string-length cod-id) cod-id
+                            (string-length edge-name) edge-name))))
 
 (struct (T S) node ([graph-id : Symbol]
                     [id : Symbol]
@@ -24,23 +44,19 @@
   #:type-name Node)
 
 (: node-maker (All (T S)
-                   (-> Symbol
+                   (-> String
                        (-> String
                            #:type T
                            [#:desc (Option String)]
                            [#:trans (Option (Trans S S))]
                            (Node T S)))))
-(define ((node-maker g) name #:type type #:desc [desc #f] #:trans [tr #f])
-  (let ([id (string->symbol name)])
-    (cond [(hash-ref (current-graph-node-ids) g #f)
-           => (lambda ([id-set : (Setof Symbol)])
-                (if (set-member? id-set id)
-                    (error "node-maker: duplicate node ID" g id)
-                    (current-graph-node-ids (hash-set (current-graph-node-ids)
-                                                      g
-                                                      (set-add id-set id)))))]
-          [else (current-graph-node-ids (hash-set (current-graph-node-ids) g (set id)))])
-    (node g id name type desc (or tr (make-trans (inst identity S))))))
+(define ((node-maker graph-name) name #:type type #:desc [desc #f] #:trans [tr #f])
+  (let ([graph-id (make-graph-id graph-name)]
+        [node-id (make-node-id graph-name name)])
+    (cond [(set-member? (current-seen-ids) node-id)
+           (error "node-maker: duplicate ID" node-id)]
+          [else (current-seen-ids (set-add (current-seen-ids) node-id))])
+    (node graph-id node-id name type desc (or tr (make-trans (inst identity S))))))
 
 (struct (S) condition ([proc : (-> S Any)]
                        [desc : (Option String)])
@@ -56,11 +72,13 @@
   #:type-name Trans)
 
 (: make-trans (All (S1 S2) (-> (-> S1 S2) [#:desc (Option String)]
+
                                (Trans S1 S2))))
 (define (make-trans proc #:desc [desc #f])
   (trans proc desc))
 
-(struct (T1 S1 T2 S2) edge ([name : String]
+(struct (T1 S1 T2 S2) edge ([id : Symbol]
+                            [name : String]
                             [mode : (U 'auto 'choose)]
                             [dom : (Node T1 S1)]
                             [cod : (Node T2 S2)]
@@ -93,12 +111,17 @@
                      #:trans tr
                      #:priority [priority #f]
                      #:weight [weight #f])
-  (edge name mode dom cod
-        desc
-        (or when (make-condition (const #t)))
-        tr
-        (or priority 1)
-        (or weight 1)))
+  (let ([edge-id (make-edge-id name dom cod)])
+    (cond [(set-member? (current-seen-ids) edge-id)
+           (error "node-maker: duplicate ID" edge-id)]
+          [else (current-seen-ids (set-add (current-seen-ids) edge-id))])
+    (edge edge-id
+          name mode dom cod
+          desc
+          (or when (make-condition (const #t)))
+          tr
+          (or priority 1)
+          (or weight 1))))
 
 (: make-edge (All (T S)
                   (-> String
@@ -141,49 +164,47 @@
 (define-type (OpenGraph T S) (Graph* T S Any Any))
 
 (: make-graph* (All (T1 S1 T2 S2)
-                    (-> Symbol
-                        String
+                    (-> String
                         [#:desc (Option String)]
                         [#:edges (Option (Listof (Edge T1 S1)))]
                         [#:bridges (Option (Listof (Bridge T1 S1 T2 S2)))]
                         (Graph* T1 S1 T2 S2))))
-(define (make-graph* sym
-                     name
+(define (make-graph* name
                      #:desc [desc #f]
                      #:edges [edges #f]
                      #:bridges [bridges #f])
-  (graph sym name desc (or edges '()) (or bridges '())))
+  (let ([graph-id (make-graph-id name)])
+    (cond [(set-member? (current-seen-ids) graph-id)
+           (error "node-maker: duplicate ID" graph-id)]
+          [else (current-seen-ids (set-add (current-seen-ids) graph-id))])
+    (graph (make-graph-id name) name desc (or edges '()) (or bridges '()))))
 
 (: make-open-graph (All (T S)
-                   (-> Symbol
-                       String
-                       [#:desc (Option String)]
-                       [#:edges (Option (Listof (Edge T S)))]
-                       [#:bridges (Option (Listof (Bridge T S Any Any)))]
-                       (OpenGraph T S))))
-(define (make-open-graph sym
-                         name
+                        (-> String
+                            [#:desc (Option String)]
+                            [#:edges (Option (Listof (Edge T S)))]
+                            [#:bridges (Option (Listof (Bridge T S Any Any)))]
+                            (OpenGraph T S))))
+(define (make-open-graph name
                          #:desc [desc #f]
                          #:edges [edges #f]
                          #:bridges [bridges #f])
-  ((inst make-graph* T S Any Any) sym name
+  ((inst make-graph* T S Any Any) name
                                   #:desc desc
                                   #:edges edges
                                   #:bridges bridges))
 
 (: make-graph (All (T S)
-                   (-> Symbol
-                       String
+                   (-> String
                        [#:desc (Option String)]
                        [#:edges (Option (Listof (Edge T S)))]
                        [#:bridges (Option (Listof (Bridge T S T S)))]
                        (Graph T S))))
-(define (make-graph sym
-                    name
+(define (make-graph name
                     #:desc [desc #f]
                     #:edges [edges #f]
                     #:bridges [bridges #f])
-  ((inst make-graph* T S T S) sym name
+  ((inst make-graph* T S T S) name
                               #:desc desc
                               #:edges edges
                               #:bridges bridges))
