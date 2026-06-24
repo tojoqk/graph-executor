@@ -72,7 +72,7 @@
 
 (: make-bridge (All (T1 S1 T2 S2)
                     (-> String
-                        #:mode EdgeMode
+                        [#:mode (Option EdgeMode)]
                         #:dom (Node T1 S1)
                         #:cod (Node T2 S2)
                         [#:desc (Option String)]
@@ -82,7 +82,7 @@
                         [#:weight (Option Exact-Positive-Integer)]
                         (Bridge T1 S1 T2 S2))))
 (define (make-bridge name
-                     #:mode mode
+                     #:mode [mode #f]
                      #:dom dom
                      #:cod cod
                      #:desc [desc #f]
@@ -95,7 +95,7 @@
            (error "make-edge, make-bridge: duplicate ID" edge-id)]
           [else (current-seen-ids (set-add (current-seen-ids) edge-id))])
     (edge edge-id
-          name mode dom cod
+          name (or mode 'choose) dom cod
           desc
           (or when (const #t))
           tr
@@ -104,7 +104,7 @@
 
 (: make-edge (All (T S)
                   (-> String
-                      #:mode EdgeMode
+                      [#:mode (Option EdgeMode)]
                       #:dom (Node T S)
                       #:cod (Node T S)
                       [#:desc (Option String)]
@@ -114,7 +114,7 @@
                       [#:weight (Option Exact-Positive-Integer)]
                       (Edge T S))))
 (define (make-edge name
-                   #:mode mode
+                   #:mode [mode #f]
                    #:dom dom
                    #:cod cod
                    #:desc [desc #f]
