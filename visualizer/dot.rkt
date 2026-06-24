@@ -204,19 +204,28 @@
                    (fprintf port "  ~a ~a"
                             (dot-string (symbol->string (get-id v)))
                             (format-node-attributes
-                             (node-name (cdr v))
+                             (string-join `(,(mark-node-title (node-name (cdr v)))
+                                            ,@(cond [(node-desc (cdr v)) => list]
+                                                    [else '()]))
+                                          "\n")
                              ((graph-config-node config) (node-type (cdr v)))))]
                   [(eq? 'edge (car v))
                    (fprintf port "  ~a ~a"
                             (dot-string (symbol->string (get-id v)))
                             (format-node-attributes
-                             (edge-name (cdr v))
+                             (string-join `(,(mark-edge-title (edge-name (cdr v)))
+                                            ,@(cond [(edge-desc (cdr v)) => list]
+                                                    [else '()]))
+                                          "\n")
                              ((graph-config-edge-node config) (edge-mode (cdr v)))))]
                   [(eq? 'bridge (car v))
                    (fprintf port "  ~a ~a"
                             (dot-string (symbol->string (get-id v)))
                             (format-node-attributes
-                             (edge-name (cdr v))
+                             (string-join `(,(mark-edge-title (edge-name (cdr v)))
+                                            ,@(cond [(edge-desc (cdr v)) => list]
+                                                    [else '()]))
+                                          "\n")
                              ((graph-config-bridge-node config) (edge-mode (cdr v)))))]))
               visnodes)
     (newline port)
@@ -248,6 +257,14 @@
                                        [arrowtail 'none]))))
               (visnodes-edges visnodes))
     (displayln "}" port)))
+
+(: mark-node-title (-> String String))
+(define (mark-node-title str)
+  (format "【~a】" str))
+
+(: mark-edge-title (-> String String))
+(define (mark-edge-title str)
+  (format "[~a]" str))
 
 (: byte->hex-string (-> Byte String))
 (define (byte->hex-string b)
