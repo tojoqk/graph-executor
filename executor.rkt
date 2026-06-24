@@ -4,10 +4,10 @@
 
 (provide find-graph next-edges auto-choose step)
 
-(: find-graph (All (T S) (-> (Listof (Graph T S)) Symbol (Graph T S))))
+(: find-graph (All (T S) (-> (Listof (Graph T S)) Symbol (Option (Graph T S)))))
 (define (find-graph gs g-id)
   (cond [(memf (lambda ([g : (Graph T S)]) (equal? (graph-id g) g-id)) gs) => car]
-        [else (error "Graph not found" gs g-id)]))
+        [else #f]))
 
 (: next-edges (All (T S)
                    (-> (Listof (Graph T S))
@@ -26,7 +26,7 @@
                         (list 'terminated)
                         (list 'choose es))
                     (list 'auto aes))))]
-        [else (error "Graph not found" (node-graph-id n))]))
+        [else (list 'terminated)]))
 
 (: auto-choose (All (T S)
                     (-> (List 'auto (Pairof (Edge T S) (Listof (Edge T S)))) (Edge T S))))
