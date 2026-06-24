@@ -66,24 +66,24 @@
     graph-name
     #:edges
     (list
-     (v-edge "Insert 100 Yen" #:mode 'choose #:dom idle #:cod has-coins
+     (v-edge "Insert 100 Yen" #:dom idle #:cod has-coins
              #:when (can-insert? 100)
              #:trans (insert-money 100))
-     (v-edge "Insert More" #:mode 'choose #:dom has-coins #:cod has-coins
+     (v-edge "Insert More" #:dom has-coins #:cod has-coins
              #:when (can-insert? 100)
              #:trans (insert-money 100))
-     (v-edge "Purchase Drink (150 Yen)" #:mode 'choose #:dom has-coins #:cod dispensing
+     (v-edge "Purchase Drink (150 Yen)" #:dom has-coins #:cod dispensing
              #:when (price-met? 150)
              #:trans (purchase 150))
      (v-edge "Dispense Done (Remaining Inserted)" #:mode 'auto #:dom dispensing #:cod has-coins
              #:when inserted?)
      (v-edge "Dispense Done (Just Zero)" #:mode 'auto #:dom dispensing #:cod idle
              #:when (negate inserted?))
-     (v-edge "Press Return Lever" #:mode 'choose #:dom has-coins #:cod ret-change
+     (v-edge "Press Return Lever" #:dom has-coins #:cod ret-change
              #:when inserted?
              #:trans reset-money)
      (v-edge "Change Dispatched" #:mode 'auto #:dom ret-change #:cod idle)
-     (v-edge "Walk Away" #:mode 'choose #:dom idle #:cod terminal)))
+     (v-edge "Walk Away" #:dom idle #:cod terminal)))
    initial-state
    idle))
 
