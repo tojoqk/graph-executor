@@ -70,26 +70,26 @@
       #:edges
       (list 
        (v-edge "Insert 100 Yen" #:mode 'choose #:dom idle #:cod has-coins
-               #:when (make-condition (can-insert? 100))
-               #:trans (make-trans (insert-money 100)))
+               #:when (can-insert? 100)
+               #:trans (insert-money 100))
        (v-edge "Insert More" #:mode 'choose #:dom has-coins #:cod has-coins
-               #:when (make-condition (can-insert? 100))
-               #:trans (make-trans (insert-money 100)))
+               #:when (can-insert? 100)
+               #:trans (insert-money 100))
        (v-edge "Purchase Drink (150 Yen)" #:mode 'choose #:dom has-coins #:cod dispensing
-               #:when (make-condition (price-met? 150))
-               #:trans (make-trans (purchase 150)))
+               #:when (price-met? 150)
+               #:trans (purchase 150))
        (v-edge "Dispense Done (Remaining Inserted)" #:mode 'auto #:dom dispensing #:cod has-coins
-               #:when (make-condition inserted?))
+               #:when inserted?)
        (v-edge "Dispense Done (Just Zero)" #:mode 'auto #:dom dispensing #:cod idle
-               #:when (make-condition (negate inserted?)))
+               #:when (negate inserted?))
        (v-edge "Press Return Lever" #:mode 'choose #:dom has-coins #:cod ret-change
-               #:when (make-condition inserted?)
-               #:trans (make-trans reset-money))
+               #:when inserted?
+               #:trans reset-money)
        (v-edge "Change Dispatched" #:mode 'auto #:dom ret-change #:cod idle))
       #:bridges
       (list
        (v-bridge "Walk Away" #:mode 'choose #:dom idle #:cod output
-                 #:trans (make-trans output-edge))))
+                 #:trans output-edge)))
      initial-state
      idle)))
 
