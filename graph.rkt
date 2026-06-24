@@ -58,24 +58,31 @@
           [else (current-seen-ids (set-add (current-seen-ids) node-id))])
     (node graph-id node-id name type desc (or tr (make-trans (inst identity S))))))
 
-(struct (S) condition ([proc : (-> S Any)]
+(struct (S) condition ([name : (Option String)]
+                       [proc : (-> S Any)]
                        [desc : (Option String)])
-  #:type-name Condition)
+  #:type-name Condition
+  #:transparent)
 
-(: make-condition (All (S) (-> (-> S Any) [#:desc (Option String)]
+(: make-condition (All (S) (-> (-> S Any)
+                               [#:name (Option String)]
+                               [#:desc (Option String)]
                                (Condition S))))
-(define (make-condition proc #:desc [desc #f])
-  (condition proc desc))
+(define (make-condition proc #:name [name #f] #:desc [desc #f])
+  (condition name proc desc))
 
-(struct (S1 S2) trans ([proc : (-> S1 S2)]
+(struct (S1 S2) trans ([name : (Option String)]
+                       [proc : (-> S1 S2)]
                        [desc : (Option String)])
-  #:type-name Trans)
+  #:type-name Trans
+  #:transparent)
 
-(: make-trans (All (S1 S2) (-> (-> S1 S2) [#:desc (Option String)]
-
+(: make-trans (All (S1 S2) (-> (-> S1 S2)
+                               [#:name (Option String)]
+                               [#:desc (Option String)]
                                (Trans S1 S2))))
-(define (make-trans proc #:desc [desc #f])
-  (trans proc desc))
+(define (make-trans proc #:name [name #f] #:desc [desc #f])
+  (trans name proc desc))
 
 (struct (T1 S1 T2 S2) edge ([id : Symbol]
                             [name : String]
