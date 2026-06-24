@@ -121,27 +121,7 @@
      'tab
      'folder
      'box3d
-     'component
-     'promoter
-     'cds
-     'terminator
-     'utr
-     'primersite
-     'restrictionsite
-     'fivepoverhang
-     'threepoverhang
-     'noverhang
-     'assembly
-     'signature
-     'insulator
-     'ribosite
-     'rnastab
-     'proteasesite
-     'proteinstab
-     'rpromoter
-     'rarrow
-     'larrow
-     'lpromoter))
+     'component))
 
 (define-type NodeStyle
   (U 'dashed
