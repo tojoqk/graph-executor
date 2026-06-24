@@ -133,9 +133,21 @@
 
 (module+ main
   (require "../executor.rkt")
+  (require "../visualizer/dot.rkt")
+  (require racket/cmdline)
+  (define repl-mode (box #f))
+  (command-line
+   #:program "graph-example"
+   #:once-each
+   [("--repl") "Run repl" (set-box! repl-mode #t)]
+   #:args ()
+   (define-values (t-graph t-entry)
+     (terminal-graph "Terminal"))
+   (define-values (v-graph initial-state v-entry)
+     (vending-graph "Vending Machine Model" t-entry vending-graph->terminal-graph))
+   (if (unbox repl-mode)
+       (let-values ([(state _)
+                     (repl-run (list v-graph t-graph) (initial-state 400) v-entry)])
+         state)
+       (write-dot (list v-graph) v-entry))))
 
-  (define-values (t-graph t-entry)
-    (terminal-graph "Terminal"))
-  (define-values (v-graph initial-state v-entry)
-    (vending-graph "Vending Machine Model" t-entry vending-graph->terminal-graph))
-  (repl-run (list v-graph t-graph) (initial-state 400) v-entry))
