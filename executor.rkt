@@ -62,10 +62,8 @@
 
 (: step (All (T S) (-> S (Edge T S) (values S (Node T S)))))
 (define (step st e)
-  (let* ([n (edge-cod e)]
-         [p1 (trans-proc (edge-trans e))]
-         [p2 (trans-proc (node-trans n))])
-    (values (p2 (p1 st)) n)))
+  (let ([n (edge-cod e)])
+    (values ((node-trans n) ((edge-trans e) st)) n)))
 
 (: repl-run (All (T S) (-> (Listof (Graph T S)) S (Node T S) (values S (Node T S)))))
 (define (repl-run gs st n)
@@ -100,9 +98,7 @@
 (: filter-state (All (T S) (-> S (Listof (Edge T S)) (Listof (Edge T S)))))
 (define (filter-state st es)
   (filter (lambda ([e : (Edge T S)])
-            (let* ([c (edge-when e)]
-                   [proc (condition-proc c)])
-              (proc st)))
+            ((edge-when e) st))
           es))
 
 (: filter-auto (All (T S) (-> (Listof (Edge T S)) (Listof (Edge T S)))))

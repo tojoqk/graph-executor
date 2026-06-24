@@ -3,10 +3,6 @@
 (provide current-seen-ids
          Node node-maker
          node-graph-id node-id node-name node-type node-desc node-trans
-         Condition make-condition
-         condition-desc condition-proc
-         Trans make-trans
-         trans-desc trans-proc
          Bridge Edge make-bridge make-edge
          edge-id edge-name edge-mode edge-dom edge-cod edge-desc edge-when edge-trans edge-priority edge-weight
          Graph* OpenGraph Graph make-graph* make-open-graph make-graph
@@ -39,7 +35,7 @@
                     [name : String]
                     [type : T]
                     [desc : (Option String)]
-                    [trans : (Trans S S)])
+                    [trans : (-> S S)])
   #:transparent
   #:type-name Node)
 
@@ -48,7 +44,7 @@
                        (-> String
                            #:type T
                            [#:desc (Option String)]
-                           [#:trans (Option (Trans S S))]
+                           [#:trans (Option (-> S S))]
                            (Node T S)))))
 (define ((node-maker graph-name) name #:type type #:desc [desc #f] #:trans [tr #f])
   (let ([graph-id (make-graph-id graph-name)]
@@ -56,33 +52,7 @@
     (cond [(set-member? (current-seen-ids) node-id)
            (error "node-maker: duplicate ID" node-id)]
           [else (current-seen-ids (set-add (current-seen-ids) node-id))])
-    (node graph-id node-id name type desc (or tr (make-trans (inst identity S))))))
-
-(struct (S) condition ([name : (Option String)]
-                       [proc : (-> S Any)]
-                       [desc : (Option String)])
-  #:type-name Condition
-  #:transparent)
-
-(: make-condition (All (S) (-> (-> S Any)
-                               [#:name (Option String)]
-                               [#:desc (Option String)]
-                               (Condition S))))
-(define (make-condition proc #:name [name #f] #:desc [desc #f])
-  (condition name proc desc))
-
-(struct (S1 S2) trans ([name : (Option String)]
-                       [proc : (-> S1 S2)]
-                       [desc : (Option String)])
-  #:type-name Trans
-  #:transparent)
-
-(: make-trans (All (S1 S2) (-> (-> S1 S2)
-                               [#:name (Option String)]
-                               [#:desc (Option String)]
-                               (Trans S1 S2))))
-(define (make-trans proc #:name [name #f] #:desc [desc #f])
-  (trans name proc desc))
+    (node graph-id node-id name type desc (or tr (inst identity S)))))
 
 (struct (T1 S1 T2 S2) edge ([id : Symbol]
                             [name : String]
@@ -90,8 +60,8 @@
                             [dom : (Node T1 S1)]
                             [cod : (Node T2 S2)]
                             [desc : (Option String)]
-                            [when : (Condition S1)]
-                            [trans : (Trans S1 S2)]
+                            [when : (-> S1 Any)]
+                            [trans : (-> S1 S2)]
                             [priority : Integer]
                             [weight : Exact-Positive-Integer])
   #:type-name Bridge)
@@ -104,8 +74,8 @@
                         #:dom (Node T1 S1)
                         #:cod (Node T2 S2)
                         [#:desc (Option String)]
-                        [#:when (Option (Condition S1))]
-                        #:trans (Trans S1 S2)
+                        [#:when (Option (-> S1 Any))]
+                        #:trans (-> S1 S2)
                         [#:priority (Option Integer)]
                         [#:weight (Option Exact-Positive-Integer)]
                         (Bridge T1 S1 T2 S2))))
@@ -125,7 +95,7 @@
     (edge edge-id
           name mode dom cod
           desc
-          (or when (make-condition (const #t)))
+          (or when (const #t))
           tr
           (or priority 1)
           (or weight 1))))
@@ -136,8 +106,8 @@
                       #:dom (Node T S)
                       #:cod (Node T S)
                       [#:desc (Option String)]
-                      [#:when (Option (Condition S))]
-                      [#:trans (Option (Trans S S))]
+                      [#:when (Option (-> S Any))]
+                      [#:trans (Option (-> S S))]
                       [#:priority (Option Integer)]
                       [#:weight (Option Exact-Positive-Integer)]
                       (Edge T S))))
@@ -156,7 +126,7 @@
                               #:cod cod
                               #:desc desc
                               #:when when
-                              #:trans (or tr (make-trans (inst identity S)))
+                              #:trans (or tr (inst identity S))
                               #:priority priority
                               #:weight weight))
 
