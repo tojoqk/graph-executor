@@ -2,7 +2,8 @@
 
 (require "graph.rkt")
 
-(provide find-graph next-edges auto-choose step)
+(provide find-graph next-edges auto-choose step
+         current-auto-conflict-policy current-single-choose-policy)
 
 (: current-auto-conflict-policy (Parameterof (U 'random 'choose)))
 (define current-auto-conflict-policy (make-parameter 'random))
