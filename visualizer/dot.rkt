@@ -12,18 +12,18 @@
          ArrowShape EdgeStyle)
 
 (struct (T) graph-config ([node : (-> T NodeConfig)]
-                          [edge-node : (-> (U 'auto 'choose) NodeConfig)]
-                          [bridge-node : (-> (U 'auto 'choose) NodeConfig)]
-                          [edge : (-> (U 'auto 'choose) EdgeConfig)]
-                          [bridge : (-> (U 'auto 'choose) EdgeConfig)])
+                          [edge-node : (-> EdgeMode NodeConfig)]
+                          [bridge-node : (-> EdgeMode NodeConfig)]
+                          [edge : (-> EdgeMode EdgeConfig)]
+                          [bridge : (-> EdgeMode EdgeConfig)])
   #:type-name GraphConfig)
 
 (: make-graph-config (All (T)
                           (-> [#:node (Option (-> T NodeConfig))]
-                              [#:edge-node (Option (-> (U 'auto 'choose) NodeConfig))]
-                              [#:bridge-node (Option (-> (U 'auto 'choose) NodeConfig))]
-                              [#:edge (Option (-> (U 'auto 'choose) EdgeConfig))]
-                              [#:bridge (Option (-> (U 'auto 'choose) EdgeConfig))]
+                              [#:edge-node (Option (-> EdgeMode NodeConfig))]
+                              [#:bridge-node (Option (-> EdgeMode NodeConfig))]
+                              [#:edge (Option (-> EdgeMode EdgeConfig))]
+                              [#:bridge (Option (-> EdgeMode EdgeConfig))]
                               (GraphConfig T))))
 (define (make-graph-config #:node [node #f]
                            #:edge-node [edge-node #f]
@@ -34,10 +34,12 @@
                                                            #:style '(filled rounded))))
                          (or edge-node (const (make-node-config #:shape 'plaintext)))
                          (or bridge-node (const (make-node-config #:shape 'plaintext)))
-                         (or edge (lambda ([mode : (U 'auto 'choose)])
-                                         (if (eq? mode 'auto)
-                                             (make-edge-config #:color "red")
-                                             (make-edge-config #:color "blue"))))
+                         (or edge (lambda ([mode : EdgeMode])
+                                    (cond [(eq? mode 'auto) (make-edge-config #:color "red")]
+                                          [(eq? mode 'choose) (make-edge-config #:color "blue")]
+                                          [(eq? mode 'annotation)
+                                           (make-edge-config #:style '(dashed)
+                                                             #:color "black")])))
                          (or bridge (const (make-edge-config)))))
 
 (struct node-config ([shape : NodeShape]

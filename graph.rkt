@@ -3,7 +3,7 @@
 (provide current-seen-ids
          Node node-maker
          node-graph-id node-id node-name node-type node-desc node-trans
-         Bridge Edge make-bridge make-edge
+         Bridge Edge EdgeMode make-bridge make-edge
          edge-id edge-name edge-mode edge-dom edge-cod edge-desc edge-when edge-trans edge-priority edge-weight
          Graph* OpenGraph Graph make-graph* make-open-graph make-graph
          graph-id graph-name graph-edges graph-bridges)
@@ -54,9 +54,11 @@
           [else (current-seen-ids (set-add (current-seen-ids) node-id))])
     (node graph-id node-id name type desc (or tr (inst identity S)))))
 
+(define-type EdgeMode (U 'auto 'choose 'annotation))
+
 (struct (T1 S1 T2 S2) edge ([id : Symbol]
                             [name : String]
-                            [mode : (U 'auto 'choose)]
+                            [mode : EdgeMode]
                             [dom : (Node T1 S1)]
                             [cod : (Node T2 S2)]
                             [desc : (Option String)]
@@ -70,7 +72,7 @@
 
 (: make-bridge (All (T1 S1 T2 S2)
                     (-> String
-                        #:mode (U 'auto 'choose)
+                        #:mode EdgeMode
                         #:dom (Node T1 S1)
                         #:cod (Node T2 S2)
                         [#:desc (Option String)]
@@ -102,7 +104,7 @@
 
 (: make-edge (All (T S)
                   (-> String
-                      #:mode (U 'auto 'choose)
+                      #:mode EdgeMode
                       #:dom (Node T S)
                       #:cod (Node T S)
                       [#:desc (Option String)]

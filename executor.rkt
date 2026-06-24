@@ -19,7 +19,7 @@
 (define (next-edges gs st n)
   (cond [(find-graph gs (node-graph-id n))
          => (lambda ([g : (Graph T S)])
-              (let* ([es (edge-sort (filter-state st (filter-node n (graph-all-edges g))))]
+              (let* ([es (edge-sort (filter-state st (remove-annotation (filter-node n (graph-all-edges g)))))]
                      [aes (auto-edges es)])
                 (if (null? aes)
                     (if (null? es)
@@ -99,6 +99,11 @@
 (define (filter-state st es)
   (filter (lambda ([e : (Edge T S)])
             ((edge-when e) st))
+          es))
+
+(: remove-annotation (All (T S) (-> (Listof (Edge T S)) (Listof (Edge T S)))))
+(define (remove-annotation es)
+  (filter (lambda ([e : (Edge T S)]) (not (eq? (edge-mode e) 'annotation)))
           es))
 
 (: filter-auto (All (T S) (-> (Listof (Edge T S)) (Listof (Edge T S)))))
