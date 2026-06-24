@@ -4,6 +4,12 @@
 
 (provide find-graph next-edges auto-choose step)
 
+(: current-auto-conflict-policy (Parameterof (U 'random 'choose)))
+(define current-auto-conflict-policy (make-parameter 'random))
+
+(: current-single-choose-policy (Parameterof (U 'skip 'choose)))
+(define current-single-choose-policy (make-parameter 'skip))
+
 (: find-graph (All (T S) (-> (Listof (Graph T S)) Symbol (Option (Graph T S)))))
 (define (find-graph gs g-id)
   (cond [(memf (lambda ([g : (Graph T S)]) (equal? (graph-id g) g-id)) gs) => car]
@@ -24,8 +30,16 @@
                 (if (null? aes)
                     (if (null? es)
                         (list 'terminated)
-                        (list 'choose es))
-                    (list 'auto aes))))]
+                        (if (null? (cdr es))
+                            (let ([policy (current-single-choose-policy)])
+                              (cond [(eq? policy 'skip) (list 'auto es)]
+                                    [(eq? policy 'choose) (list 'choose es)]))
+                            (list 'choose es)))
+                    (if (null? (cdr aes))
+                        (list 'auto aes)
+                        (let ([policy (current-auto-conflict-policy)])
+                          (cond [(eq? policy 'random) (list 'auto aes)]
+                                [(eq? policy 'choose) (list 'choose aes)]))))))]
         [else (list 'terminated)]))
 
 (: auto-choose (All (T S)
