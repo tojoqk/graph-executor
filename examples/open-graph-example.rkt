@@ -133,7 +133,7 @@
 (require (submod "." vending-to-terminal))
 
 (module+ main
-  (require "../executor.rkt")
+  (require "../executor/repl.rkt")
   (require "../visualizer/dot.rkt")
   (require racket/cmdline)
   (define repl-mode (box #f))
