@@ -120,7 +120,7 @@
                      #:weight [weight #f])
   (let ([edge-id (make-edge-id name dom cod)])
     (cond [(set-member? (current-seen-ids) edge-id)
-           (error "node-maker: duplicate ID" edge-id)]
+           (error "make-edge, make-bridge: duplicate ID" edge-id)]
           [else (current-seen-ids (set-add (current-seen-ids) edge-id))])
     (edge edge-id
           name mode dom cod
@@ -182,7 +182,7 @@
                      #:bridges [bridges #f])
   (let ([graph-id (make-graph-id name)])
     (cond [(set-member? (current-seen-ids) graph-id)
-           (error "node-maker: duplicate ID" graph-id)]
+           (error "make-graph*: duplicate ID" graph-id)]
           [else (current-seen-ids (set-add (current-seen-ids) graph-id))])
     (graph (make-graph-id name) name desc (or edges '()) (or bridges '()))))
 
