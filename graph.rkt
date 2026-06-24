@@ -1,12 +1,9 @@
 #lang typed/racket
 
 (provide current-seen-ids
-         Node node-maker
-         node-graph-id node-id node-name node-type node-desc node-trans
-         Bridge Edge EdgeMode make-bridge make-edge
-         edge-id edge-name edge-mode edge-dom edge-cod edge-desc edge-when edge-trans edge-priority edge-weight
-         OpenGraph Graph make-open-graph make-graph
-         graph-id graph-name graph-edges graph-bridges)
+         (struct-out node) Node node-maker
+         (struct-out edge) Bridge Edge EdgeMode make-bridge make-edge
+         (struct-out graph) OpenGraph Graph make-open-graph make-graph)
 
 (: current-seen-ids (Parameterof (Setof Symbol)))
 (define current-seen-ids (make-parameter ((inst set Symbol))))
