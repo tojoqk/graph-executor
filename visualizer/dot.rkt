@@ -11,11 +11,6 @@
          NodeShape NodeStyle
          ArrowShape EdgeStyle)
 
-(define-type EdgeNodeConfig (-> (U 'auto 'choose)
-                                (Option Condition)
-                                (Option Trans)
-                                ))
-
 (struct (T) graph-config ([node : (-> T NodeConfig)]
                           [edge-node : (-> (U 'auto 'choose) NodeConfig)]
                           [bridge-node : (-> (U 'auto 'choose) NodeConfig)]
