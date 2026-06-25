@@ -96,7 +96,7 @@
           desc
           (or when (const #t))
           tr
-          (or priority 1)
+          (or priority 0)
           (or weight 1))))
 
 (: make-edge (All (T S)
