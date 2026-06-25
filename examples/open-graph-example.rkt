@@ -150,4 +150,4 @@
        (let-values ([(state _)
                      (repl-run (list v-graph t-graph) (initial-state 400) v-entry)])
          state)
-       (write-dot (list v-graph) v-entry))))
+       (write-dot (list t-graph v-graph) v-entry))))
