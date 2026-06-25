@@ -190,7 +190,7 @@
                     (define get-id (inst visnode-id T S))
                     (cond
                       [(eq? 'node (car v))
-                       (fprintf port "  ~a ~a"
+                       (fprintf port "  ~a ~a\n"
                                 (dot-string (symbol->string (get-id v)))
                                 (format-node-attributes
                                  (string-join `(,(mark-node-title (node-name (caddr v)))
@@ -199,7 +199,7 @@
                                               "\n")
                                  ((graph-config-node config) (node-type (caddr v)))))]
                       [(eq? 'edge (car v))
-                       (fprintf port "  ~a ~a"
+                       (fprintf port "  ~a ~a\n"
                                 (dot-string (symbol->string (get-id v)))
                                 (format-node-attributes
                                  (string-join `(,(mark-edge-title (edge-name (caddr v)))
@@ -208,7 +208,7 @@
                                               "\n")
                                  ((graph-config-edge-node config) (edge-mode (caddr v)))))]
                       [(eq? 'bridge (car v))
-                       (fprintf port "  ~a ~a"
+                       (fprintf port "  ~a ~a\n"
                                 (dot-string (symbol->string (get-id v)))
                                 (format-node-attributes
                                  (string-join `(,(mark-edge-title (edge-name (caddr v)))
@@ -223,7 +223,7 @@
     (display-visnodes #f)
     (newline port)
     (for-each (lambda ([v : (U (VisNode-Edge T S) (VisNode-Bridge T S))])
-                (fprintf port "  ~a -> ~a ~a"
+                (fprintf port "  ~a -> ~a ~a\n"
                          (dot-string (symbol->string (node-id (edge-dom (caddr v)))))
                          (dot-string (symbol->string (edge-id (caddr v))))
                          (format-edge-attributes
