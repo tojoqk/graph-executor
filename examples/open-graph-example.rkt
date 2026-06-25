@@ -4,8 +4,7 @@
   (require "../graph.rkt")
   (provide vending-graph
            Vending-State
-           v-state?
-           v-state-wallet)
+           (struct-out v-state))
 
   (define-type Vending-Node-Type (U 'start 'normal 'terminal))
 
@@ -52,7 +51,6 @@
                             (Node T S)
                             (-> Vending-State S)
                             (Values (OpenGraph Vending-Node-Type Vending-State T S)
-                                    (-> Natural Vending-State)
                                     (Node Vending-Node-Type Vending-State)))))
   (define (vending-graph g output output-edge)
     (define v-node ((inst node-maker Vending-Node-Type Vending-State) g))
@@ -91,7 +89,6 @@
       (list
        (v-bridge "Walk Away" #:dom idle #:cod output
                  #:trans output-edge)))
-     initial-state
      idle)))
 
 (require (submod "." vending-machine-example))
@@ -144,10 +141,10 @@
    #:args ()
    (define-values (t-graph t-entry)
      (terminal-graph "Terminal"))
-   (define-values (v-graph initial-state v-entry)
+   (define-values (v-graph v-entry)
      (vending-graph "Vending Machine Model" t-entry vending-graph->terminal-graph))
    (if (unbox repl-mode)
        (let-values ([(state _)
-                     (repl-run (list v-graph t-graph) (initial-state 400) v-entry)])
+                     (repl-run (list v-graph t-graph) (v-state 400 0) v-entry)])
          state)
        (write-dot (list t-graph v-graph) v-entry))))

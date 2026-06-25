@@ -13,10 +13,6 @@
   #:type-name Vending-State
   #:transparent)
 
-(: initial-state (-> Integer Vending-State))
-(define (initial-state w)
-  (v-state w 0))
-
 (: insert-money (-> Integer (-> Vending-State Vending-State)))
 (define ((insert-money amount) st)
   (struct-copy v-state st
@@ -48,7 +44,6 @@
 
 (: vending-graph (-> String
                      (Values (Graph Vending-Node-Type Vending-State)
-                             (-> Natural Vending-State)
                              (Node Vending-Node-Type Vending-State))))
 (define (vending-graph graph-name)
   (define v-node ((inst node-maker Vending-Node-Type Vending-State) graph-name))
@@ -84,7 +79,6 @@
              #:trans reset-money)
      (v-edge "Change Dispatched" #:mode 'auto #:dom ret-change #:cod idle)
      (v-edge "Walk Away" #:dom idle #:cod terminal)))
-   initial-state
    idle))
 
 (module+ main
@@ -98,9 +92,9 @@
    #:once-each
    [("--repl") "Run repl" (set-box! repl-mode #t)]
    #:args ()
-   (define-values (v-graph initial-state v-entry) (vending-graph "Vending Machine Model"))
+   (define-values (v-graph v-entry) (vending-graph "Vending Machine Model"))
    (if (unbox repl-mode)
        (let-values ([(state _)
-                     (repl-run (list v-graph) (initial-state 400) v-entry)])
+                     (repl-run (list v-graph) (v-state 400 0) v-entry)])
          state)
        (write-dot (list v-graph) v-entry))))
