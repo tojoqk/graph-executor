@@ -1,7 +1,8 @@
 #lang typed/racket
 
 (require "../graph.rkt")
-(provide VisNode reachable-visnodes visnode-id visnodes-edges)
+(provide VisNode VisNode-Node VisNode-Edge VisNode-Bridge
+         find-graph reachable-visnodes visnode-id visnodes-edges visnodes->graphs)
 
 (: find-graph (All (T S) (-> (Listof (Graph T S)) Symbol (Option (Graph T S)))))
 (define (find-graph gs g-id)
@@ -14,36 +15,41 @@
             (eq? (node-id n) (node-id (edge-dom e))))
           es))
 
-(define-type (VisNode T S) (U (Pairof 'node (Node T S))
-                              (Pairof 'edge (Edge T S))
-                              (Pairof 'bridge (Edge T S))))
+(define-type (VisNode-Node T S) (List 'node (Graph T S) (Node T S)))
+(define-type (VisNode-Edge T S) (List 'edge (Graph T S) (Edge T S)))
+(define-type (VisNode-Bridge T S) (List 'bridge False (Edge T S)))
 
-(: node->visnode (All (T S) (-> (Node T S) (Pairof 'node (Node T S)))))
-(define (node->visnode n)
-  (cons 'node n))
+(define-type (VisNode T S) (U (VisNode-Node T S) (VisNode-Edge T S) (VisNode-Bridge T S)))
 
-(: edge->visnode (All (T S) (-> (Edge T S) (Pairof 'edge (Edge T S)))))
-(define (edge->visnode e)
-  (cons 'edge e))
+(: node->visnode (All (T S) (-> (Graph T S) (-> (Node T S) (VisNode-Node T S)))))
+(define ((node->visnode g) n)
+  (list 'node g n))
 
-(: bridge->visnode (All (T S) (-> (Edge T S) (Pairof 'bridge (Edge T S)))))
+(: edge->visnode (All (T S) (-> (Graph T S) (-> (Edge T S) (VisNode-Edge T S)))))
+(define ((edge->visnode g) e)
+  (list 'edge g e))
+
+(: bridge->visnode (All (T S) (-> (Edge T S) (VisNode-Bridge T S))))
 (define (bridge->visnode b)
-  (cons 'bridge b))
+  (list 'bridge #f b))
 
 (: visnode-id (All (T S) (-> (VisNode T S) Symbol)))
 (define (visnode-id v)
   (cond
     [(eq? (car v) 'node)
-     (node-id (cdr v))]
+     (node-id (caddr v))]
     [(eq? (car v) 'edge)
-     (edge-id (cdr v))]
+     (edge-id (caddr v))]
     [(eq? (car v) 'bridge)
-     (edge-id (cdr v))]))
+     (edge-id (caddr v))]))
 
+(: visnode-graph (All (T S) (-> (VisNode T S) (Option (Graph T S)))))
+(define (visnode-graph v)
+  (cadr v))
 
 (: visnodes-edges (All (T S)
-                       (-> (Listof (VisNode T S)) (Listof (U (Pairof 'edge (Edge T S))
-                                                             (Pairof 'bridge (Edge T S)))))))
+                       (-> (Listof (VisNode T S)) (Listof (U (VisNode-Edge T S)
+                                                             (VisNode-Bridge T S))))))
 (define (visnodes-edges visnodes)
   (if (null? visnodes)
       '()
@@ -67,8 +73,8 @@
            => (lambda ([g : (Graph T S)])
                 (let ([edges (filter-dom n (graph-edges g))]
                       [bridges (filter-dom n (graph-bridges g))])
-                  (let* ([visnodes (append (list (node->visnode n))
-                                           ((inst map (VisNode T S) (Edge T S)) edge->visnode edges)
+                  (let* ([visnodes (append (list ((node->visnode g) n))
+                                           ((inst map (VisNode T S) (Edge T S)) (edge->visnode g) edges)
                                            ((inst map (VisNode T S) (Edge T S)) bridge->visnode bridges))]
                          [seen (set-union seen (list->set ((inst map Symbol (VisNode T S)) visnode-id visnodes)))])
                     (for/fold : (Values (Listof (VisNode T S)) (Setof Symbol))
@@ -84,3 +90,17 @@
   (define-values (visnodes _)
     (loop n (set)))
   visnodes)
+
+(: visnodes->graphs (All (T S) (-> (Listof (VisNode T S)) (Listof (Graph T S)))))
+(define (visnodes->graphs vs)
+  (let loop ([vs vs] [gs : (Listof (Graph T S)) '()])
+    (if (null? vs)
+        gs
+        (cond [(visnode-graph (car vs))
+               => (lambda ([g : (Graph T S)])
+                    (cond [(memf (lambda ([h : (Graph T S)])
+                                   (symbol=? (graph-id g) (graph-id h)))
+                                 gs)
+                           (loop (cdr vs) gs)]
+                          [else (loop (cdr vs) (cons g gs))]))]
+              [else (loop (cdr vs) gs)]))))

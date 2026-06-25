@@ -177,63 +177,75 @@
   (let ([visnodes (reachable-visnodes gs node)])
     (displayln (format "digraph G {") port)
     (displayln  "  graph [rankdir=TB]" port)
-    (for-each (lambda ([v : (VisNode T S)])
-                (define get-id (inst visnode-id T S))
-                (cond
-                  [(eq? 'node (car v))
-                   (fprintf port "  ~a ~a"
-                            (dot-string (symbol->string (get-id v)))
-                            (format-node-attributes
-                             (string-join `(,(mark-node-title (node-name (cdr v)))
-                                            ,@(cond [(node-desc (cdr v)) => list]
-                                                    [else '()]))
-                                          "\n")
-                             ((graph-config-node config) (node-type (cdr v)))))]
-                  [(eq? 'edge (car v))
-                   (fprintf port "  ~a ~a"
-                            (dot-string (symbol->string (get-id v)))
-                            (format-node-attributes
-                             (string-join `(,(mark-edge-title (edge-name (cdr v)))
-                                            ,@(cond [(edge-desc (cdr v)) => list]
-                                                    [else '()]))
-                                          "\n")
-                             ((graph-config-edge-node config) (edge-mode (cdr v)))))]
-                  [(eq? 'bridge (car v))
-                   (fprintf port "  ~a ~a"
-                            (dot-string (symbol->string (get-id v)))
-                            (format-node-attributes
-                             (string-join `(,(mark-edge-title (edge-name (cdr v)))
-                                            ,@(cond [(edge-desc (cdr v)) => list]
-                                                    [else '()]))
-                                          "\n")
-                             ((graph-config-bridge-node config) (edge-mode (cdr v)))))]))
-              visnodes)
+    (: display-visnodes (-> (Option (Graph T S)) Void))
+    (define (display-visnodes g)
+      (when g
+        (fprintf port "subgraph ~a {\n" (dot-string (string-append "cluster_"
+                                                                   (symbol->string (graph-id g)))))
+        (fprintf port "  label = ~a\n" (dot-string (graph-name g))))
+      (for-each (lambda ([v : (VisNode T S)])
+                  (when (if (and g (cadr v))
+                            (symbol=? (graph-id g) (graph-id (cadr v)))
+                            (and (not g) (not (cadr v))))
+                    (define get-id (inst visnode-id T S))
+                    (cond
+                      [(eq? 'node (car v))
+                       (fprintf port "  ~a ~a"
+                                (dot-string (symbol->string (get-id v)))
+                                (format-node-attributes
+                                 (string-join `(,(mark-node-title (node-name (caddr v)))
+                                                ,@(cond [(node-desc (caddr v)) => list]
+                                                        [else '()]))
+                                              "\n")
+                                 ((graph-config-node config) (node-type (caddr v)))))]
+                      [(eq? 'edge (car v))
+                       (fprintf port "  ~a ~a"
+                                (dot-string (symbol->string (get-id v)))
+                                (format-node-attributes
+                                 (string-join `(,(mark-edge-title (edge-name (caddr v)))
+                                                ,@(cond [(edge-desc (caddr v)) => list]
+                                                        [else '()]))
+                                              "\n")
+                                 ((graph-config-edge-node config) (edge-mode (caddr v)))))]
+                      [(eq? 'bridge (car v))
+                       (fprintf port "  ~a ~a"
+                                (dot-string (symbol->string (get-id v)))
+                                (format-node-attributes
+                                 (string-join `(,(mark-edge-title (edge-name (caddr v)))
+                                                ,@(cond [(edge-desc (caddr v)) => list]
+                                                        [else '()]))
+                                              "\n")
+                                 ((graph-config-bridge-node config) (edge-mode (caddr v)))))])))
+                visnodes)
+      (when g
+        (displayln "}" port)))
+    (for-each display-visnodes (visnodes->graphs visnodes))
+    (display-visnodes #f)
     (newline port)
-    (for-each (lambda ([v : (U (Pairof 'edge (Edge T S))
-                               (Pairof 'bridge (Edge T S)))])
+    (for-each (lambda ([v : (U (VisNode-Edge T S) (VisNode-Bridge T S))])
                 (fprintf port "  ~a -> ~a ~a"
-                         (dot-string (symbol->string (node-id (edge-dom (cdr v)))))
-                         (dot-string (symbol->string (edge-id (cdr v))))
+                         (dot-string (symbol->string (node-id (edge-dom (caddr v)))))
+                         (dot-string (symbol->string (edge-id (caddr v))))
                          (format-edge-attributes
                           ""
                           (struct-copy edge-config
                                        (cond
                                          [(eq? 'edge (car v))
-                                          ((graph-config-edge config) (edge-mode (cdr v)))]
+                                          ((graph-config-edge config) (edge-mode (caddr v)))]
                                          [(eq? 'bridge (car v))
-                                          ((graph-config-edge config) (edge-mode (cdr v)))])
+                                          ((graph-config-edge config) (edge-mode (caddr v)))])
                                        [arrowhead 'none])))
                 (fprintf port "  ~a -> ~a ~a\n"
-                         (dot-string (symbol->string (edge-id (cdr v))))
-                         (dot-string (symbol->string (node-id (edge-cod (cdr v)))))
+                         (dot-string (symbol->string (edge-id (caddr v))))
+                         (dot-string (symbol->string (node-id (edge-cod (caddr v)))))
                          (format-edge-attributes
                           ""
                           (struct-copy edge-config
                                        (cond
                                          [(eq? 'edge (car v))
-                                          ((graph-config-edge config) (edge-mode (cdr v)))]
+                                          ((graph-config-edge config) (edge-mode (caddr v)))]
                                          [(eq? 'bridge (car v))
-                                          ((graph-config-edge config) (edge-mode (cdr v)))])
+                                          ((graph-config-edge config) (edge-mode (caddr v)))])
                                        [arrowtail 'none]))))
               (visnodes-edges visnodes))
     (displayln "}" port)))
