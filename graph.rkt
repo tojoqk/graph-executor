@@ -10,18 +10,18 @@
 
 (: make-graph-id (-> String Symbol))
 (define (make-graph-id graph-name)
-  (string->symbol (format "~a_~a" (string-length graph-name) graph-name)))
+  (string->symbol (format "[~a]~a" (string-length graph-name) graph-name)))
 
 (: make-node-id (-> String String Symbol))
 (define (make-node-id graph-name node-name)
-  (string->symbol (format "~a_~a_~a_~a"
+  (string->symbol (format "[~a]~a[~a]~a"
                           (string-length graph-name) graph-name
                           (string-length node-name) node-name)))
 
 (: make-edge-id (All (T S) (-> String (Node T S) Symbol)))
 (define (make-edge-id edge-name dom)
   (let ([dom-id (symbol->string (node-id dom))])
-    (string->symbol (format "~a_~a_~a"
+    (string->symbol (format "~a[~a]~a"
                             dom-id
                             (string-length edge-name)
                             edge-name))))
