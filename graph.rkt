@@ -18,14 +18,13 @@
                           (string-length graph-name) graph-name
                           (string-length node-name) node-name)))
 
-(: make-edge-id (All (T1 S1 T2 S2) (-> String (Node T1 S1) (Node T2 S2) Symbol)))
-(define (make-edge-id edge-name dom cod)
-  (let ([dom-id (symbol->string (node-id dom))]
-        [cod-id (symbol->string (node-id cod))])
-    (string->symbol (format "~a_~a_~a_~a_~a_~a"
-                            (string-length dom-id) dom-id
-                            (string-length cod-id) cod-id
-                            (string-length edge-name) edge-name))))
+(: make-edge-id (All (T S) (-> String (Node T S) Symbol)))
+(define (make-edge-id edge-name dom)
+  (let ([dom-id (symbol->string (node-id dom))])
+    (string->symbol (format "~a_~a_~a"
+                            dom-id
+                            (string-length edge-name)
+                            edge-name))))
 
 (struct (T S) node ([graph-id : Symbol]
                     [id : Symbol]
@@ -87,7 +86,7 @@
                      #:trans tr
                      #:priority [priority #f]
                      #:weight [weight #f])
-  (let ([edge-id (make-edge-id name dom cod)])
+  (let ([edge-id (make-edge-id name dom)])
     (cond [(set-member? (current-seen-ids) edge-id)
            (error "make-edge, make-bridge: duplicate ID" edge-id)]
           [else (current-seen-ids (set-add (current-seen-ids) edge-id))])
