@@ -11,36 +11,43 @@
          NodeShape NodeStyle
          ArrowShape EdgeStyle)
 
-(struct (T) graph-config ([node : (-> T NodeConfig)]
-                          [edge-node : (-> EdgeMode NodeConfig)]
-                          [bridge-node : (-> EdgeMode NodeConfig)]
-                          [edge : (-> EdgeMode EdgeConfig)]
-                          [bridge : (-> EdgeMode EdgeConfig)])
+(struct (T S) graph-config ([node : (-> (Node T S) NodeConfig)]
+                            [edge-node : (-> (Edge T S) NodeConfig)]
+                            [bridge-node : (-> (Edge T S) NodeConfig)]
+                            [edge : (-> (Edge T S) EdgeConfig)]
+                            [bridge : (-> (Edge T S) EdgeConfig)])
   #:type-name GraphConfig)
 
-(: make-graph-config (All (T)
-                          (-> [#:node (Option (-> T NodeConfig))]
-                              [#:edge-node (Option (-> EdgeMode NodeConfig))]
-                              [#:bridge-node (Option (-> EdgeMode NodeConfig))]
-                              [#:edge (Option (-> EdgeMode EdgeConfig))]
-                              [#:bridge (Option (-> EdgeMode EdgeConfig))]
-                              (GraphConfig T))))
+(: make-graph-config (All (T S)
+                          (-> [#:node (Option (-> (Node T S) NodeConfig))]
+                              [#:edge-node (Option (-> (Edge T S) NodeConfig))]
+                              [#:bridge-node (Option (-> (Edge T S) NodeConfig))]
+                              [#:edge (Option (-> (Edge T S) EdgeConfig))]
+                              [#:bridge (Option (-> (Edge T S) EdgeConfig))]
+                              (GraphConfig T S))))
 (define (make-graph-config #:node [node #f]
                            #:edge-node [edge-node #f]
                            #:bridge-node [bridge-node #f]
                            #:edge [edge #f]
                            #:bridge [bridge #f])
-  ((inst graph-config T) (or node (const (make-node-config #:shape 'box
-                                                           #:style '(filled rounded))))
-                         (or edge-node (const (make-node-config #:shape 'plaintext)))
-                         (or bridge-node (const (make-node-config #:shape 'plaintext)))
-                         (or edge (lambda ([mode : EdgeMode])
-                                    (cond [(eq? mode 'auto) (make-edge-config #:color "red")]
-                                          [(eq? mode 'choose) (make-edge-config #:color "blue")]
-                                          [(eq? mode 'annotation)
-                                           (make-edge-config #:style '(dashed)
-                                                             #:color "black")])))
-                         (or bridge (const (make-edge-config)))))
+  ((inst graph-config T S) (or node (lambda ([_ : (Node T S)])
+                                      (make-node-config #:shape 'box
+                                                        #:style '(filled rounded))))
+                           (or edge-node
+                               (lambda ([_ : (Edge T S)])
+                                 (make-node-config #:shape 'plaintext)))
+                           (or bridge-node
+                               (lambda ([_ : (Edge T S)])
+                                 (make-node-config #:shape 'plaintext)))
+                           (or edge (lambda ([e : (Edge T S)])
+                                      (let ([mode (edge-mode e)])
+                                        (cond [(eq? mode 'auto) (make-edge-config #:color "red")]
+                                              [(eq? mode 'choose) (make-edge-config #:color "blue")]
+                                              [(eq? mode 'annotation)
+                                               (make-edge-config #:style '(dashed)
+                                                                 #:color "black")]))))
+                           (or bridge (lambda ([_ : (Edge T S)])
+                                        (make-edge-config)))))
 
 (struct node-config ([shape : NodeShape]
                      [style : (Listof NodeStyle)]
@@ -168,11 +175,11 @@
      'curve 'lcurve 'rcurve 'icurve 'licurve 'ricurve))
 
 (: write-dot (All (T S) (-> (Listof (Graph T S)) (Node T S)
-                            [#:config (GraphConfig T)]
+                            [#:config (GraphConfig T S)]
                             [#:port Output-Port]
                             Void)))
 (define (write-dot gs node
-                   #:config [config (make-graph-config)]
+                   #:config [config ((inst make-graph-config T S))]
                    #:port [port (current-output-port)])
   (let ([visnodes (reachable-visnodes gs node)])
     (displayln (format "digraph G {") port)
@@ -197,7 +204,7 @@
                                                 ,@(cond [(node-desc (caddr v)) => list]
                                                         [else '()]))
                                               "\n")
-                                 ((graph-config-node config) (node-type (caddr v)))))]
+                                 ((graph-config-node config) (caddr v))))]
                       [(eq? 'edge (car v))
                        (fprintf port "  ~a ~a\n"
                                 (dot-string (symbol->string (get-id v)))
@@ -206,7 +213,7 @@
                                                 ,@(cond [(edge-desc (caddr v)) => list]
                                                         [else '()]))
                                               "\n")
-                                 ((graph-config-edge-node config) (edge-mode (caddr v)))))]
+                                 ((graph-config-edge-node config) (caddr v))))]
                       [(eq? 'bridge (car v))
                        (fprintf port "  ~a ~a\n"
                                 (dot-string (symbol->string (get-id v)))
@@ -215,7 +222,7 @@
                                                 ,@(cond [(edge-desc (caddr v)) => list]
                                                         [else '()]))
                                               "\n")
-                                 ((graph-config-bridge-node config) (edge-mode (caddr v)))))])))
+                                 ((graph-config-bridge-node config) (caddr v))))])))
                 visnodes)
       (when g
         (displayln "}" port)))
@@ -231,9 +238,9 @@
                           (struct-copy edge-config
                                        (cond
                                          [(eq? 'edge (car v))
-                                          ((graph-config-edge config) (edge-mode (caddr v)))]
+                                          ((graph-config-edge config) (caddr v))]
                                          [(eq? 'bridge (car v))
-                                          ((graph-config-edge config) (edge-mode (caddr v)))])
+                                          ((graph-config-edge config) (caddr v))])
                                        [arrowhead 'none])))
                 (fprintf port "  ~a -> ~a ~a\n"
                          (dot-string (symbol->string (edge-id (caddr v))))
@@ -243,9 +250,9 @@
                           (struct-copy edge-config
                                        (cond
                                          [(eq? 'edge (car v))
-                                          ((graph-config-edge config) (edge-mode (caddr v)))]
+                                          ((graph-config-edge config) (caddr v))]
                                          [(eq? 'bridge (car v))
-                                          ((graph-config-edge config) (edge-mode (caddr v)))])
+                                          ((graph-config-edge config) (caddr v))])
                                        [arrowtail 'none]))))
               (visnodes-edges visnodes))
     (displayln "}" port)))
