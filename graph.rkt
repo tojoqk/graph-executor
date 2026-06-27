@@ -64,6 +64,7 @@
                             [trans : (-> S1 S2)]
                             [priority : Integer]
                             [weight : Exact-Positive-Integer])
+  #:transparent
   #:type-name Bridge)
 
 (define-type (Edge T S) (Bridge T S T S))
@@ -135,6 +136,7 @@
                              [desc : (Option String)]
                              [edges : (Listof (Edge T1 S1))]
                              [bridges : (Listof (Bridge T1 S1 T2 S2))])
+  #:transparent
   #:type-name OpenGraph)
 
 (define-type (Graph T S) (OpenGraph T S T S))
