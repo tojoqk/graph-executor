@@ -1,7 +1,6 @@
 #lang typed/racket
 
 (provide current-seen-ids
-         make-graph-id make-node-id make-edge-id
          Node node-maker
          node-graph-id node-graph-name node-id node-name node-type node-desc node-trans node-attributes
          Bridge Edge EdgeMode make-bridge make-edge
