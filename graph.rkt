@@ -1,6 +1,7 @@
 #lang typed/racket
 
 (provide current-seen-ids
+         make-graph-id make-node-id make-edge-id
          (struct-out node) Node node-maker
          (struct-out edge) Bridge Edge EdgeMode make-bridge make-edge
          (struct-out graph) OpenGraph Graph make-open-graph make-graph)
