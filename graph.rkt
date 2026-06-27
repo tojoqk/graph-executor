@@ -2,9 +2,12 @@
 
 (provide current-seen-ids
          make-graph-id make-node-id make-edge-id
-         (struct-out node) Node node-maker
-         (struct-out edge) Bridge Edge EdgeMode make-bridge make-edge
-         (struct-out graph) OpenGraph Graph make-open-graph make-graph)
+         Node node-maker
+         node-graph-id node-graph-name node-id node-name node-type node-desc node-trans node-attributes
+         Bridge Edge EdgeMode make-bridge make-edge
+         edge-id edge-name edge-mode edge-dom edge-cod edge-desc edge-when edge-trans edge-priority edge-weight edge-attributes
+         OpenGraph Graph make-open-graph make-graph
+         graph-id graph-name graph-desc graph-edges graph-bridges)
 
 (: current-seen-ids (Parameterof (Setof Symbol)))
 (define current-seen-ids (make-parameter ((inst set Symbol))))
@@ -33,7 +36,8 @@
                     [name : String]
                     [type : T]
                     [desc : (Option String)]
-                    [trans : (-> S S)])
+                    [trans : (-> S S)]
+                    [attributes : (Listof (Pair Symbol Any))])
   #:transparent
   #:type-name Node)
 
@@ -43,14 +47,15 @@
                            #:type T
                            [#:desc (Option String)]
                            [#:trans (Option (-> S S))]
+                           [#:attributes (Listof (Pair Symbol Any))]
                            (Node T S)))))
-(define ((node-maker graph-name) name #:type type #:desc [desc #f] #:trans [tr #f])
+(define ((node-maker graph-name) name #:type type #:desc [desc #f] #:trans [tr #f] #:attributes [attrs '()])
   (let ([graph-id (make-graph-id graph-name)]
         [node-id (make-node-id graph-name name)])
     (cond [(set-member? (current-seen-ids) node-id)
            (error "node-maker: duplicate ID" node-id)]
           [else (current-seen-ids (set-add (current-seen-ids) node-id))])
-    (node graph-id graph-name node-id name type desc (or tr (inst identity S)))))
+    (node graph-id graph-name node-id name type desc (or tr (inst identity S)) attrs)))
 
 (define-type EdgeMode (U 'auto 'choose 'annotation))
 
@@ -63,7 +68,8 @@
                             [when : (-> S1 Any)]
                             [trans : (-> S1 S2)]
                             [priority : Integer]
-                            [weight : Exact-Positive-Integer])
+                            [weight : Exact-Positive-Integer]
+                            [attributes : (Listof (Pair Symbol Any))])
   #:transparent
   #:type-name Bridge)
 
@@ -79,6 +85,7 @@
                         #:trans (-> S1 S2)
                         [#:priority (Option Integer)]
                         [#:weight (Option Exact-Positive-Integer)]
+                        [#:attributes (Listof (Pair Symbol Any))]
                         (Bridge T1 S1 T2 S2))))
 (define (make-bridge name
                      #:mode [mode #f]
@@ -88,7 +95,8 @@
                      #:when [when #f]
                      #:trans tr
                      #:priority [priority #f]
-                     #:weight [weight #f])
+                     #:weight [weight #f]
+                     #:attributes [attrs '()])
   (let ([edge-id (make-edge-id name dom)])
     (cond [(set-member? (current-seen-ids) edge-id)
            (error "make-edge, make-bridge: duplicate ID" edge-id)]
@@ -99,7 +107,8 @@
           (or when (const #t))
           tr
           (or priority 0)
-          (or weight 1))))
+          (or weight 1)
+          '())))
 
 (: make-edge (All (T S)
                   (-> String
@@ -111,6 +120,7 @@
                       [#:trans (Option (-> S S))]
                       [#:priority (Option Integer)]
                       [#:weight (Option Exact-Positive-Integer)]
+                      [#:attributes (Listof (Pair Symbol Any))]
                       (Edge T S))))
 (define (make-edge name
                    #:mode [mode #f]
@@ -120,7 +130,8 @@
                    #:when [when #f]
                    #:trans [tr #f]
                    #:priority [priority #f]
-                   #:weight [weight #f])
+                   #:weight [weight #f]
+                   #:attributes [attrs '()])
   ((inst make-bridge T S T S) name
                               #:mode mode
                               #:dom dom
@@ -129,7 +140,8 @@
                               #:when when
                               #:trans (or tr (inst identity S))
                               #:priority priority
-                              #:weight weight))
+                              #:weight weight
+                              #:attributes attrs))
 
 (struct (T1 S1 T2 S2) graph ([id : Symbol]
                              [name : String]
