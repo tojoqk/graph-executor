@@ -27,6 +27,7 @@
                             edge-name))))
 
 (struct (T S) node ([graph-id : Symbol]
+                    [graph-name : String]
                     [id : Symbol]
                     [name : String]
                     [type : T]
@@ -48,7 +49,7 @@
     (cond [(set-member? (current-seen-ids) node-id)
            (error "node-maker: duplicate ID" node-id)]
           [else (current-seen-ids (set-add (current-seen-ids) node-id))])
-    (node graph-id node-id name type desc (or tr (inst identity S)))))
+    (node graph-id graph-name node-id name type desc (or tr (inst identity S)))))
 
 (define-type EdgeMode (U 'auto 'choose 'annotation))
 

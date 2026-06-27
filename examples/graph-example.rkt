@@ -11,7 +11,7 @@
 (struct v-state ([wallet : Integer]
                  [inserted : Integer])
   #:type-name Vending-State
-  #:transparent)
+  #:prefab)
 
 (: insert-money (-> Integer (-> Vending-State Vending-State)))
 (define ((insert-money amount) st)
@@ -92,9 +92,16 @@
    #:once-each
    [("--repl") "Run repl" (set-box! repl-mode #t)]
    #:args ()
-   (define-values (v-graph v-entry) (vending-graph "Vending Machine Model"))
+   (define-values (v-graph node-init) (vending-graph "Vending Machine Model"))
    (if (unbox repl-mode)
-       (let-values ([(state _)
-                     (repl-run (list v-graph) (v-state 400 0) v-entry)])
-         state)
-       (write-dot (list v-graph) v-entry))))
+       (let ([state-init (v-state 400 0)])
+         (let-values ([(node-current state-current history)
+                       (repl-run (list v-graph) node-init state-init)])
+           (pretty-write `((init (graph ,(node-graph-name node-init))
+                                 (node ,(node-name node-init))
+                                 (state ,state-init))
+                           (current (graph ,(node-graph-name node-current))
+                                    (node ,(node-name node-current))
+                                    (state ,state-current))
+                           (history ,@history)))))
+       (write-dot (list v-graph) node-init))))

@@ -2,6 +2,7 @@
 
 (module vending-machine-example typed/racket
   (require "../graph.rkt")
+  (require "../prompt.rkt")
   (provide vending-graph
            Vending-State
            (struct-out v-state))
@@ -11,17 +12,14 @@
   (struct v-state ([wallet : Integer]
                    [inserted : Integer])
     #:type-name Vending-State
-    #:transparent)
+    #:prefab)
 
-  (: initial-state (-> Integer Vending-State))
-  (define (initial-state w)
-    (v-state w 0))
-
-  (: insert-money (-> Integer (-> Vending-State Vending-State)))
-  (define ((insert-money amount) st)
-    (struct-copy v-state st
-                 [wallet (- (v-state-wallet st) amount)]
-                 [inserted (+ (v-state-inserted st) amount)]))
+  (: insert-money (-> Vending-State Vending-State))
+  (define (insert-money st)
+    (let ([amount (prompt "How much?" `(range from 1 to ,(v-state-wallet st)))])
+      (struct-copy v-state st
+                   [wallet (- (v-state-wallet st) amount)]
+                   [inserted (+ (v-state-inserted st) amount)])))
 
   (: purchase (-> Integer (-> Vending-State Vending-State)))
   (define ((purchase amount) st)
@@ -68,12 +66,12 @@
       g
       #:edges
       (list 
-       (v-edge "Insert 100 Yen" #:dom idle #:cod has-coins
+       (v-edge "Insert Money" #:dom idle #:cod has-coins
                #:when (can-insert? 100)
-               #:trans (insert-money 100))
+               #:trans insert-money)
        (v-edge "Insert More" #:dom has-coins #:cod has-coins
                #:when (can-insert? 100)
-               #:trans (insert-money 100))
+               #:trans insert-money)
        (v-edge "Purchase Drink (150 Yen)" #:dom has-coins #:cod dispensing
                #:when (price-met? 150)
                #:trans (purchase 150))
@@ -103,7 +101,7 @@
 
   (struct terminal ([wallet : Integer])
     #:type-name Terminal
-    #:transparent)
+    #:prefab)
 
   (: terminal-graph (-> String
                         (Values (Graph Terminal-Node-Type Terminal)
@@ -130,6 +128,7 @@
 (require (submod "." vending-to-terminal))
 
 (module+ main
+  (require "../graph.rkt")
   (require "../executor/repl.rkt")
   (require "../visualizer/dot.rkt")
   (require racket/cmdline)
@@ -141,10 +140,17 @@
    #:args ()
    (define-values (t-graph t-entry)
      (terminal-graph "Terminal"))
-   (define-values (v-graph v-entry)
+   (define-values (v-graph node-init)
      (vending-graph "Vending Machine Model" t-entry vending-graph->terminal-graph))
    (if (unbox repl-mode)
-       (let-values ([(state _)
-                     (repl-run (list v-graph t-graph) (v-state 400 0) v-entry)])
-         state)
-       (write-dot (list t-graph v-graph) v-entry))))
+       (let ([state-init (v-state 400 0)])
+         (let-values ([(node-current state-current history)
+                       (repl-run (list v-graph t-graph) node-init state-init)])
+           (pretty-write `((init (graph ,(node-graph-name node-init))
+                                 (node ,(node-name node-init))
+                                 (state ,state-init))
+                           (current (graph ,(node-graph-name node-current))
+                                    (node ,(node-name node-current))
+                                    (state ,state-current))
+                           (history ,@history)))))
+       (write-dot (list t-graph v-graph) node-init))))

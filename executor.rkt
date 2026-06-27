@@ -2,7 +2,7 @@
 
 (require "graph.rkt")
 
-(provide find-graph next-edges auto-choose step
+(provide find-graph next-edges auto-choose
          current-auto-conflict-policy current-single-choose-policy)
 
 (: current-auto-conflict-policy (Parameterof (U 'random 'choose)))
@@ -56,11 +56,6 @@
         (cond [(< r (edge-weight fst)) fst]
               [(null? rst) (error "auto-choose: unreachble")]
               [else (loop rst (- r (edge-weight fst)))])))))
-
-(: step (All (T S) (-> S (Edge T S) (values S (Node T S)))))
-(define (step st e)
-  (let ([n (edge-cod e)])
-    (values ((node-trans n) ((edge-trans e) st)) n)))
 
 ;; --- private ---
 (: edge-sort (All (T S) (-> (Listof (Edge T S)) (Listof (Edge T S)))))
