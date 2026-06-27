@@ -37,7 +37,7 @@
                     [type : T]
                     [desc : (Option String)]
                     [trans : (-> S S)]
-                    [attributes : (Listof (Pair Symbol Any))])
+                    [attributes : (Immutable-HashTable Symbol Any)])
   #:transparent
   #:type-name Node)
 
@@ -47,9 +47,9 @@
                            #:type T
                            [#:desc (Option String)]
                            [#:trans (Option (-> S S))]
-                           [#:attributes (Listof (Pair Symbol Any))]
+                           [#:attributes (Immutable-HashTable Symbol Any)]
                            (Node T S)))))
-(define ((node-maker graph-name) name #:type type #:desc [desc #f] #:trans [tr #f] #:attributes [attrs '()])
+(define ((node-maker graph-name) name #:type type #:desc [desc #f] #:trans [tr #f] #:attributes [attrs ((inst hash Symbol Any))])
   (let ([graph-id (make-graph-id graph-name)]
         [node-id (make-node-id graph-name name)])
     (cond [(set-member? (current-seen-ids) node-id)
@@ -69,7 +69,7 @@
                             [trans : (-> S1 S2)]
                             [priority : Integer]
                             [weight : Exact-Positive-Integer]
-                            [attributes : (Listof (Pair Symbol Any))])
+                            [attributes : (Immutable-HashTable Symbol Any)])
   #:transparent
   #:type-name Bridge)
 
@@ -85,7 +85,7 @@
                         #:trans (-> S1 S2)
                         [#:priority (Option Integer)]
                         [#:weight (Option Exact-Positive-Integer)]
-                        [#:attributes (Listof (Pair Symbol Any))]
+                        [#:attributes (Immutable-HashTable Symbol Any)]
                         (Bridge T1 S1 T2 S2))))
 (define (make-bridge name
                      #:mode [mode #f]
@@ -96,7 +96,7 @@
                      #:trans tr
                      #:priority [priority #f]
                      #:weight [weight #f]
-                     #:attributes [attrs '()])
+                     #:attributes [attrs ((inst hash Symbol Any))])
   (let ([edge-id (make-edge-id name dom)])
     (cond [(set-member? (current-seen-ids) edge-id)
            (error "make-edge, make-bridge: duplicate ID" edge-id)]
@@ -108,7 +108,7 @@
           tr
           (or priority 0)
           (or weight 1)
-          '())))
+          attrs)))
 
 (: make-edge (All (T S)
                   (-> String
@@ -120,7 +120,7 @@
                       [#:trans (Option (-> S S))]
                       [#:priority (Option Integer)]
                       [#:weight (Option Exact-Positive-Integer)]
-                      [#:attributes (Listof (Pair Symbol Any))]
+                      [#:attributes (Immutable-HashTable Symbol Any)]
                       (Edge T S))))
 (define (make-edge name
                    #:mode [mode #f]
@@ -131,7 +131,7 @@
                    #:trans [tr #f]
                    #:priority [priority #f]
                    #:weight [weight #f]
-                   #:attributes [attrs '()])
+                   #:attributes [attrs ((inst hash Symbol Any))])
   ((inst make-bridge T S T S) name
                               #:mode mode
                               #:dom dom
