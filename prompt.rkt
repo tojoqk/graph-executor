@@ -5,9 +5,9 @@
 (define-type (Prompt A)
   (case-> (-> String (List 'choose
                            (-> Any Boolean : #:+ A)
-                           (Listof (U (∩ A (U Symbol String))
-                                      (List (∩ A (U Symbol String False)) String))))
-              (∩ (U Symbol String False) A))
+                           (Listof (U (∩ A String)
+                                      (List (∩ A (U String False)) String))))
+              (∩ (U String False) A))
           (-> String (List 'string) String)
           (-> String (List 'integer) Integer)
           (-> String (List 'natural) Natural)
@@ -19,8 +19,8 @@
 (define-type (Prompt-Operator A)
   (U (List 'choose
            (-> Any Boolean : #:+ A)
-           (Listof (U (∩ A (U Symbol String))
-                      (List (∩ A (U Symbol String False)) String))))
+           (Listof (U (∩ A String)
+                      (List (∩ A (U String False)) String))))
      (List 'string)
      (List 'integer)
      (List 'natural)
@@ -29,7 +29,7 @@
      (List 'range 'from Integer 'to Integer)
      (List 'random Positive-Integer)))
 
-(define-type Prompt-Value (U Symbol String False Integer))
+(define-type Prompt-Value (U String False Integer))
 
 (: current-prompt (Parameterof (Option (Prompt Any))))
 (define current-prompt (make-parameter #f))
