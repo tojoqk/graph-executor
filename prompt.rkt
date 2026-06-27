@@ -7,14 +7,15 @@
                            (-> Any Boolean : #:+ A)
                            (Listof (U (∩ A (U Symbol String))
                                       (List (∩ A (U Symbol String False)) String))))
+              [#:type (Option Symbol)]
               (∩ (U Symbol String False) A))
-          (-> String (List 'string) String)
-          (-> String (List 'integer) Integer)
-          (-> String (List 'natural) Natural)
-          (-> String (List 'positive) Positive-Integer)
-          (-> String (List 'range 'from Natural 'to Natural) Natural)
-          (-> String (List 'range 'from Integer 'to Integer) Integer)
-          (-> String (List 'random Positive-Integer) Natural)))
+          (-> String (List 'string) [#:type (Option Symbol)] String)
+          (-> String (List 'integer) [#:type (Option Symbol)] Integer)
+          (-> String (List 'natural) [#:type (Option Symbol)] Natural)
+          (-> String (List 'positive) [#:type (Option Symbol)] Positive-Integer)
+          (-> String (List 'range 'from Natural 'to Natural) [#:type (Option Symbol)] Natural)
+          (-> String (List 'range 'from Integer 'to Integer) [#:type (Option Symbol)] Integer)
+          (-> String (List 'random Positive-Integer) [#:type (Option Symbol)] Natural)))
 
 (define-type (Prompt-Operator A)
   (U (List 'choose
@@ -35,9 +36,9 @@
 (define current-prompt (make-parameter #f))
 
 (: prompt (All (A) (Prompt A)))
-(define (prompt title op)
+(define (prompt title op #:type [type #f])
   (cond [(current-prompt) => (lambda ([p : (Prompt Any)])
-                               (let ([value (p title op)])
+                               (let ([value (p title op #:type type)])
                                  (case (car op)
                                    [(choose) (assert value (cadr op))]
                                    [else value])))]
