@@ -73,7 +73,7 @@
             [else (error 'repl-choose "unexpected error")]))))
 
 (: repl-prompt/log (All (A) (-> (-> Prompt-Value Void) (Prompt A))))
-(define ((repl-prompt/log k) title op #:type [type #f])
-  (let ([value ((inst repl-prompt A) title op #:type type)])
+(define ((repl-prompt/log k) title op)
+  (let ([value ((inst repl-prompt A) title op)])
     (k value)
     value))

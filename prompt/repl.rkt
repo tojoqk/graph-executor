@@ -5,7 +5,7 @@
 (provide repl-prompt)
 
 (: repl-prompt (All (A) (Prompt A)))
-(define (repl-prompt title op #:type [_ #f])
+(define (repl-prompt title op)
   (let ([value
          (case (car op)
            [(choose) ((inst repl-choose A) title op)]
