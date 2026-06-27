@@ -109,11 +109,16 @@
   (define (terminal-graph g)
     (define t-node ((inst node-maker Terminal-Node-Type Terminal) g))
     (define t-graph (inst make-graph Terminal-Node-Type Terminal))
-    (define terminal (t-node "Terminated" #:type 'terminal))
+    (define t-edge (inst make-edge Terminal-Node-Type Terminal))
+    (define entry (t-node "Terminal Entry" #:type 'terminal))
+    (define terminal (t-node "Terminal" #:type 'terminal))
 
     (values
-     (t-graph g)
-     terminal)))
+     (t-graph g
+              #:edges
+              (list
+               (t-edge "Terminate" #:mode 'auto #:dom entry #:cod terminal)))
+     entry)))
 
 (module vending-to-terminal typed/racket
   (require (submod ".." vending-machine-example))
@@ -130,6 +135,7 @@
 (module+ main
   (require "../graph.rkt")
   (require "../executor/repl.rkt")
+  (require "../history.rkt")
   (require "../visualizer/dot.rkt")
   (require racket/cmdline)
   (define repl-mode (box #f))
@@ -152,5 +158,5 @@
                            (current (graph ,(node-graph-name node-current))
                                     (node ,(node-name node-current))
                                     (state ,state-current))
-                           (history ,@history)))))
+                           (journal ,@(history->journal history))))))
        (write-dot (list t-graph v-graph) node-init))))

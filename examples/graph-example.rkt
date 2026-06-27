@@ -83,6 +83,7 @@
 
 (module+ main
   (require "../executor/repl.rkt")
+  (require "../history.rkt")
   (require "../visualizer/dot.rkt")
   (require racket/cmdline)
   (: repl-mode (Boxof Boolean))
@@ -103,5 +104,5 @@
                            (current (graph ,(node-graph-name node-current))
                                     (node ,(node-name node-current))
                                     (state ,state-current))
-                           (history ,@history)))))
+                           (journal ,@(history->journal history))))))
        (write-dot (list v-graph) node-init))))

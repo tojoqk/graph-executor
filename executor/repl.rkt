@@ -4,12 +4,9 @@
 (require "../prompt.rkt")
 (require "../prompt/repl.rkt")
 (require "../executor.rkt")
+(require "../history.rkt")
 
-(provide repl-run History)
-
-(define-type History (Listof (U History-Choose History-Prompt)))
-(define-type History-Choose (List (U 'choose 'auto) String))
-(define-type History-Prompt (List 'prompt Prompt-Value (U 'edge 'node) String))
+(provide repl-run)
 
 (: repl-run (All (T S) (-> (Listof (Graph T S)) (Node T S) S
                            (Values (Node T S) S History))))
@@ -33,14 +30,20 @@
                        (displayln (format ">> [Auto] ~a" (edge-name chosen-edge)))
                        (define-values (next-st next-node next-h)
                          (repl-step st chosen-edge
-                                    (cons `(auto ,(edge-name chosen-edge))
+                                    (cons (history-choose 'auto
+                                                          (edge-name chosen-edge) (edge-desc chosen-edge)
+                                                          (node-graph-name n)
+                                                          (node-name n) (node-desc n))
                                           h)))
                        (loop next-node next-st next-h))]
                     [(choose)
                      (let ([chosen-edge (repl-choose ne)])
                        (define-values (next-st next-node next-h)
                          (repl-step st chosen-edge
-                                    (cons `(choose ,(edge-name chosen-edge))
+                                    (cons (history-choose 'choose
+                                                          (edge-name chosen-edge) (edge-desc chosen-edge)
+                                                          (node-graph-name n)
+                                                          (node-name n) (node-desc n))
                                           h)))
                        (loop next-node next-st next-h))])))]
           [else (terminate)])))
@@ -49,12 +52,12 @@
 (define (repl-step st e h)
   (let ([n (edge-cod e)]
         [bh : (Boxof History) (box h)])
-    (: log-edge-prompt (-> Prompt-Value Void))
-    (define (log-edge-prompt val)
-      (set-box! bh (cons `(prompt ,val edge ,(edge-name e)) (unbox bh))))
-    (: log-node-prompt (-> Prompt-Value Void))
-    (define (log-node-prompt val)
-      (set-box! bh (cons `(prompt ,val node ,(node-name n)) (unbox bh))))
+    (: log-edge-prompt (-> String Prompt-Value Void))
+    (define (log-edge-prompt title val)
+      (set-box! bh (cons (history-prompt val title) (unbox bh))))
+    (: log-node-prompt (-> String Prompt-Value Void))
+    (define (log-node-prompt title val)
+      (set-box! bh (cons (history-prompt val title) (unbox bh))))
     (define st-1
       (parameterize ([current-prompt ((inst repl-prompt/log Any) log-edge-prompt)])
         ((edge-trans e) st)))
@@ -66,14 +69,19 @@
 (: repl-choose (All (T S)
                     (-> (List 'choose (Pairof (Edge T S) (Listof (Edge T S)))) (Edge T S))))
 (define (repl-choose ne)
-  (let* ([edges : (Listof (Edge T S)) (second ne)]
-         [edge-names ((inst map String (Edge T S)) edge-name edges)])
-    (let ([name : String (repl-prompt "Choose:" `(choose ,string? ,edge-names))])
+  (let* ([edges : (Pairof (Edge T S) (Listof (Edge T S))) (second ne)]
+         [edge-names ((inst map String (Edge T S)) edge-name edges)]
+         [dom : (Node T S) (edge-dom (car edges))]
+         [title : String (cond [(node-desc dom)
+                                => (lambda ([desc : String])
+                                     (format "~a\n~a\n" (node-name dom) desc))]
+                               [else (node-name dom)])])
+    (let ([name : String (repl-prompt title `(choose ,string? ,edge-names))])
       (cond [(memf (lambda ([edge : (Edge T S)]) (string=? name (edge-name edge))) edges) => car]
             [else (error 'repl-choose "unexpected error")]))))
 
-(: repl-prompt/log (All (A) (-> (-> Prompt-Value Void) (Prompt A))))
+(: repl-prompt/log (All (A) (-> (-> String Prompt-Value Void) (Prompt A))))
 (define ((repl-prompt/log k) title op)
   (let ([value ((inst repl-prompt A) title op)])
-    (k value)
+    (k title value)
     value))
