@@ -12,13 +12,13 @@
                         [graph-name : String]
                         [node-name : String]
                         [node-desc : (Option String)])
-  #:type-name History-Choose
-  #:prefab)
+  #:transparent
+  #:type-name History-Choose)
 
 (struct history-prompt ([value : Prompt-Value]
                         [title : String])
-  #:type-name History-Prompt
-  #:prefab)
+  #:transparent
+  #:type-name History-Prompt)
 
 (define-type History (Listof (U History-Choose History-Prompt)))
 
