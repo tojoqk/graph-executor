@@ -2,22 +2,28 @@
 
 (require "prompt.rkt")
 (provide History History-Record
-         (struct-out history-choose) History-Choose
+         (struct-out history-edge) History-Edge
+         (struct-out history-node) History-Node
          (struct-out history-prompt) History-Prompt
          Journal history->journal)
 
-(struct history-choose ([mode : (U 'choose 'auto)]
-                        [edge : String]
-                        [prompt : String])
+(struct history-node ([node : String]
+                      [desc : (Option String)])
   #:transparent
-  #:type-name History-Choose)
+  #:type-name History-Node)
+
+(struct history-edge ([mode : (U 'choose 'auto)]
+                      [name : String]
+                      [prompt : String])
+  #:transparent
+  #:type-name History-Edge)
 
 (struct history-prompt ([value : Prompt-Value]
                         [text : String])
   #:transparent
   #:type-name History-Prompt)
 
-(define-type History-Record (U History-Choose History-Prompt))
+(define-type History-Record (U History-Edge History-Node History-Prompt))
 (define-type History (Listof History-Record))
 
 (define-type Journal (Listof (U (List (U 'choose 'auto) String)
@@ -25,9 +31,10 @@
 
 (: history->journal (-> History Journal))
 (define (history->journal h)
-  (map (lambda ([x : (U History-Choose History-Prompt)])
-         (cond [(history-choose? x)
-                (list (history-choose-mode x) (history-choose-edge x))]
-               [(history-prompt? x)
-                (list 'prompt (history-prompt-value x))]))
+  (filter-map (lambda ([x : (U History-Record)])
+                (cond [(history-edge? x)
+                       (list (history-edge-mode x) (history-edge-name x))]
+                      [(history-prompt? x)
+                       (list 'prompt (history-prompt-value x))]
+                      [(history-node? x) #f]))
        h))

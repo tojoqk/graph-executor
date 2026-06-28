@@ -30,14 +30,14 @@
                        (displayln (format ">> [Auto] ~a" (edge-name chosen-edge)))
                        (define-values (next-st next-node next-h)
                          (repl-step st chosen-edge
-                                    (cons (history-choose 'auto
-                                                          (edge-name chosen-edge)
-                                                          (string-join `(,(node-name n)
-                                                                         ,@(cond [(node-desc n) => list]
-                                                                                 [else '()])
-                                                                         ,@(cond [(edge-desc chosen-edge) => list]
-                                                                                 [else '()]))
-                                                                       "\n"))
+                                    (cons (history-edge 'auto
+                                                        (edge-name chosen-edge)
+                                                        (string-join `(,(node-name n)
+                                                                       ,@(cond [(node-desc n) => list]
+                                                                               [else '()])
+                                                                       ,@(cond [(edge-desc chosen-edge) => list]
+                                                                               [else '()]))
+                                                                     "\n"))
                                           h)))
                        (loop next-node next-st next-h))]
                     [(choose)
@@ -61,6 +61,7 @@
     (define st-1
       (parameterize ([current-prompt ((inst repl-prompt/log Any) log-edge-prompt)])
         ((edge-trans e) st)))
+    (set-box! bh (cons (history-node (node-name n) (node-desc n)) (unbox bh)))
     (define st-2
       (parameterize ([current-prompt ((inst repl-prompt/log Any) log-node-prompt)])
         ((node-trans n) st-1)))
@@ -85,8 +86,8 @@
     (let ([name : String ((repl-prompt log-prompt-text) title `(choose ,string? ,edge-names))])
       (cond [(findf (lambda ([edge : (Edge T S)]) (string=? name (edge-name edge))) edges)
              => (lambda ([e : (Edge T S)])
-                  (values e (cons (history-choose 'choose (edge-name e)
-                                                  (unbox prompt-text-box))
+                  (values e (cons (history-edge 'choose (edge-name e)
+                                                (unbox prompt-text-box))
                                   h)))]
             [else (error 'repl-choose "unexpected error")]))))
 
