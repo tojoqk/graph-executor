@@ -68,7 +68,7 @@
 (define (repl-string title op)
   (printf "* ~a\n" title)
   (let retry ()
-    (printf "? \n")
+    (printf "? ")
     (let ([value (read-line)])
       (if (or (eof-object? value)
               (regexp-match #rx"^\\s*$" value))
