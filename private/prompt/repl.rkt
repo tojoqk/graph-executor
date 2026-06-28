@@ -41,12 +41,16 @@
       (display text)
       (let retry ()
         (display "? ")
-        (let ([n (read)])
-          (if (and (exact? n)
-                   (positive-integer? n)
-                   (<= n (length choices)))
-              (values (choice->target (list-ref choices (sub1 n))) text)
-              (retry)))))))
+        (let ([line (read-line)])
+          (cond [(eof-object? line) (retry)]
+                [(string->number line)
+                 => (lambda ([n : Number])
+                      (if (and (exact? n)
+                               (positive-integer? n)
+                               (<= n (length choices)))
+                          (values (choice->target (list-ref choices (sub1 n))) text)
+                          (retry)))]
+                [else (retry)]))))))
 
 (: repl-input-number (case-> (-> String (List 'integer) Integer)
                              (-> String (List 'natural) Natural)
@@ -55,14 +59,18 @@
   (printf "* ~a\n" title)
   (let retry ()
     (printf "? " (car op))
-    (let ([value (read)])
-      (case (car op)
-        [(integer)
-         (if (and (exact? value) (integer? value)) value (retry))]
-        [(natural)
-         (if (and (exact? value) (natural? value)) value (retry))]
-        [(positive)
-         (if (and (exact? value) (positive-integer? value)) value (retry))]))))
+    (let ([line (read-line)])
+      (cond [(eof-object? line) (retry)]
+            [(string->number line)
+             => (lambda ([value : Number])
+                  (case (car op)
+                    [(integer)
+                     (if (and (exact? value) (integer? value)) value (retry))]
+                    [(natural)
+                     (if (and (exact? value) (natural? value)) value (retry))]
+                    [(positive)
+                     (if (and (exact? value) (positive-integer? value)) value (retry))]))]
+            [else (retry)]))))
 
 (: repl-string (case-> (-> String (List 'string) String)))
 (define (repl-string title op)
@@ -83,11 +91,15 @@
         [to (fifth op)])
     (let retry ()
       (printf "(~a..~a)? " from to)
-      (let ([value (read)])
-        (if (and (exact? value) (integer? value)
-                 (<= from value) (<= value to))
-            value
-            (retry))))))
+      (let ([line (read-line)])
+        (cond [(eof-object? line) (retry)]
+              [(string->number line)
+               => (lambda ([value : Number])
+                    (if (and (exact? value) (integer? value)
+                             (<= from value) (<= value to))
+                        value
+                        (retry)))]
+              [else (retry)])))))
 
 (: repl-random (-> String (List 'random Positive-Integer) Natural))
 (define (repl-random title op)
