@@ -68,7 +68,7 @@
 (define (repl-string title op)
   (printf "* ~a\n" title)
   (let retry ()
-    (printf "? " (car op))
+    (printf "? \n")
     (let ([value (read-line)])
       (if (eof-object? value)
           (retry)
