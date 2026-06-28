@@ -2,7 +2,7 @@
 
 (require "../graph.rkt")
 (require "../prompt.rkt")
-(require "../prompt/repl.rkt")
+(require "../private/prompt/repl.rkt")
 (require "../executor.rkt")
 (require "../history.rkt")
 
