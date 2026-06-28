@@ -92,7 +92,7 @@
             [else (error 'repl-choose "unexpected error")]))))
 
 (: repl-prompt/log (All (A) (-> (-> String Prompt-Value Void) (Prompt A))))
-(define ((repl-prompt/log k) title op)
+(define ((repl-prompt/log k) title op #:attributes [_ (hash)])
   (let ([prompt-text-box : (Boxof String) (box "")])
     (: log-prompt (-> String Void))
     (define (log-prompt text)

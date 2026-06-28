@@ -5,7 +5,7 @@
 (provide repl-prompt)
 
 (: repl-prompt (All (A) (-> (-> String Void) (Prompt A))))
-(define ((repl-prompt log-prompt) title op)
+(define ((repl-prompt log-prompt) title op #:attributes [_ (hash)])
   (define-values (value prompt-text)
     (case (car op)
       [(const) (values (third op) title)]
