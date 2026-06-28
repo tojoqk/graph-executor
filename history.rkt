@@ -7,7 +7,7 @@
          (struct-out history-prompt) History-Prompt
          Journal history->journal)
 
-(struct history-node ([node : String]
+(struct history-node ([name : String]
                       [desc : (Option String)])
   #:transparent
   #:type-name History-Node)
