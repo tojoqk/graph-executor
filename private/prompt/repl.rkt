@@ -70,7 +70,8 @@
   (let retry ()
     (printf "? \n")
     (let ([value (read-line)])
-      (if (eof-object? value)
+      (if (or (eof-object? value)
+              (regexp-match #rx"^\\s*$" value))
           (retry)
           value))))
 
