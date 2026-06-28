@@ -55,9 +55,9 @@
 (define current-prompt (make-parameter #f))
 
 (: prompt (All (A) (Prompt A)))
-(define (prompt title op [_ (hash)])
+(define (prompt title op [attrs  ((inst hash Symbol Any))])
   (cond [(current-prompt) => (lambda ([p : (Prompt Any)])
-                               (let ([value (p title op)])
+                               (let ([value (p title op attrs)])
                                  (case (car op)
                                    [(choose const) (assert value (cadr op))]
                                    [else value])))]
