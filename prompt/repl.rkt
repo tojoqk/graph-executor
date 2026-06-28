@@ -4,45 +4,49 @@
 
 (provide repl-prompt)
 
-(: repl-prompt (All (A) (Prompt A)))
-(define (repl-prompt title op)
-  (let ([value
-         (case (car op)
-           [(const) (third op)]
-           [(choose) ((inst repl-choose A) title op)]
-           [(integer natural positive) (repl-input-number title op)]
-           [(string) (repl-string title op)]
-           [(range) (repl-range title op)]
-           [(random) (repl-random title op)])])
-    value))
+(: repl-prompt (All (A) (-> (-> String Void) (Prompt A))))
+(define ((repl-prompt log-prompt) title op)
+  (define-values (value prompt-text)
+    (case (car op)
+      [(const) (values (third op) title)]
+      [(choose) ((inst repl-choose A) title op)]
+      [(integer natural positive) (values (repl-input-number title op) title)]
+      [(string) (values (repl-string title op) title)]
+      [(range) (values (repl-range title op) title)]
+      [(random) (values (repl-random title op) title)]))
+  (log-prompt prompt-text)
+  value)
 
 (: repl-choose (All (A)
                     (-> String (List 'choose
                                      (-> Any Boolean : #:+ A)
                                      (Listof (U (∩ String A)
                                                 (List (∩ String A) String))))
-                        (∩ String A))))
+                        (Values (∩ String A) String))))
 (define (repl-choose title op)
   (: choice->target (-> (U (∩ String A) (List (∩ String A) String))
                         (∩ String A)))
   (define (choice->target c) (if (pair? c) (car c) c))
-  (let ([choices (third op)])
-    (printf "* ~a\n" title)
+  (let ([choices (third op)]
+        [out (open-output-string)])
+    (fprintf out "* ~a\n" title)
     (for ([choice choices]
           [i : Positive-Integer (in-naturals 1)])
       (if (pair? choice)
           (cond [(car choice)
                  => (lambda ([target : String])
-                      (printf "- [~a] ~a: ~a\n" i (car choice) (cadr choice)))])
-          (printf "  - [~a] ~a\n" i (choice->target choice))))
-    (let retry ()
-      (display "? ")
-      (let ([n (read)])
-        (if (and (exact? n)
-                 (positive-integer? n)
-                 (<= n (length choices)))
-            (choice->target (list-ref choices (sub1 n)))
-            (retry))))))
+                      (fprintf out "- [~a] ~a: ~a\n" i (car choice) (cadr choice)))])
+          (fprintf out "  - [~a] ~a\n" i (choice->target choice))))
+    (let ([text (get-output-string out)])
+      (display text)
+      (let retry ()
+        (display "? ")
+        (let ([n (read)])
+          (if (and (exact? n)
+                   (positive-integer? n)
+                   (<= n (length choices)))
+              (values (choice->target (list-ref choices (sub1 n))) text)
+              (retry)))))))
 
 (: repl-input-number (case-> (-> String (List 'integer) Integer)
                              (-> String (List 'natural) Natural)
