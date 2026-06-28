@@ -8,6 +8,7 @@
 (define (repl-prompt title op)
   (let ([value
          (case (car op)
+           [(const) (third op)]
            [(choose) ((inst repl-choose A) title op)]
            [(integer natural positive) (repl-input-number title op)]
            [(string) (repl-string title op)]

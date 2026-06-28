@@ -3,7 +3,11 @@
 (provide Prompt Prompt-Operator Prompt-Value current-prompt prompt)
 
 (define-type (Prompt A)
-  (case-> (-> String (List 'choose
+  (case-> (-> String (List 'const
+                           (-> Any Boolean : #:+ A)
+                           (∩ A Prompt-Value))
+              (∩ A Prompt-Value))
+          (-> String (List 'choose
                            (-> Any Boolean : #:+ A)
                            (Listof (U (∩ A String)
                                       (List (∩ A String) String))))
@@ -39,6 +43,6 @@
   (cond [(current-prompt) => (lambda ([p : (Prompt Any)])
                                (let ([value (p title op)])
                                  (case (car op)
-                                   [(choose) (assert value (cadr op))]
+                                   [(choose const) (assert value (cadr op))]
                                    [else value])))]
         [else (error 'prompt "called outside of trans")]))
