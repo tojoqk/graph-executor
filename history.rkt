@@ -9,8 +9,7 @@
          history-edge-mode history-edge-name history-edge-prompt history-edge-attributes
          History-Prompt make-history-prompt history-prompt?
          history-prompt-value history-prompt-text history-prompt-attributes
-         Journal
-         history->journal)
+         Journal history->journal)
 
 (define-type Attribute-Value (U Symbol String Integer Boolean))
 
@@ -49,15 +48,29 @@
 (define-type History-Record (U History-Edge History-Node History-Prompt))
 (define-type History (Listof History-Record))
 
-(define-type Journal (Listof (U (List (U 'choose 'auto) String)
-                                (List 'prompt Prompt-Value))))
+
+(define-type Journal-Record (Pairof String (Listof Prompt-Value)))
+(define-type Journal (Listof Journal-Record))
+
+(: take-to-choose (-> (Pairof History-Record (Listof History-Record))
+                      (Values String (Listof Prompt-Value) History)))
+(define (take-to-choose rs)
+  (let loop ([rs rs] [ps : (Listof Prompt-Value) '()])
+    (let ([fst (car rs)]
+          [rst (cdr rs)])
+      (cond [(history-edge? fst) (values (history-edge-name fst) ps rst)]
+            [(history-prompt? fst)
+             (if (null? rst)
+                 (error 'history->journal "invalid history")
+                 (loop (cdr rs) (cons (history-prompt-value fst) ps)))]
+            [(history-node? fst) (loop (cdr rs) ps)]))))
 
 (: history->journal (-> History Journal))
-(define (history->journal h)
-  (filter-map (lambda ([x : (U History-Record)])
-                (cond [(history-edge? x)
-                       (list (history-edge-mode x) (history-edge-name x))]
-                      [(history-prompt? x)
-                       (list 'prompt (history-prompt-value x))]
-                      [(history-node? x) #f]))
-       h))
+(define (history->journal rs)
+  (if (null? rs)
+      '()
+      (let ->journal ([rs : (Pairof History-Record (Listof History-Record)) rs])
+        (define-values (e ps rest-rs) (take-to-choose rs))
+        (if (null? rest-rs)
+            (list (cons e ps))
+            ((inst cons Journal-Record Journal) (cons e ps) (->journal rest-rs))))))
