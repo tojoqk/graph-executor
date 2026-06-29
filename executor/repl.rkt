@@ -30,13 +30,13 @@
                        (displayln (format ">> [Auto] ~a" (edge-name chosen-edge)))
                        (define-values (next-st next-node next-h)
                          (repl-step st chosen-edge
-                                    (cons (history-edge 'auto
-                                                        (edge-name chosen-edge)
-                                                        (string-join `(,(node-name n)
-                                                                       ,@(cond [(node-desc n) => list]
-                                                                               [else '()])
-                                                                       ,@(cond [(edge-desc chosen-edge) => list]
-                                                                               [else '()]))
+                                    (cons (make-history-edge 'auto
+                                                             (edge-name chosen-edge)
+                                                             (string-join `(,(node-name n)
+                                                                            ,@(cond [(node-desc n) => list]
+                                                                                    [else '()])
+                                                                            ,@(cond [(edge-desc chosen-edge) => list]
+                                                                                    [else '()]))
                                                                      "\n"))
                                           h)))
                        (loop next-node next-st next-h))]
@@ -54,14 +54,14 @@
         [bh : (Boxof History) (box h)])
     (: log-edge-prompt (-> String Prompt-Value Void))
     (define (log-edge-prompt title val)
-      (set-box! bh (cons (history-prompt val title) (unbox bh))))
+      (set-box! bh (cons (make-history-prompt val title) (unbox bh))))
     (: log-node-prompt (-> String Prompt-Value Void))
     (define (log-node-prompt title val)
-      (set-box! bh (cons (history-prompt val title) (unbox bh))))
+      (set-box! bh (cons (make-history-prompt val title) (unbox bh))))
     (define st-1
       (parameterize ([current-prompt ((inst repl-prompt/log Any) log-edge-prompt)])
         ((edge-trans e) st)))
-    (set-box! bh (cons (history-node (node-name n) (node-desc n)) (unbox bh)))
+    (set-box! bh (cons (make-history-node (node-name n) (node-desc n)) (unbox bh)))
     (define st-2
       (parameterize ([current-prompt ((inst repl-prompt/log Any) log-node-prompt)])
         ((node-trans n) st-1)))
@@ -86,8 +86,8 @@
     (let ([name : String ((repl-prompt log-prompt-text) title `(choose ,string? ,edge-names))])
       (cond [(findf (lambda ([edge : (Edge T S)]) (string=? name (edge-name edge))) edges)
              => (lambda ([e : (Edge T S)])
-                  (values e (cons (history-edge 'choose (edge-name e)
-                                                (unbox prompt-text-box))
+                  (values e (cons (make-history-edge 'choose (edge-name e)
+                                                     (unbox prompt-text-box))
                                   h)))]
             [else (error 'repl-choose "unexpected error")]))))
 
