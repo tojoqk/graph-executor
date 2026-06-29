@@ -69,8 +69,9 @@
 (define (history->journal rs)
   (if (null? rs)
       '()
-      (let ->journal ([rs : (Pairof History-Record (Listof History-Record)) rs])
+      (let loop ([rs : (Pairof History-Record (Listof History-Record)) rs]
+                 [acc : Journal '()])
         (define-values (e ps rest-rs) (take-to-choose rs))
         (if (null? rest-rs)
-            (list (cons e ps))
-            ((inst cons Journal-Record Journal) (cons e ps) (->journal rest-rs))))))
+            ((inst cons Journal-Record Journal) (cons e ps) acc)
+            (loop rest-rs ((inst cons Journal-Record Journal) (cons e ps) acc))))))
