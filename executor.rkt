@@ -56,7 +56,7 @@
 (: find-graph (All (T S) (-> (Listof (Graph T S)) Symbol (Option (Graph T S)))))
 (define (find-graph gs g-id)
   (cond [(memf (lambda ([g : (Graph T S)]) (equal? (graph-id g) g-id)) gs) => car]
-        [else #f]))
+        [else (error 'find-graph "not found" g-id)]))
 
 (: next-edges (All (T S)
                    (-> (Listof (Graph T S))
