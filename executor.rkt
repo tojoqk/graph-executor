@@ -27,6 +27,7 @@
                            (: pop-bps (Prompt Any))
                            (define (pop-bps title op [_ (hash)])
                              (let ([ps (unbox bps)])
+                               (set-box! bps (cdr ps))
                                (if (null? ps)
                                    (error 'replay "unexpected end of prompt values")
                                    (let ([p (car ps)])
