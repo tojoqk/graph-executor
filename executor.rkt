@@ -1,9 +1,50 @@
 #lang typed/racket
 
 (require "graph.rkt")
+(require "history.rkt")
+(require "prompt.rkt")
 
-(provide find-graph next-edges auto-choose
+(provide replay
+         find-graph next-edges auto-choose
          current-auto-conflict-policy current-single-choose-policy)
+
+(: replay (All (T S) (-> (Listof (Graph T S)) (Node T S) S Journal
+                         (Values (Node T S) S))))
+(define (replay gs n st j)
+  (let ([ne (next-edges gs st n)])
+    (if (null? j)
+        (values n st)
+        (case (car ne)
+          [(choose auto)
+           (let* ([edges (cadr ne)]
+                  [es (car j)]
+                  [name (car es)]
+                  (ps-init (cdr es)))
+             (cond [(findf (lambda ([e : (Edge T S)]) (string=? name (edge-name e))) edges)
+                    => (lambda ([e : (Edge T S)])
+                         (let ([cod (edge-cod e)]
+                               [bps : (Boxof (Listof Prompt-Value)) (box ps-init)])
+                           (: pop-bps (Prompt Any))
+                           (define (pop-bps title op [_ (hash)])
+                             (let ([ps (unbox bps)])
+                               (if (null? ps)
+                                   (error 'replay "unexpected end of prompt values")
+                                   (let ([p (car ps)])
+                                     (case (car op)
+                                       [(const) p]
+                                       [(choose string) (assert p string?)]
+                                       [(integer) (assert (assert p exact?) integer?)]
+                                       [(natural) (assert (assert p exact?) natural?)]
+                                       [(positive) (assert (assert p exact?) positive-integer?)]
+                                       [(range) (if (natural? (third op))
+                                                    (assert (assert p exact?) natural?)
+                                                    (assert (assert p exact?) integer?))]
+                                       [(random) (assert p natural?)])))))
+                           (replay gs cod (parameterize ([current-prompt pop-bps])
+                                            ((node-trans cod) ((edge-trans e) st)))
+                                   (cdr j))))]
+                   [else (error 'replay "edge not found")]))]
+          [(terminated) (error 'replay "unexpected termination")]))))
 
 (: current-auto-conflict-policy (Parameterof (U 'random 'choose)))
 (define current-auto-conflict-policy (make-parameter 'random))
