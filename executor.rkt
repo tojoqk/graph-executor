@@ -17,15 +17,15 @@
         (case (car ne)
           [(choose auto)
            (let* ([edges (cadr ne)]
-                  [es (car j)]
-                  [name (car es)]
-                  (ps-init (cdr es)))
+                  [j-rec (car j)]
+                  [name (car j-rec)]
+                  [ps-init (cdr j-rec)])
              (cond [(findf (lambda ([e : (Edge T S)]) (string=? name (edge-name e))) edges)
                     => (lambda ([e : (Edge T S)])
                          (let ([cod (edge-cod e)]
                                [bps : (Boxof (Listof Prompt-Value)) (box ps-init)])
                            (: pop-bps (Prompt Any))
-                           (define (pop-bps title op [_ (hash)])
+                           (define (pop-bps _title op [_ (hash)])
                              (let ([ps (unbox bps)])
                                (set-box! bps (cdr ps))
                                (if (null? ps)
