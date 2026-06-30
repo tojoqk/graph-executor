@@ -30,10 +30,6 @@
 (define ((edge->visnode g) e)
   (list 'edge g e))
 
-(: bridge->visnode (All (T S) (-> (Edge T S) (VisNode-Bridge T S))))
-(define (bridge->visnode b)
-  (list 'bridge #f b))
-
 (: visnode-id (All (T S) (-> (VisNode T S) Symbol)))
 (define (visnode-id v)
   (cond
@@ -76,7 +72,7 @@
                       [bridges (filter-dom n (graph-bridges g))])
                   (let* ([visnodes (append (list ((node->visnode g) n))
                                            ((inst map (VisNode T S) (Edge T S)) (edge->visnode g) edges)
-                                           ((inst map (VisNode T S) (Edge T S)) bridge->visnode bridges))]
+                                           ((inst map (VisNode T S) (Edge T S)) (edge->visnode g) bridges))]
                          [seen (set-union seen (list->set ((inst map Symbol (VisNode T S)) visnode-id visnodes)))])
                     (for/fold : (Values (Listof (VisNode T S)) (Setof Symbol))
                               ([visnodes visnodes]
