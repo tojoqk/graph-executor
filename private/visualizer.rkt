@@ -1,7 +1,7 @@
 #lang typed/racket
 
 (require "../graph.rkt")
-(provide VisNode VisNode-Node VisNode-Edge VisNode-Bridge
+(provide VisNode VisNode-Node VisNode-Edge
          find-graph reachable-visnodes visnode-id visnodes-edges visnodes->graphs
          Nested-Graphs graphs->nested)
 
@@ -18,9 +18,7 @@
 
 (define-type (VisNode-Node T S) (List 'node (Graph T S) (Node T S)))
 (define-type (VisNode-Edge T S) (List 'edge (Graph T S) (Edge T S)))
-(define-type (VisNode-Bridge T S) (List 'bridge False (Edge T S)))
-
-(define-type (VisNode T S) (U (VisNode-Node T S) (VisNode-Edge T S) (VisNode-Bridge T S)))
+(define-type (VisNode T S) (U (VisNode-Node T S) (VisNode-Edge T S)))
 
 (: node->visnode (All (T S) (-> (Graph T S) (-> (Node T S) (VisNode-Node T S)))))
 (define ((node->visnode g) n)
@@ -45,8 +43,7 @@
   (cadr v))
 
 (: visnodes-edges (All (T S)
-                       (-> (Listof (VisNode T S)) (Listof (U (VisNode-Edge T S)
-                                                             (VisNode-Bridge T S))))))
+                       (-> (Listof (VisNode T S)) (Listof (VisNode-Edge T S)))))
 (define (visnodes-edges visnodes)
   (if (null? visnodes)
       '()

@@ -14,23 +14,17 @@
 
 (struct (T S) graph-config ([node : (-> (Node T S) NodeConfig)]
                             [edge-node : (-> (Edge T S) NodeConfig)]
-                            [bridge-node : (-> (Edge T S) NodeConfig)]
-                            [edge : (-> (Edge T S) EdgeConfig)]
-                            [bridge : (-> (Edge T S) EdgeConfig)])
+                            [edge : (-> (Edge T S) EdgeConfig)])
   #:type-name GraphConfig)
 
 (: make-graph-config (All (T S)
                           (-> [#:node (Option (-> (Node T S) NodeConfig))]
                               [#:edge-node (Option (-> (Edge T S) NodeConfig))]
-                              [#:bridge-node (Option (-> (Edge T S) NodeConfig))]
                               [#:edge (Option (-> (Edge T S) EdgeConfig))]
-                              [#:bridge (Option (-> (Edge T S) EdgeConfig))]
                               (GraphConfig T S))))
 (define (make-graph-config #:node [node #f]
                            #:edge-node [edge-node #f]
-                           #:bridge-node [bridge-node #f]
-                           #:edge [edge #f]
-                           #:bridge [bridge #f])
+                           #:edge [edge #f])
   (: edge-default (-> (Edge T S) EdgeConfig))
   (define (edge-default e)
     (let ([mode (edge-mode e)])
@@ -50,20 +44,8 @@
                                  (edge-node e)
                                  (make-node-config #:shape 'plaintext)))
                            (lambda ([e : (Edge T S)])
-                             (if bridge-node
-                                 (bridge-node e)
-                                 (make-node-config #:shape 'plaintext)))
-                           (lambda ([e : (Edge T S)])
                              (let ([c (if edge
                                           (edge e)
-                                          (edge-default e))])
-                               (if (edge-dot-minlen e)
-                                   (struct-copy edge-config c
-                                                [minlen (edge-dot-minlen e)])
-                                   c)))
-                           (lambda ([e : (Edge T S)])
-                             (let ([c (if bridge
-                                          (bridge e)
                                           (edge-default e))])
                                (if (edge-dot-minlen e)
                                    (struct-copy edge-config c
@@ -240,47 +222,26 @@
                                                 ,@(cond [(edge-desc (caddr v)) => list]
                                                         [else '()]))
                                               "\n")
-                                 ((graph-config-edge-node config) (caddr v))))]
-                      [(eq? 'bridge (car v))
-                       (fprintf port "  ~a ~a\n"
-                                (dot-string (symbol->string (get-id v)))
-                                (format-node-attributes
-                                 (string-join `(,(mark-edge-title (edge-name (caddr v)))
-                                                ,@(cond [(edge-desc (caddr v)) => list]
-                                                        [else '()]))
-                                              "\n")
-                                 ((graph-config-bridge-node config) (caddr v))))])))
+                                 ((graph-config-edge-node config) (caddr v))))])))
                 visnodes)
-      (when g
-        (for-each display-visnodes (cdr g))
-        (displayln "}" port)))
+      (for-each display-visnodes (cdr g))
+      (displayln "}" port))
     (for-each display-visnodes (graphs->nested (visnodes->graphs visnodes)))
-    (display-visnodes #f)
     (newline port)
-    (for-each (lambda ([v : (U (VisNode-Edge T S) (VisNode-Bridge T S))])
+    (for-each (lambda ([v : (VisNode-Edge T S)])
                 (fprintf port "  ~a -> ~a ~a\n"
                          (dot-string (symbol->string (node-id (edge-dom (caddr v)))))
                          (dot-string (symbol->string (edge-id (caddr v))))
                          (format-edge-attributes
                           ""
-                          (struct-copy edge-config
-                                       (cond
-                                         [(eq? 'edge (car v))
-                                          ((graph-config-edge config) (caddr v))]
-                                         [(eq? 'bridge (car v))
-                                          ((graph-config-edge config) (caddr v))])
+                          (struct-copy edge-config ((graph-config-edge config) (caddr v))
                                        [arrowhead 'none])))
                 (fprintf port "  ~a -> ~a ~a\n"
                          (dot-string (symbol->string (edge-id (caddr v))))
                          (dot-string (symbol->string (node-id (edge-cod (caddr v)))))
                          (format-edge-attributes
                           ""
-                          (struct-copy edge-config
-                                       (cond
-                                         [(eq? 'edge (car v))
-                                          ((graph-config-edge config) (caddr v))]
-                                         [(eq? 'bridge (car v))
-                                          ((graph-config-edge config) (caddr v))])
+                          (struct-copy edge-config ((graph-config-edge config) (caddr v))
                                        [arrowtail 'none]))))
               (visnodes-edges visnodes))
     (displayln "}" port)))
