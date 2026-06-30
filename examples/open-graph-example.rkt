@@ -3,6 +3,7 @@
 (module vending-machine-example typed/racket
   (require "../graph.rkt")
   (require "../prompt.rkt")
+  (require "../graph/dot.rkt")
   (provide vending-graph
            Vending-State
            (struct-out v-state))
@@ -53,7 +54,7 @@
   (define (vending-graph g output output-edge)
     (define v-node ((inst node-maker Vending-Node-Type Vending-State) g))
     (define v-edge (inst make-edge Vending-Node-Type Vending-State))
-    (define v-bridge (inst make-bridge Vending-Node-Type Vending-State T S))
+    (define v-bridge (inst make-dot-bridge Vending-Node-Type Vending-State T S))
     (define v-graph (inst make-open-graph Vending-Node-Type Vending-State T S))
 
     (define idle       (v-node "Idle (Accepting Coins)" #:type 'start))
@@ -86,7 +87,8 @@
       #:bridges
       (list
        (v-bridge "Walk Away" #:dom idle #:cod output
-                 #:trans output-edge)))
+                 #:trans output-edge
+                 #:dot-minlen 3)))
      idle)))
 
 (require (submod "." vending-machine-example))
