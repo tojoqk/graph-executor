@@ -1,8 +1,8 @@
 #lang typed/racket
 
-(provide current-seen-ids
+(provide current-seen-ids current-node-prompt
          Node node-maker
-         node-graph-id node-graph-name node-id node-name node-type node-desc node-trans node-attributes
+         node-graph-id node-graph-name node-id node-name node-type node-desc node-trans node-prompt node-attributes
          Bridge Edge EdgeMode make-bridge make-edge
          edge-id edge-name edge-mode edge-dom edge-cod edge-desc edge-when edge-trans edge-priority edge-weight edge-attributes
          OpenGraph Graph make-open-graph make-graph
@@ -10,6 +10,9 @@
 
 (: current-seen-ids (Parameterof (Setof Symbol)))
 (define current-seen-ids (make-parameter ((inst set Symbol))))
+
+(: current-node-prompt (Parameterof String))
+(define current-node-prompt (make-parameter "Choose:"))
 
 (: make-graph-id (-> String Symbol))
 (define (make-graph-id graph-name)
@@ -36,6 +39,7 @@
                     [type : T]
                     [desc : (Option String)]
                     [trans : (-> S S)]
+                    [prompt : String]
                     [attributes : (Immutable-HashTable Symbol Any)])
   #:transparent
   #:type-name Node)
@@ -46,15 +50,16 @@
                            #:type T
                            [#:desc (Option String)]
                            [#:trans (Option (-> S S))]
+                           [#:prompt (Option String)]
                            [#:attributes (Immutable-HashTable Symbol Any)]
                            (Node T S)))))
-(define ((node-maker graph-name) name #:type type #:desc [desc #f] #:trans [tr #f] #:attributes [attrs ((inst hash Symbol Any))])
+(define ((node-maker graph-name) name #:type type #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f] #:attributes [attrs ((inst hash Symbol Any))])
   (let ([graph-id (make-graph-id graph-name)]
         [node-id (make-node-id graph-name name)])
     (cond [(set-member? (current-seen-ids) node-id)
            (error "node-maker: duplicate ID" node-id)]
           [else (current-seen-ids (set-add (current-seen-ids) node-id))])
-    (node graph-id graph-name node-id name type desc (or tr (inst identity S)) attrs)))
+    (node graph-id graph-name node-id name type desc (or tr (inst identity S)) (or pmt (current-node-prompt)) attrs)))
 
 (define-type EdgeMode (U 'auto 'choose 'annotation))
 
