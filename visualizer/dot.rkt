@@ -1,6 +1,7 @@
 #lang typed/racket
 
 (require "../graph.rkt")
+(require "../graph/dot.rkt")
 (require "../private/visualizer.rkt")
 
 (provide write-dot
@@ -30,24 +31,44 @@
                            #:bridge-node [bridge-node #f]
                            #:edge [edge #f]
                            #:bridge [bridge #f])
-  ((inst graph-config T S) (or node (lambda ([_ : (Node T S)])
-                                      (make-node-config #:shape 'box
-                                                        #:style '(filled rounded))))
-                           (or edge-node
-                               (lambda ([_ : (Edge T S)])
+  (: edge-default (-> (Edge T S) EdgeConfig))
+  (define (edge-default e)
+    (let ([mode (edge-mode e)])
+      (cond [(eq? mode 'auto)
+             (make-edge-config #:color "red")]
+            [(eq? mode 'choose) (make-edge-config #:color "blue")]
+            [(eq? mode 'annotation)
+             (make-edge-config #:style '(dashed)
+                               #:color "black")])))
+  ((inst graph-config T S) (lambda ([n : (Node T S)])
+                             (if node
+                                 (node n)
+                                 (make-node-config #:shape 'box
+                                                   #:style '(filled rounded))))
+                           (lambda ([e : (Edge T S)])
+                             (if edge-node
+                                 (edge-node e)
                                  (make-node-config #:shape 'plaintext)))
-                           (or bridge-node
-                               (lambda ([_ : (Edge T S)])
+                           (lambda ([e : (Edge T S)])
+                             (if bridge-node
+                                 (bridge-node e)
                                  (make-node-config #:shape 'plaintext)))
-                           (or edge (lambda ([e : (Edge T S)])
-                                      (let ([mode (edge-mode e)])
-                                        (cond [(eq? mode 'auto) (make-edge-config #:color "red")]
-                                              [(eq? mode 'choose) (make-edge-config #:color "blue")]
-                                              [(eq? mode 'annotation)
-                                               (make-edge-config #:style '(dashed)
-                                                                 #:color "black")]))))
-                           (or bridge (lambda ([_ : (Edge T S)])
-                                        (make-edge-config)))))
+                           (lambda ([e : (Edge T S)])
+                             (let ([c (if edge
+                                          (edge e)
+                                          (edge-default e))])
+                               (if (edge-dot-minlen e)
+                                   (struct-copy edge-config c
+                                                [minlen (edge-dot-minlen e)])
+                                   c)))
+                           (lambda ([e : (Edge T S)])
+                             (let ([c (if bridge
+                                          (bridge e)
+                                          (edge-default e))])
+                               (if (edge-dot-minlen e)
+                                   (struct-copy edge-config c
+                                                [minlen (edge-dot-minlen e)])
+                                   c)))))
 
 (struct node-config ([shape : NodeShape]
                      [style : (Listof NodeStyle)]
@@ -72,22 +93,26 @@
 (struct edge-config ([arrowhead : (U ArrowShape String)]
                      [arrowtail : (U ArrowShape String)]
                      [style : (Listof EdgeStyle)]
-                     [color : Color])
+                     [color : Color]
+                     [minlen : Natural])
   #:type-name EdgeConfig)
 
 (: make-edge-config (-> [#:arrowhead (Option ArrowShape)]
                         [#:arrowtail (Option ArrowShape)]
                         [#:style (Option (Listof EdgeStyle))]
                         [#:color (Option Color)]
+                        [#:minlen (Option Natural)]
                         EdgeConfig))
 (define (make-edge-config #:arrowhead [arrowhead #f]
                           #:arrowtail [arrowtail #f]
                           #:style [style #f]
-                          #:color [color #f])
+                          #:color [color #f]
+                          #:minlen [minlen #f])
   (edge-config (or arrowhead 'normal)
                (or arrowtail 'normal)
                (or style '())
-               (or color "black")))
+               (or color "black")
+               (or minlen 1)))
 
 (define-type NodeShape
   (U 'box
@@ -308,12 +333,13 @@
 
 (: format-edge-attributes (-> String EdgeConfig String))
 (define (format-edge-attributes label ec)
-  (format "[label=~a,arrowhead=~a,arrowtail=~a,style=~a,color=~a]"
+  (format "[label=~a,arrowhead=~a,arrowtail=~a,style=~a,color=~a,minlen=~a]"
           (dot-string label)
           (dot-string (arrow-shape->string (edge-config-arrowhead ec)))
           (dot-string (arrow-shape->string (edge-config-arrowtail ec)))
           (dot-string (edge-styles->string (edge-config-style ec)))
-          (dot-string (color->string (edge-config-color ec)))))
+          (dot-string (color->string (edge-config-color ec)))
+          (edge-config-minlen ec)))
 
 (: dot-string (-> String String))
 (define (dot-string str)
