@@ -1,6 +1,7 @@
 #lang typed/racket
 
 (require "../graph.rkt")
+(require "../graph/dot.rkt")
 (provide vending-graph
          Vending-State
          v-state?
@@ -47,7 +48,7 @@
                              (Node Vending-Node-Type Vending-State))))
 (define (vending-graph graph-name)
   (define v-node ((inst node-maker Vending-Node-Type Vending-State) graph-name))
-  (define v-edge (inst make-edge Vending-Node-Type Vending-State))
+  (define v-edge (inst make-dot-edge Vending-Node-Type Vending-State))
   (define v-graph (inst make-graph Vending-Node-Type Vending-State))
 
   (define idle       (v-node "Idle (Accepting Coins)" #:type 'start))
@@ -78,7 +79,7 @@
              #:when inserted?
              #:trans reset-money)
      (v-edge "Change Dispatched" #:mode 'auto #:dom ret-change #:cod idle)
-     (v-edge "Walk Away" #:dom idle #:cod terminal)))
+     (v-edge "Walk Away" #:dom idle #:cod terminal #:dot-minlen 2)))
    idle))
 
 (module+ main
