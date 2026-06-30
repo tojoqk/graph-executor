@@ -34,8 +34,6 @@
     [(eq? (car v) 'node)
      (node-id (caddr v))]
     [(eq? (car v) 'edge)
-     (edge-id (caddr v))]
-    [(eq? (car v) 'bridge)
      (edge-id (caddr v))]))
 
 (: visnode-graph (All (T S) (-> (VisNode T S) (Option (Graph T S)))))
@@ -52,9 +50,6 @@
           [(eq? (car visnode) 'node)
            (visnodes-edges (cdr visnodes))]
           [(eq? (car visnode) 'edge)
-           (cons visnode
-                 (visnodes-edges (cdr visnodes)))]
-          [(eq? (car visnode) 'bridge)
            (cons visnode
                  (visnodes-edges (cdr visnodes)))]))))
 
