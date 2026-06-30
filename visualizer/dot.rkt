@@ -191,18 +191,15 @@
   (let ([visnodes (reachable-visnodes gs node)])
     (displayln (format "digraph G {") port)
     (displayln  "  graph [rankdir=TB]" port)
-    (: display-visnodes (-> (Option (Nested-Graphs T S)) Void))
+    (: display-visnodes (-> (Nested-Graphs T S) Void))
     (define (display-visnodes g)
-      (when g
-        (fprintf port "subgraph ~a {\n" (dot-string (string-append
-                                                     "cluster_"
-                                                     (symbol->string (graph-id (car g))))))
-        (fprintf port "  label = ~a\n" (dot-string (graph-name (car g)))))
+      (fprintf port "subgraph ~a {\n" (dot-string (string-append
+                                                   "cluster_"
+                                                   (symbol->string (graph-id (car g))))))
+      (fprintf port "  label = ~a\n" (dot-string (graph-name (car g))))
 
       (for-each (lambda ([v : (VisNode T S)])
-                  (when (if (and g (cadr v))
-                            (symbol=? (graph-id (car g)) (graph-id (cadr v)))
-                            (and (not g) (not (cadr v))))
+                  (when (symbol=? (graph-id (car g)) (graph-id (cadr v)))
                     (define get-id (inst visnode-id T S))
                     (cond
                       [(eq? 'node (car v))
