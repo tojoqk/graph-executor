@@ -209,15 +209,17 @@
   (let ([visnodes (reachable-visnodes gs node)])
     (displayln (format "digraph G {") port)
     (displayln  "  graph [rankdir=TB]" port)
-    (: display-visnodes (-> (Option (Graph T S)) Void))
+    (: display-visnodes (-> (Option (Nested-Graphs T S)) Void))
     (define (display-visnodes g)
       (when g
-        (fprintf port "subgraph ~a {\n" (dot-string (string-append "cluster_"
-                                                                   (symbol->string (graph-id g)))))
-        (fprintf port "  label = ~a\n" (dot-string (graph-name g))))
+        (fprintf port "subgraph ~a {\n" (dot-string (string-append
+                                                     "cluster_"
+                                                     (symbol->string (graph-id (car g))))))
+        (fprintf port "  label = ~a\n" (dot-string (graph-name (car g)))))
+
       (for-each (lambda ([v : (VisNode T S)])
                   (when (if (and g (cadr v))
-                            (symbol=? (graph-id g) (graph-id (cadr v)))
+                            (symbol=? (graph-id (car g)) (graph-id (cadr v)))
                             (and (not g) (not (cadr v))))
                     (define get-id (inst visnode-id T S))
                     (cond
@@ -250,8 +252,9 @@
                                  ((graph-config-bridge-node config) (caddr v))))])))
                 visnodes)
       (when g
+        (for-each display-visnodes (cdr g))
         (displayln "}" port)))
-    (for-each display-visnodes (visnodes->graphs visnodes))
+    (for-each display-visnodes (graphs->nested (visnodes->graphs visnodes)))
     (display-visnodes #f)
     (newline port)
     (for-each (lambda ([v : (U (VisNode-Edge T S) (VisNode-Bridge T S))])

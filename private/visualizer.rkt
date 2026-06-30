@@ -2,7 +2,8 @@
 
 (require "../graph.rkt")
 (provide VisNode VisNode-Node VisNode-Edge VisNode-Bridge
-         find-graph reachable-visnodes visnode-id visnodes-edges visnodes->graphs)
+         find-graph reachable-visnodes visnode-id visnodes-edges visnodes->graphs
+         Nested-Graphs graphs->nested)
 
 (: find-graph (All (T S) (-> (Listof (Graph T S)) Symbol (Option (Graph T S)))))
 (define (find-graph gs g-id)
@@ -104,3 +105,25 @@
                            (loop (cdr vs) gs)]
                           [else (loop (cdr vs) (cons g gs))]))]
               [else (loop (cdr vs) gs)]))))
+
+(define-type (Nested-Graphs T S) (Pairof (Graph T S) (Listof (Nested-Graphs T S))))
+
+(: graphs->nested (All (T S) (-> (Listof (Graph T S)) (Listof (Nested-Graphs T S)))))
+(define (graphs->nested gs)
+  (let ([ht : (Mutable-HashTable Symbol (Listof (Graph T S))) (make-hash)])
+    (define get-parent-id (inst graph-parent-id T S T S))
+    (: roots-box (Boxof (Listof (Graph T S))))
+    (define roots-box (box '()))
+    (for-each (lambda ([g : (Graph T S)])
+                (cond [(get-parent-id g)
+                       => (lambda ([parent-id : Symbol])
+                            ((inst hash-set! Symbol (Listof (Graph T S)))
+                             ht
+                             parent-id
+                             (cons g (hash-ref ht parent-id (lambda () '())))))]
+                      [else (set-box! roots-box (cons g (unbox roots-box)))]))
+              (reverse gs))
+    (: ->nested (-> (Graph T S) (Nested-Graphs T S)))
+    (define (->nested g)
+      (cons g (map ->nested (or (hash-ref ht (graph-id g) #f) '()))))
+    (map ->nested (unbox roots-box))))

@@ -6,7 +6,7 @@
          Bridge Edge EdgeMode make-bridge make-edge
          edge-id edge-name edge-mode edge-dom edge-cod edge-desc edge-when edge-trans edge-priority edge-weight edge-attributes
          OpenGraph Graph make-open-graph make-graph
-         graph-id graph-name graph-desc graph-edges graph-bridges)
+         graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges graph-bridges)
 
 (: current-seen-ids (Parameterof (Setof Symbol)))
 (define current-seen-ids (make-parameter ((inst set Symbol))))
@@ -149,6 +149,8 @@
 
 (struct (T1 S1 T2 S2) graph ([id : Symbol]
                              [name : String]
+                             [parent-id : (Option Symbol)]
+                             [parent-name : (Option String)]
                              [desc : (Option String)]
                              [edges : (Listof (Edge T1 S1))]
                              [bridges : (Listof (Bridge T1 S1 T2 S2))])
@@ -159,11 +161,13 @@
 
 (: make-open-graph (All (T1 S1 T2 S2)
                         (-> String
+                            [#:parent-name (Option String)]
                             [#:desc (Option String)]
                             [#:edges (Option (Listof (Edge T1 S1)))]
                             [#:bridges (Option (Listof (Bridge T1 S1 T2 S2)))]
                             (OpenGraph T1 S1 T2 S2))))
 (define (make-open-graph name
+                         #:parent-name [parent-name #f]
                          #:desc [desc #f]
                          #:edges [edges #f]
                          #:bridges [bridges #f])
@@ -171,19 +175,24 @@
     (cond [(set-member? (current-seen-ids) graph-id)
            (error "make-graph*: duplicate ID" graph-id)]
           [else (current-seen-ids (set-add (current-seen-ids) graph-id))])
-    (graph (make-graph-id name) name desc (or edges '()) (or bridges '()))))
+    (graph (make-graph-id name) name
+           (and parent-name (make-graph-id parent-name)) parent-name
+           desc (or edges '()) (or bridges '()))))
 
 (: make-graph (All (T S)
                    (-> String
+                       [#:parent-name (Option String)]
                        [#:desc (Option String)]
                        [#:edges (Option (Listof (Edge T S)))]
                        [#:bridges (Option (Listof (Bridge T S T S)))]
                        (Graph T S))))
 (define (make-graph name
+                    #:parent-name [parent-name #f]
                     #:desc [desc #f]
                     #:edges [edges #f]
                     #:bridges [bridges #f])
   ((inst make-open-graph T S T S) name
+                                  #:parent-name parent-name
                                   #:desc desc
                                   #:edges edges
                                   #:bridges bridges))
