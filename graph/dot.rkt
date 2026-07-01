@@ -19,27 +19,27 @@
                             [#:attributes (Immutable-HashTable Symbol Any)]
                             (Bridge T1 S1 T2 S2))))
 (define (make-dot-bridge name
-                     #:mode [mode #f]
-                     #:dom dom
-                     #:cod cod
-                     #:desc [desc #f]
-                     #:when [when #f]
-                     #:trans tr
-                     #:priority [priority #f]
-                     #:weight [weight #f]
-                     #:dot-minlen [dot-minlen #f]
-                     #:attributes [attrs ((inst hash Symbol Any))])
-  ((inst make-bridge T1 S1 T2 S2) name
-                                  #:mode mode
-                                  #:dom dom
-                                  #:cod cod
-                                  #:desc desc
-                                  #:when when
-                                  #:trans (or tr (inst identity S))
-                                  #:priority priority
-                                  #:weight weight
-                                  #:attributes (hash-union attrs
-                                                           (hash 'dot-minlen dot-minlen))))
+                         #:mode [mode #f]
+                         #:dom dom
+                         #:cod cod
+                         #:desc [desc #f]
+                         #:when [when #f]
+                         #:trans tr
+                         #:priority [priority #f]
+                         #:weight [weight #f]
+                         #:dot-minlen [dot-minlen #f]
+                         #:attributes [attrs ((inst hash Symbol Any))])
+  ((inst make-bridge* T1 S1 T2 S2) name
+                                   #:mode mode
+                                   #:dom dom
+                                   #:cod cod
+                                   #:desc desc
+                                   #:when when
+                                   #:trans (or tr (inst identity S))
+                                   #:priority priority
+                                   #:weight weight
+                                   #:attributes (hash-union attrs
+                                                            (hash 'dot-minlen dot-minlen))))
 
 (: make-dot-edge (All (T S)
                       (-> String
@@ -55,27 +55,27 @@
                           [#:attributes (Immutable-HashTable Symbol Any)]
                           (Edge T S))))
 (define (make-dot-edge name
-                   #:mode [mode #f]
-                   #:dom dom
-                   #:cod cod
-                   #:desc [desc #f]
-                   #:when [when #f]
-                   #:trans [tr #f]
-                   #:priority [priority #f]
-                   #:weight [weight #f]
-                   #:dot-minlen [dot-minlen #f]
-                   #:attributes [attrs ((inst hash Symbol Any))])
+                       #:mode [mode #f]
+                       #:dom dom
+                       #:cod cod
+                       #:desc [desc #f]
+                       #:when [when #f]
+                       #:trans [tr #f]
+                       #:priority [priority #f]
+                       #:weight [weight #f]
+                       #:dot-minlen [dot-minlen #f]
+                       #:attributes [attrs ((inst hash Symbol Any))])
   ((inst make-dot-bridge T S T S) name
-                              #:mode mode
-                              #:dom dom
-                              #:cod cod
-                              #:desc desc
-                              #:when when
-                              #:trans (or tr (inst identity S))
-                              #:priority priority
-                              #:weight weight
-                              #:dot-minlen dot-minlen
-                              #:attributes attrs))
+                                  #:mode mode
+                                  #:dom dom
+                                  #:cod cod
+                                  #:desc desc
+                                  #:when when
+                                  #:trans (or tr (inst identity S))
+                                  #:priority priority
+                                  #:weight weight
+                                  #:dot-minlen dot-minlen
+                                  #:attributes attrs))
 
 (: edge-dot-minlen (All (T S) (-> (Edge T S) Natural)))
 (define (edge-dot-minlen e)
