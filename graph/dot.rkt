@@ -8,6 +8,7 @@
 (: make-dot-bridge (All (T1 S1 T2 S2)
                         (-> String
                             [#:mode (Option EdgeMode)]
+                            [#:half? Boolean]
                             #:dom (Node T1 S1)
                             #:cod (Node T2 S2)
                             [#:desc (Option String)]
@@ -20,6 +21,7 @@
                             (Bridge T1 S1 T2 S2))))
 (define (make-dot-bridge name
                          #:mode [mode #f]
+                         #:half? [half? #f]
                          #:dom dom
                          #:cod cod
                          #:desc [desc #f]
@@ -31,6 +33,7 @@
                          #:attributes [attrs ((inst hash Symbol Any))])
   ((inst make-bridge* T1 S1 T2 S2) name
                                    #:mode mode
+                                   #:half? half?
                                    #:dom dom
                                    #:cod cod
                                    #:desc desc
@@ -44,6 +47,7 @@
 (: make-dot-edge (All (T S)
                       (-> String
                           [#:mode (Option EdgeMode)]
+                          [#:half? Boolean]
                           #:dom (Node T S)
                           #:cod (Node T S)
                           [#:desc (Option String)]
@@ -56,6 +60,7 @@
                           (Edge T S))))
 (define (make-dot-edge name
                        #:mode [mode #f]
+                       #:half? [half? #f]
                        #:dom dom
                        #:cod cod
                        #:desc [desc #f]
@@ -67,6 +72,7 @@
                        #:attributes [attrs ((inst hash Symbol Any))])
   ((inst make-dot-bridge T S T S) name
                                   #:mode mode
+                                  #:half? half?
                                   #:dom dom
                                   #:cod cod
                                   #:desc desc

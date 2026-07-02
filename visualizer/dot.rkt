@@ -231,15 +231,18 @@
                          (dot-string (symbol->string (edge-id (caddr v))))
                          (format-edge-attributes
                           ""
-                          (struct-copy edge-config ((graph-config-edge config) (caddr v))
-                                       [arrowhead 'none])))
-                (fprintf port "  ~a -> ~a ~a\n"
-                         (dot-string (symbol->string (edge-id (caddr v))))
-                         (dot-string (symbol->string (node-id (edge-cod (caddr v)))))
-                         (format-edge-attributes
-                          ""
-                          (struct-copy edge-config ((graph-config-edge config) (caddr v))
-                                       [arrowtail 'none]))))
+                          (if (edge-half? (caddr v))
+                              ((graph-config-edge config) (caddr v))
+                              (struct-copy edge-config ((graph-config-edge config) (caddr v))
+                                           [arrowhead 'none]))))
+                (unless (edge-half? (caddr v))
+                  (fprintf port "  ~a -> ~a ~a\n"
+                           (dot-string (symbol->string (edge-id (caddr v))))
+                           (dot-string (symbol->string (node-id (edge-cod (caddr v)))))
+                           (format-edge-attributes
+                            ""
+                            (struct-copy edge-config ((graph-config-edge config) (caddr v))
+                                         [arrowtail 'none])))))
               (visnodes-edges visnodes))
     (displayln "}" port)))
 

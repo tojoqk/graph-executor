@@ -4,7 +4,7 @@
          Node node-maker* node-maker
          node-graph-id node-graph-name node-id node-name node-type node-desc node-trans node-prompt node-attributes
          Bridge Edge EdgeMode make-bridge* make-bridge make-edge* make-edge
-         edge-id edge-name edge-mode edge-dom edge-cod edge-desc edge-when edge-trans edge-priority edge-weight edge-attributes
+         edge-id edge-name edge-mode edge-half? edge-dom edge-cod edge-desc edge-when edge-trans edge-priority edge-weight edge-attributes
          OpenGraph Graph make-open-graph make-graph
          graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges graph-bridges)
 
@@ -76,6 +76,7 @@
 (struct (T1 S1 T2 S2) edge ([id : Symbol]
                             [name : String]
                             [mode : EdgeMode]
+                            [half? : Boolean]
                             [dom : (Node T1 S1)]
                             [cod : (Node T2 S2)]
                             [desc : (Option String)]
@@ -92,6 +93,7 @@
 (: make-bridge* (All (T1 S1 T2 S2)
                      (-> String
                          [#:mode (Option EdgeMode)]
+                         [#:half? Boolean]
                          #:dom (Node T1 S1)
                          #:cod (Node T2 S2)
                          [#:desc (Option String)]
@@ -103,6 +105,7 @@
                          (Bridge T1 S1 T2 S2))))
 (define (make-bridge* name
                       #:mode [mode #f]
+                      #:half? [half? #f]
                       #:dom dom
                       #:cod cod
                       #:desc [desc #f]
@@ -116,7 +119,9 @@
            (error "make-edge, make-bridge*: duplicate ID" edge-id)]
           [else (current-seen-ids (set-add (current-seen-ids) edge-id))])
     (edge edge-id
-          name (or mode 'choose) dom cod
+          name (or mode 'choose)
+          half?
+          dom cod
           desc
           (or when (const #t))
           tr
@@ -127,6 +132,7 @@
 (: make-bridge (All (T1 S1 T2 S2)
                     (-> String
                         [#:mode (Option EdgeMode)]
+                        [#:half Boolean]
                         #:dom (Node T1 S1)
                         #:cod (Node T2 S2)
                         [#:desc (Option String)]
@@ -137,6 +143,7 @@
                         (Bridge T1 S1 T2 S2))))
 (define (make-bridge name
                      #:mode [mode #f]
+                     #:half [half? #f]
                      #:dom dom
                      #:cod cod
                      #:desc [desc #f]
@@ -146,6 +153,7 @@
                      #:weight [weight #f])
   ((inst make-bridge* T1 S1 T2 S2) name
                                    #:mode mode
+                                   #:half? half?
                                    #:dom dom
                                    #:cod cod
                                    #:desc desc
@@ -158,6 +166,7 @@
 (: make-edge* (All (T S)
                    (-> String
                        [#:mode (Option EdgeMode)]
+                       [#:half? Boolean]
                        #:dom (Node T S)
                        #:cod (Node T S)
                        [#:desc (Option String)]
@@ -169,6 +178,7 @@
                        (Edge T S))))
 (define (make-edge* name
                     #:mode [mode #f]
+                    #:half? [half? #f]
                     #:dom dom
                     #:cod cod
                     #:desc [desc #f]
@@ -179,6 +189,7 @@
                     #:attributes [attrs ((inst hash Symbol Any))])
   ((inst make-bridge* T S T S) name
                                #:mode mode
+                               #:half? half?
                                #:dom dom
                                #:cod cod
                                #:desc desc
@@ -191,6 +202,7 @@
 (: make-edge (All (T S)
                   (-> String
                       [#:mode (Option EdgeMode)]
+                      [#:half? Boolean]
                       #:dom (Node T S)
                       #:cod (Node T S)
                       [#:desc (Option String)]
@@ -201,6 +213,7 @@
                       (Edge T S))))
 (define (make-edge name
                    #:mode [mode #f]
+                   #:half? [half? #f]
                    #:dom dom
                    #:cod cod
                    #:desc [desc #f]
@@ -210,6 +223,7 @@
                    #:weight [weight #f])
   ((inst make-edge* T S) name
                          #:mode mode
+                         #:half? half?
                          #:dom dom
                          #:cod cod
                          #:desc desc
