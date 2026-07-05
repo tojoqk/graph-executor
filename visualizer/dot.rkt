@@ -11,6 +11,7 @@
          DotColor DotRGBColor dot-rgb-color
          DotNodeShape DotNodeStyle
          DotArrowShape DotEdgeStyle
+         current-dot-node-config
          current-dot-auto-edge-config
          current-dot-choose-edge-config
          current-dot-annotation-edge-config)
