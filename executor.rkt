@@ -6,7 +6,25 @@
 
 (provide replay
          find-graph next-edges auto-choose
-         current-auto-conflict-policy current-single-choose-policy)
+         current-auto-conflict-policy current-single-choose-policy
+         current-node-id current-node?
+         current-edge-id current-edge?)
+
+(: current-node-id (Parameterof (Option Symbol)))
+(define current-node-id (make-parameter #f))
+
+(: current-node? (All (T S) (-> (Node T S) Boolean)))
+(define (current-node? n)
+  (cond [(current-node-id) => (curry symbol=? (node-id n))]
+        [else #f]))
+
+(: current-edge-id (Parameterof (Option Symbol)))
+(define current-edge-id (make-parameter #f))
+
+(: current-edge? (All (T S) (-> (Edge T S) Boolean)))
+(define (current-edge? e)
+  (cond [(current-edge-id) => (curry symbol=? (edge-id e))]
+        [else #f]))
 
 (: replay (All (T S) (-> (Listof (Graph T S)) (Node T S) S Journal
                          (Values (Node T S) S))))
