@@ -5,44 +5,44 @@
 (require "../private/visualizer.rkt")
 
 (provide write-dot
-         GraphConfig make-graph-config
-         NodeConfig make-node-config
-         EdgeConfig make-edge-config
-         Color RGBColor rgb-color rgb-color?
-         NodeShape NodeStyle
-         ArrowShape EdgeStyle)
+         DotConfig make-dot-config
+         DotNodeConfig make-dot-node-config
+         DotEdgeConfig make-dot-edge-config
+         DotColor DotRGBColor rgb-color rgb-color?
+         DotNodeShape DotNodeStyle
+         DotArrowShape DotEdgeStyle)
 
-(struct (T S) graph-config ([node : (-> (Node T S) NodeConfig)]
-                            [edge-node : (-> (Edge T S) NodeConfig)]
-                            [edge : (-> (Edge T S) EdgeConfig)])
-  #:type-name GraphConfig)
+(struct (T S) graph-config ([node : (-> (Node T S) DotNodeConfig)]
+                            [edge-node : (-> (Edge T S) DotNodeConfig)]
+                            [edge : (-> (Edge T S) DotEdgeConfig)])
+  #:type-name DotConfig)
 
-(: make-graph-config (All (T S)
-                          (-> [#:node (Option (-> (Node T S) NodeConfig))]
-                              [#:edge-node (Option (-> (Edge T S) NodeConfig))]
-                              [#:edge (Option (-> (Edge T S) EdgeConfig))]
-                              (GraphConfig T S))))
-(define (make-graph-config #:node [node #f]
-                           #:edge-node [edge-node #f]
-                           #:edge [edge #f])
-  (: edge-default (-> (Edge T S) EdgeConfig))
+(: make-dot-config (All (T S)
+                        (-> [#:node (Option (-> (Node T S) DotNodeConfig))]
+                            [#:edge-node (Option (-> (Edge T S) DotNodeConfig))]
+                            [#:edge (Option (-> (Edge T S) DotEdgeConfig))]
+                            (DotConfig T S))))
+(define (make-dot-config #:node [node #f]
+                         #:edge-node [edge-node #f]
+                         #:edge [edge #f])
+  (: edge-default (-> (Edge T S) DotEdgeConfig))
   (define (edge-default e)
     (let ([mode (edge-mode e)])
       (cond [(eq? mode 'auto)
-             (make-edge-config #:color "red")]
-            [(eq? mode 'choose) (make-edge-config #:color "blue")]
+             (make-dot-edge-config #:color "red")]
+            [(eq? mode 'choose) (make-dot-edge-config #:color "blue")]
             [(eq? mode 'annotation)
-             (make-edge-config #:style '(dashed)
-                               #:color "black")])))
+             (make-dot-edge-config #:style '(dashed)
+                                   #:color "black")])))
   ((inst graph-config T S) (lambda ([n : (Node T S)])
                              (if node
                                  (node n)
-                                 (make-node-config #:shape 'box
-                                                   #:style '(filled rounded))))
+                                 (make-dot-node-config #:shape 'box
+                                                       #:style '(filled rounded))))
                            (lambda ([e : (Edge T S)])
                              (if edge-node
                                  (edge-node e)
-                                 (make-node-config #:shape 'plaintext)))
+                                 (make-dot-node-config #:shape 'plaintext)))
                            (lambda ([e : (Edge T S)])
                              (let ([c (if edge
                                           (edge e)
@@ -52,51 +52,51 @@
                                                 [minlen (edge-dot-minlen e)])
                                    c)))))
 
-(struct node-config ([shape : NodeShape]
-                     [style : (Listof NodeStyle)]
-                     [color : Color]
-                     [fillcolor : Color])
-  #:type-name NodeConfig)
+(struct node-config ([shape : DotNodeShape]
+                     [style : (Listof DotNodeStyle)]
+                     [color : DotColor]
+                     [fillcolor : DotColor])
+  #:type-name DotNodeConfig)
 
-(: make-node-config (-> [#:shape (Option NodeShape)]
-                        [#:style (Option (Listof NodeStyle))]
-                        [#:color (Option Color)]
-                        [#:fillcolor (Option Color)]
-                        NodeConfig))
-(define (make-node-config #:shape [shape #f]
-                          #:style [style #f]
-                          #:color [color #f]
-                          #:fillcolor [fillcolor #f])
+(: make-dot-node-config (-> [#:shape (Option DotNodeShape)]
+                            [#:style (Option (Listof DotNodeStyle))]
+                            [#:color (Option DotColor)]
+                            [#:fillcolor (Option DotColor)]
+                            DotNodeConfig))
+(define (make-dot-node-config #:shape [shape #f]
+                              #:style [style #f]
+                              #:color [color #f]
+                              #:fillcolor [fillcolor #f])
   (node-config (or shape 'ellipse)
                (or style '())
                (or color "black")
                (or fillcolor "white")))
 
-(struct edge-config ([arrowhead : (U ArrowShape String)]
-                     [arrowtail : (U ArrowShape String)]
-                     [style : (Listof EdgeStyle)]
-                     [color : Color]
+(struct edge-config ([arrowhead : (U DotArrowShape String)]
+                     [arrowtail : (U DotArrowShape String)]
+                     [style : (Listof DotEdgeStyle)]
+                     [color : DotColor]
                      [minlen : Natural])
-  #:type-name EdgeConfig)
+  #:type-name DotEdgeConfig)
 
-(: make-edge-config (-> [#:arrowhead (Option ArrowShape)]
-                        [#:arrowtail (Option ArrowShape)]
-                        [#:style (Option (Listof EdgeStyle))]
-                        [#:color (Option Color)]
-                        [#:minlen (Option Natural)]
-                        EdgeConfig))
-(define (make-edge-config #:arrowhead [arrowhead #f]
-                          #:arrowtail [arrowtail #f]
-                          #:style [style #f]
-                          #:color [color #f]
-                          #:minlen [minlen #f])
+(: make-dot-edge-config (-> [#:arrowhead (Option DotArrowShape)]
+                            [#:arrowtail (Option DotArrowShape)]
+                            [#:style (Option (Listof DotEdgeStyle))]
+                            [#:color (Option DotColor)]
+                            [#:minlen (Option Natural)]
+                            DotEdgeConfig))
+(define (make-dot-edge-config #:arrowhead [arrowhead #f]
+                              #:arrowtail [arrowtail #f]
+                              #:style [style #f]
+                              #:color [color #f]
+                              #:minlen [minlen #f])
   (edge-config (or arrowhead 'normal)
                (or arrowtail 'normal)
                (or style '())
                (or color "black")
                (or minlen 1)))
 
-(define-type NodeShape
+(define-type DotNodeShape
   (U 'box
      'polygon
      'ellipse
@@ -137,7 +137,7 @@
      'box3d
      'component))
 
-(define-type NodeStyle
+(define-type DotNodeStyle
   (U 'dashed
      'dotted
      'solid
@@ -149,7 +149,7 @@
      'diagonals
      'rounded))
 
-(define-type EdgeStyle
+(define-type DotEdgeStyle
   (U 'dashed
      'dotted
      'solid
@@ -162,14 +162,14 @@
      'striped
      'rounded))
 
-(define-type Color (U RGBColor String))
+(define-type DotColor (U DotRGBColor String))
 
 (struct rgb-color ([red : Byte]
                    [green : Byte]
                    [blue : Byte])
-  #:type-name RGBColor)
+  #:type-name DotRGBColor)
 
-(define-type ArrowShape
+(define-type DotArrowShape
   (U 'box 'lbox 'rbox 'obox 'olbox 'orbox
      'crow 'lcrow 'rcrow
      'diamond 'ldiamond 'rdiamond 'odiamond 'oldiamond 'ordiamond
@@ -182,11 +182,11 @@
      'curve 'lcurve 'rcurve 'icurve 'licurve 'ricurve))
 
 (: write-dot (All (T S) (-> (Listof (Graph T S)) (Node T S)
-                            [#:config (GraphConfig T S)]
+                            [#:config (DotConfig T S)]
                             [#:port Output-Port]
                             Void)))
 (define (write-dot gs node
-                   #:config [config ((inst make-graph-config T S))]
+                   #:config [config ((inst make-dot-config T S))]
                    #:port [port (current-output-port)])
   (let ([visnodes (reachable-visnodes gs node)])
     (displayln (format "digraph G {") port)
@@ -260,7 +260,7 @@
       (format "0~x" b)
       (format "~x" b)))
 
-(: color->string (-> Color String))
+(: color->string (-> DotColor String))
 (define (color->string c)
   (if (rgb-color? c)
       (format "#~a~a~a"
@@ -269,18 +269,18 @@
               (byte->hex-string (rgb-color-blue c)))
       c))
 
-(: node-styles->string (-> (Listof NodeStyle) String))
+(: node-styles->string (-> (Listof DotNodeStyle) String))
 (define (node-styles->string styles)
   (string-join (map symbol->string styles) ","))
 
-(: edge-styles->string (-> (Listof EdgeStyle) String))
+(: edge-styles->string (-> (Listof DotEdgeStyle) String))
 (define (edge-styles->string styles)
   (string-join (map symbol->string styles) ","))
 
-(: node-shape->string (-> NodeShape String))
+(: node-shape->string (-> DotNodeShape String))
 (define node-shape->string symbol->string)
 
-(: format-node-attributes (-> String NodeConfig String))
+(: format-node-attributes (-> String DotNodeConfig String))
 (define (format-node-attributes label nc)
   (format "[label=~a,shape=~a,style=~a,color=~a,fillcolor=~a]"
           (dot-string label)
@@ -289,13 +289,13 @@
           (dot-string (color->string (node-config-color nc)))
           (dot-string (color->string (node-config-fillcolor nc)))))
 
-(: arrow-shape->string (-> (U ArrowShape String) String))
+(: arrow-shape->string (-> (U DotArrowShape String) String))
 (define (arrow-shape->string s)
   (if (symbol? s)
       (symbol->string s)
       s))
 
-(: format-edge-attributes (-> String EdgeConfig String))
+(: format-edge-attributes (-> String DotEdgeConfig String))
 (define (format-edge-attributes label ec)
   (format "[label=~a,arrowhead=~a,arrowtail=~a,style=~a,color=~a,minlen=~a]"
           (dot-string label)
