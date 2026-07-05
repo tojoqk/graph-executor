@@ -8,7 +8,7 @@
          DotConfig make-dot-config
          DotNodeConfig make-dot-node-config
          DotEdgeConfig make-dot-edge-config
-         DotColor DotRGBColor rgb-color rgb-color?
+         DotColor DotRGBColor dot-rgb-color
          DotNodeShape DotNodeStyle
          DotArrowShape DotEdgeStyle)
 
@@ -164,9 +164,9 @@
 
 (define-type DotColor (U DotRGBColor String))
 
-(struct rgb-color ([red : Byte]
-                   [green : Byte]
-                   [blue : Byte])
+(struct dot-rgb-color ([red : Byte]
+                       [green : Byte]
+                       [blue : Byte])
   #:type-name DotRGBColor)
 
 (define-type DotArrowShape
@@ -262,11 +262,11 @@
 
 (: color->string (-> DotColor String))
 (define (color->string c)
-  (if (rgb-color? c)
+  (if (dot-rgb-color? c)
       (format "#~a~a~a"
-              (byte->hex-string (rgb-color-red c))
-              (byte->hex-string (rgb-color-green c))
-              (byte->hex-string (rgb-color-blue c)))
+              (byte->hex-string (dot-rgb-color-red c))
+              (byte->hex-string (dot-rgb-color-green c))
+              (byte->hex-string (dot-rgb-color-blue c)))
       c))
 
 (: node-styles->string (-> (Listof DotNodeStyle) String))
