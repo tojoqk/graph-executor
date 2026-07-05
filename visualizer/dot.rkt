@@ -10,17 +10,20 @@
          DotEdgeConfig make-dot-edge-config
          DotColor DotRGBColor dot-rgb-color
          DotNodeShape DotNodeStyle
-         DotArrowShape DotEdgeStyle)
+         DotArrowShape DotEdgeStyle
+         current-dot-auto-edge-config
+         current-dot-choose-edge-config
+         current-dot-annotation-edge-config)
 
-(struct (T S) graph-config ([node : (-> (Node T S) DotNodeConfig)]
-                            [edge-node : (-> (Edge T S) DotNodeConfig)]
-                            [edge : (-> (Edge T S) DotEdgeConfig)])
+(struct (T S) graph-config ([node : (-> (Node T S) DotNodeConfig DotNodeConfig)]
+                            [edge-node : (-> (Edge T S) DotNodeConfig DotNodeConfig)]
+                            [edge : (-> (Edge T S) DotEdgeConfig DotEdgeConfig)])
   #:type-name DotConfig)
 
 (: make-dot-config (All (T S)
-                        (-> [#:node (Option (-> (Node T S) DotNodeConfig))]
-                            [#:edge-node (Option (-> (Edge T S) DotNodeConfig))]
-                            [#:edge (Option (-> (Edge T S) DotEdgeConfig))]
+                        (-> [#:node (Option (-> (Node T S) DotNodeConfig DotNodeConfig))]
+                            [#:edge-node (Option (-> (Edge T S) DotNodeConfig DotNodeConfig))]
+                            [#:edge (Option (-> (Edge T S) DotEdgeConfig DotEdgeConfig))]
                             (DotConfig T S))))
 (define (make-dot-config #:node [node #f]
                          #:edge-node [edge-node #f]
@@ -28,28 +31,23 @@
   (: edge-default (-> (Edge T S) DotEdgeConfig))
   (define (edge-default e)
     (let ([mode (edge-mode e)])
-      (cond [(eq? mode 'auto)
-             (make-dot-edge-config #:color "red")]
-            [(eq? mode 'choose) (make-dot-edge-config #:color "blue")]
-            [(eq? mode 'annotation)
-             (make-dot-edge-config #:style '(dashed)
-                                   #:color "black")])))
-  ((inst graph-config T S) (lambda ([n : (Node T S)])
+      (cond [(eq? mode 'auto) (current-dot-auto-edge-config)]
+            [(eq? mode 'choose) (current-dot-choose-edge-config)]
+            [(eq? mode 'annotation) (current-dot-annotation-edge-config)])))
+  ((inst graph-config T S) (lambda ([n : (Node T S)] [_ : DotNodeConfig])
                              (if node
-                                 (node n)
-                                 (make-dot-node-config #:shape 'box
-                                                       #:style '(filled rounded))))
-                           (lambda ([e : (Edge T S)])
+                                 (node n (current-dot-node-config))
+                                 (current-dot-node-config)))
+                           (lambda ([e : (Edge T S)] [_ : DotNodeConfig])
                              (if edge-node
-                                 (edge-node e)
-                                 (make-dot-node-config #:shape 'plaintext)))
-                           (lambda ([e : (Edge T S)])
+                                 (edge-node e (current-dot-edge-node-config))
+                                 (current-dot-edge-node-config)))
+                           (lambda ([e : (Edge T S)] [_ : DotEdgeConfig])
                              (let ([c (if edge
-                                          (edge e)
+                                          (edge e (edge-default e))
                                           (edge-default e))])
                                (if (edge-dot-minlen e)
-                                   (struct-copy edge-config c
-                                                [minlen (edge-dot-minlen e)])
+                                   (struct-copy edge-config c [minlen (edge-dot-minlen e)])
                                    c)))))
 
 (struct node-config ([shape : DotNodeShape]
@@ -181,6 +179,26 @@
      'vee 'lvee 'rvee
      'curve 'lcurve 'rcurve 'icurve 'licurve 'ricurve))
 
+(: current-dot-node-config (Parameterof DotNodeConfig))
+(define current-dot-node-config
+  (make-parameter (make-dot-node-config #:shape 'box #:style '(filled rounded))))
+
+(: current-dot-edge-node-config (Parameterof DotNodeConfig))
+(define current-dot-edge-node-config
+  (make-parameter (make-dot-node-config #:shape 'plaintext)))
+
+(: current-dot-auto-edge-config (Parameterof DotEdgeConfig))
+(define current-dot-auto-edge-config
+  (make-parameter (make-dot-edge-config #:color "red")))
+
+(: current-dot-choose-edge-config (Parameterof DotEdgeConfig))
+(define current-dot-choose-edge-config
+  (make-parameter (make-dot-edge-config #:color "blue")))
+
+(: current-dot-annotation-edge-config (Parameterof DotEdgeConfig))
+(define current-dot-annotation-edge-config
+  (make-parameter (make-dot-edge-config #:style '(dashed) #:color "black")))
+
 (: write-dot (All (T S) (-> (Listof (Graph T S)) (Node T S)
                             [#:config (DotConfig T S)]
                             [#:port Output-Port]
@@ -210,7 +228,8 @@
                                                 ,@(cond [(node-desc (caddr v)) => list]
                                                         [else '()]))
                                               "\n")
-                                 ((graph-config-node config) (caddr v))))]
+                                 ((graph-config-node config) (caddr v)
+                                                             (make-dot-node-config))))]
                       [(eq? 'edge (car v))
                        (fprintf port "  ~a ~a\n"
                                 (dot-string (symbol->string (get-id v)))
@@ -219,7 +238,8 @@
                                                 ,@(cond [(edge-desc (caddr v)) => list]
                                                         [else '()]))
                                               "\n")
-                                 ((graph-config-edge-node config) (caddr v))))])))
+                                 ((graph-config-edge-node config) (caddr v)
+                                                                  (make-dot-node-config))))])))
                 visnodes)
       (for-each display-visnodes (cdr g))
       (displayln "}" port))
@@ -232,8 +252,9 @@
                          (format-edge-attributes
                           ""
                           (if (edge-half? (caddr v))
-                              ((graph-config-edge config) (caddr v))
-                              (struct-copy edge-config ((graph-config-edge config) (caddr v))
+                              ((graph-config-edge config) (caddr v) (make-dot-edge-config))
+                              (struct-copy edge-config ((graph-config-edge config) (caddr v)
+                                                                                   (make-dot-edge-config))
                                            [arrowhead 'none]))))
                 (unless (edge-half? (caddr v))
                   (fprintf port "  ~a -> ~a ~a\n"
@@ -241,7 +262,8 @@
                            (dot-string (symbol->string (node-id (edge-cod (caddr v)))))
                            (format-edge-attributes
                             ""
-                            (struct-copy edge-config ((graph-config-edge config) (caddr v))
+                            (struct-copy edge-config ((graph-config-edge config) (caddr v)
+                                                                                 (make-dot-edge-config))
                                          [arrowtail 'none])))))
               (visnodes-edges visnodes))
     (displayln "}" port)))
