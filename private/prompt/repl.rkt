@@ -83,7 +83,8 @@
           (retry)
           value))))
 
-(: repl-range (case-> (-> String (List 'range Natural Natural) Natural)
+(: repl-range (case-> (-> String (List 'range Positive-Integer Positive-Integer) Positive-Integer)
+                      (-> String (List 'range Natural Natural) Natural)
                       (-> String (List 'range Integer Integer) Integer)))
 (define (repl-range title op)
   (printf "* ~a\n" title)
