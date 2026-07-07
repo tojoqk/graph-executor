@@ -5,6 +5,8 @@
 (require "prompt.rkt")
 (require "message.rkt")
 (require "history.rkt")
+(require "executor/repl.rkt")
+(require "visualizer/dot.rkt")
 
 (provide current-node-prompt
          Node node-maker node-graph-name node-name
@@ -15,4 +17,6 @@
          current-node? current-edge?
          History Journal history->journal
          prompt
-         message)
+         message
+         repl-run current-repl-random-prompt-display current-repl-trace-display
+         write-dot)
