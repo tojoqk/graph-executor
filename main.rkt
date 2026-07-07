@@ -7,8 +7,9 @@
 (require "history.rkt")
 
 (provide current-node-prompt
-         Node node-maker Edge Bridge make-bridge make-edge
-         OpenGraph Graph make-open-graph make-graph
+         Node node-maker node-graph-name node-name
+         Edge Bridge make-bridge make-edge edge-dom edge-cod
+         OpenGraph Graph make-open-graph make-graph graph-name
          replay
          current-auto-conflict-policy current-single-choose-policy
          current-node? current-edge?
