@@ -1,7 +1,6 @@
 #lang typed/racket
 
-(require graph-executor
-         graph-executor/graph/dot)
+(require graph-executor)
 
 (provide vending-graph
          Vending-State

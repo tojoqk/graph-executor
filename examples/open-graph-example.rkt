@@ -1,8 +1,7 @@
 #lang racket
 
 (module vending-machine-example typed/racket
-  (require graph-executor
-           graph-executor/graph/dot)
+  (require graph-executor)
   (provide vending-graph
            Vending-State
            (struct-out v-state))
