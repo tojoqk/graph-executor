@@ -8,7 +8,17 @@
 (require "../history.rkt")
 
 (provide repl-run repl-choose repl-prompt/log
-         current-repl-random-prompt-display)
+         current-repl-random-prompt-display
+         current-repl-trace-display current-repl-trace-display?)
+
+(: current-repl-trace-display (Parameterof (U 'show 'hide)))
+(define current-repl-trace-display (make-parameter 'show))
+
+(: current-repl-trace-display? (-> Boolean))
+(define (current-repl-trace-display?)
+  (case (current-repl-trace-display)
+    [(show) #t]
+    [(hide) #f]))
 
 (: repl-run (All (T S) (-> (Listof (Graph T S)) (Node T S) S
                            (Values (Node T S) S History))))
@@ -17,7 +27,8 @@
              [st initial-state]
              [h : History '()])
     (define (terminate)
-      (displayln ">> Terminated")
+      (when (current-repl-trace-display?)
+        (displayln ">> Terminated"))
       (values n st h))
     (cond [(find-graph gs (node-graph-id n))
            => (lambda ([g : (Graph T S)])
@@ -26,7 +37,8 @@
                     [(terminated) (terminate)]
                     [(auto)
                      (let ([chosen-edge (auto-choose ne)])
-                       (displayln (format ">> [Auto] ~a" (edge-name chosen-edge)))
+                       (when (current-repl-trace-display?)
+                         (displayln (format ">> [Auto] ~a" (edge-name chosen-edge))))
                        (define-values (next-st next-node next-h)
                          (repl-step st chosen-edge
                                     (cons (make-history-edge 'auto
@@ -66,7 +78,8 @@
       (parameterize ([current-prompt ((inst repl-prompt/log Any) log-edge-prompt)]
                      [current-message message-with-log])
         ((edge-trans e) st)))
-    (printf "--- Current Node: ~a (Graph: ~a) ---\n" (node-name n) (node-graph-name n))
+    (when (current-repl-trace-display?)
+      (printf "--- Current Node: ~a (Graph: ~a) ---\n" (node-name n) (node-graph-name n)))
     (cond [(node-desc n) => displayln])
     (set-box! bh (cons (make-history-node (node-name n) (node-desc n)) (unbox bh)))
     (define st-2
