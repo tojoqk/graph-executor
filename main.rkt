@@ -1,6 +1,7 @@
 #lang typed/racket
 
 (require "graph.rkt")
+(require "graph/dot.rkt")
 (require "executor.rkt")
 (require "prompt.rkt")
 (require "message.rkt")
@@ -12,6 +13,7 @@
          Node node-maker node-graph-name node-name
          Edge Bridge make-bridge make-edge edge-dom edge-cod
          OpenGraph Graph make-open-graph make-graph graph-name
+         make-dot-bridge make-dot-edge
          replay
          current-auto-conflict-policy current-single-choose-policy
          current-node? current-edge?
