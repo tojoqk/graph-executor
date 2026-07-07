@@ -3,10 +3,10 @@
 (require "../../prompt.rkt")
 
 (provide repl-prompt
-         current-repl-random-prompt-mode)
+         current-repl-random-prompt-display)
 
-(: current-repl-random-prompt-mode (Parameterof (U 'show 'hide)))
-(define current-repl-random-prompt-mode (make-parameter 'hide))
+(: current-repl-random-prompt-display (Parameterof (U 'show 'hide)))
+(define current-repl-random-prompt-display (make-parameter 'hide))
 
 (: repl-prompt (All (A) (-> (-> String Void) (Prompt A))))
 (define ((repl-prompt log-prompt) title op)
@@ -108,7 +108,7 @@
 (: repl-random (-> String (List 'random Positive-Integer) Natural))
 (define (repl-random title op)
   (let ([r (random (second op))])
-    (case (current-repl-random-prompt-mode)
+    (case (current-repl-random-prompt-display)
       [(show)
        (printf "* ~a\n" title)
        (printf "(random) > ~a\n" r)
