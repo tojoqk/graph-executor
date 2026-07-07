@@ -5,8 +5,8 @@
 (provide repl-prompt
          current-repl-random-prompt-mode)
 
-(: current-repl-random-prompt-mode (Parameterof (U 'silent 'verbose)))
-(define current-repl-random-prompt-mode (make-parameter 'silent))
+(: current-repl-random-prompt-mode (Parameterof (U 'show 'hide)))
+(define current-repl-random-prompt-mode (make-parameter 'hide))
 
 (: repl-prompt (All (A) (-> (-> String Void) (Prompt A))))
 (define ((repl-prompt log-prompt) title op)
@@ -109,7 +109,8 @@
 (define (repl-random title op)
   (let ([r (random (second op))])
     (case (current-repl-random-prompt-mode)
-      ((verbose)
+      [(show)
        (printf "* ~a\n" title)
-       (printf "(random) > ~a\n" r)))
-    r))
+       (printf "(random) > ~a\n" r)
+       r]
+      [(hide) r])))
