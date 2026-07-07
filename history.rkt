@@ -2,7 +2,7 @@
 
 (require "prompt.rkt")
 
-(provide History History-Record
+(provide History history? History-Record
          History-Node make-history-node history-node?
          history-node-name history-node-desc history-node-attributes
          History-Edge make-history-edge history-edge?
@@ -10,7 +10,7 @@
          History-Prompt make-history-prompt history-prompt?
          history-prompt-value history-prompt-text history-prompt-attributes
          History-Message make-history-message history-message? history-message-content history-message-attributes
-         Journal history->journal)
+         Journal journal? history->journal)
 
 (define-type Attribute-Value (U Symbol String Integer Boolean))
 
@@ -57,9 +57,11 @@
 
 (define-type History-Record (U History-Edge History-Node History-Prompt History-Message))
 (define-type History (Listof History-Record))
+(define-predicate history? History)
 
 (define-type Journal-Record (Pairof String (Listof Prompt-Value)))
 (define-type Journal (Listof Journal-Record))
+(define-predicate journal? Journal)
 
 (: take-to-choose (-> (Pairof History-Record (Listof History-Record))
                       (Values String (Listof Prompt-Value) History)))

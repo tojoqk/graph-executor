@@ -17,7 +17,7 @@
          replay
          current-auto-conflict-policy current-single-choose-policy
          current-node? current-edge?
-         History Journal history->journal
+         History history? Journal journal? history->journal
          prompt
          message
          repl-run current-repl-random-prompt-display current-repl-trace-display
