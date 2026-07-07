@@ -9,7 +9,7 @@
          history-edge-mode history-edge-name history-edge-prompt history-edge-attributes
          History-Prompt make-history-prompt history-prompt?
          history-prompt-value history-prompt-text history-prompt-attributes
-         History-Message make-history-message history-message?
+         History-Message make-history-message history-message? history-message-content history-message-attributes
          Journal history->journal)
 
 (define-type Attribute-Value (U Symbol String Integer Boolean))
@@ -46,7 +46,7 @@
 (define (make-history-prompt value text [attributes ((inst hash Symbol Attribute-Value))])
   (history-prompt value text attributes))
 
-(struct history-message ([value : String]
+(struct history-message ([content : String]
                          [attributes : (Immutable-HashTable Symbol Attribute-Value)])
   #:prefab
   #:type-name History-Message)
