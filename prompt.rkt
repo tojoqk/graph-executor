@@ -3,11 +3,7 @@
 (provide Prompt Prompt-Value current-prompt prompt)
 
 (define-type (Prompt A)
-  (case-> (-> String (List 'const
-                           (-> Any Boolean : #:+ A)
-                           (∩ A Prompt-Value))
-              (∩ A Prompt-Value))
-          (-> String (List 'choose
+  (case-> (-> String (List 'choose
                            (-> Any Boolean : #:+ A)
                            (Listof (U (∩ A String)
                                       (List (∩ A String) String))))
