@@ -9,6 +9,7 @@
          history-edge-mode history-edge-name history-edge-prompt history-edge-attributes
          History-Prompt make-history-prompt history-prompt?
          history-prompt-value history-prompt-text history-prompt-attributes
+         History-Message make-history-message history-message?
          Journal history->journal)
 
 (define-type Attribute-Value (U Symbol String Integer Boolean))
@@ -45,9 +46,17 @@
 (define (make-history-prompt value text [attributes ((inst hash Symbol Attribute-Value))])
   (history-prompt value text attributes))
 
-(define-type History-Record (U History-Edge History-Node History-Prompt))
-(define-type History (Listof History-Record))
+(struct history-message ([value : String]
+                         [attributes : (Immutable-HashTable Symbol Attribute-Value)])
+  #:prefab
+  #:type-name History-Message)
 
+(: make-history-message (->* (String) ((Immutable-HashTable Symbol Attribute-Value)) History-Message))
+(define (make-history-message val [attributes ((inst hash Symbol Attribute-Value))])
+  (history-message val attributes))
+
+(define-type History-Record (U History-Edge History-Node History-Prompt History-Message))
+(define-type History (Listof History-Record))
 
 (define-type Journal-Record (Pairof String (Listof Prompt-Value)))
 (define-type Journal (Listof Journal-Record))
@@ -63,7 +72,9 @@
              (if (null? rst)
                  (error 'history->journal "invalid history")
                  (loop (cdr rs) (cons (history-prompt-value fst) ps)))]
-            [(history-node? fst) (loop (cdr rs) ps)]))))
+            [(or (history-node? fst)
+                 (history-message? fst))
+             (loop (cdr rs) ps)]))))
 
 (: history->journal (-> History Journal))
 (define (history->journal rs)

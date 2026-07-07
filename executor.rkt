@@ -3,6 +3,7 @@
 (require "graph.rkt")
 (require "history.rkt")
 (require "prompt.rkt")
+(require "message.rkt")
 
 (provide replay
          find-graph next-edges auto-choose
@@ -61,7 +62,8 @@
                                                     p
                                                     (error 'retry "range error" p))]
                                        [(random) (assert p natural?)])))))
-                           (replay gs cod (parameterize ([current-prompt pop-bps])
+                           (replay gs cod (parameterize ([current-prompt pop-bps]
+                                                         [current-message (lambda (_) (void))])
                                             ((node-trans cod) ((edge-trans e) st)))
                                    (cdr j))))]
                    [else (error 'replay "edge not found")]))]

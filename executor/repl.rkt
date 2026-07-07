@@ -2,6 +2,7 @@
 
 (require "../graph.rkt")
 (require "../prompt.rkt")
+(require "../message.rkt")
 (require "../private/prompt/repl.rkt")
 (require "../executor.rkt")
 (require "../history.rkt")
@@ -56,14 +57,21 @@
     (: log-node-prompt (-> String Prompt-Value Void))
     (define (log-node-prompt title val)
       (set-box! bh (cons (make-history-prompt val title) (unbox bh))))
+    (: message-with-log (-> Any Void))
+    (define (message-with-log val)
+      (let ([str (~a val)])
+        (set-box! bh (cons (make-history-message str) (unbox bh)))
+        (displayln val)))
     (define st-1
-      (parameterize ([current-prompt ((inst repl-prompt/log Any) log-edge-prompt)])
+      (parameterize ([current-prompt ((inst repl-prompt/log Any) log-edge-prompt)]
+                     [current-message message-with-log])
         ((edge-trans e) st)))
     (printf "--- Current Node: ~a (Graph: ~a) ---\n" (node-name n) (node-graph-name n))
     (cond [(node-desc n) => displayln])
     (set-box! bh (cons (make-history-node (node-name n) (node-desc n)) (unbox bh)))
     (define st-2
-      (parameterize ([current-prompt ((inst repl-prompt/log Any) log-node-prompt)])
+      (parameterize ([current-prompt ((inst repl-prompt/log Any) log-node-prompt)]
+                     [current-message message-with-log])
         ((node-trans n) st-1)))
     (values st-2 n (unbox bh))))
 
