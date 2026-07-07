@@ -9,7 +9,7 @@
 (define current-repl-random-prompt-mode (make-parameter 'silent))
 
 (: repl-prompt (All (A) (-> (-> String Void) (Prompt A))))
-(define ((repl-prompt log-prompt) title op [_ (hash)])
+(define ((repl-prompt log-prompt) title op)
   (define-values (value prompt-text)
     (case (car op)
       [(choose) ((inst repl-choose A) title op)]
