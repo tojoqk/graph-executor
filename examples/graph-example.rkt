@@ -1,7 +1,8 @@
 #lang typed/racket
 
-(require "../graph.rkt")
-(require "../graph/dot.rkt")
+(require graph-executor
+         graph-executor/graph/dot)
+
 (provide vending-graph
          Vending-State
          v-state?
@@ -83,10 +84,10 @@
    idle))
 
 (module+ main
-  (require "../executor/repl.rkt")
-  (require "../history.rkt")
-  (require "../visualizer/dot.rkt")
-  (require racket/cmdline)
+  (require graph-executor
+           graph-executor/executor/repl
+           graph-executor/visualizer/dot
+           racket/cmdline)
   (: repl-mode (Boxof Boolean))
   (define repl-mode (box #f))
   (command-line

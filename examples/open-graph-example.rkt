@@ -1,9 +1,8 @@
 #lang racket
 
 (module vending-machine-example typed/racket
-  (require "../graph.rkt")
-  (require "../prompt.rkt")
-  (require "../graph/dot.rkt")
+  (require graph-executor
+           graph-executor/graph/dot)
   (provide vending-graph
            Vending-State
            (struct-out v-state))
@@ -32,7 +31,7 @@
     (struct-copy v-state st
                  [wallet (+ (v-state-wallet st) (v-state-inserted st))]
                  [inserted 0]))
-  
+
   (: price-met? (-> Integer (-> Vending-State Boolean)))
   (define ((price-met? price) st)
     (>= (v-state-inserted st) price))
@@ -44,7 +43,7 @@
   (: inserted? (-> Vending-State Boolean))
   (define (inserted? st)
     (< 0 (v-state-inserted st)))
-  
+
   (: vending-graph (All (T S)
                         (-> String
                             (Node T S)
@@ -66,7 +65,7 @@
      (v-graph
       g
       #:edges
-      (list 
+      (list
        (v-edge "Insert Money" #:dom idle #:cod has-coins
                #:when (can-insert? 100)
                #:trans insert-money)
@@ -95,7 +94,7 @@
 (provide (all-from-out (submod "." vending-machine-example)))
 
 (module terminal typed/racket
-  (require "../graph.rkt")
+  (require graph-executor)
   (provide terminal-graph
            Terminal terminal)
 
@@ -135,11 +134,10 @@
 (require (submod "." vending-to-terminal))
 
 (module+ main
-  (require "../graph.rkt")
-  (require "../executor/repl.rkt")
-  (require "../history.rkt")
-  (require "../visualizer/dot.rkt")
-  (require racket/cmdline)
+  (require graph-executor
+           graph-executor/executor/repl
+           graph-executor/visualizer/dot
+           racket/cmdline)
   (define repl-mode (box #f))
   (command-line
    #:program "graph-example"
