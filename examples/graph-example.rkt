@@ -85,8 +85,6 @@
 
 (module+ main
   (require graph-executor
-           graph-executor/executor/repl
-           graph-executor/visualizer/dot
            racket/cmdline)
   (: repl-mode (Boxof Boolean))
   (define repl-mode (box #f))

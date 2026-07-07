@@ -135,8 +135,6 @@
 
 (module+ main
   (require graph-executor
-           graph-executor/executor/repl
-           graph-executor/visualizer/dot
            racket/cmdline)
   (define repl-mode (box #f))
   (command-line
