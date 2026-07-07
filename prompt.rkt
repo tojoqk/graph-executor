@@ -1,6 +1,6 @@
 #lang typed/racket
 
-(provide Prompt Prompt-Operator Prompt-Value current-prompt prompt)
+(provide Prompt Prompt-Value current-prompt prompt)
 
 (define-type (Prompt A)
   (case-> (->* (String (List 'const
@@ -35,19 +35,6 @@
           (->* (String (List 'random Positive-Integer))
                ((Immutable-HashTable Symbol Any))
                Natural)))
-
-(define-type (Prompt-Operator A)
-  (U (List 'choose
-           (-> Any Boolean : #:+ A)
-           (Listof (U (∩ A String)
-                      (List (∩ A String) String))))
-     (List 'string)
-     (List 'integer)
-     (List 'natural)
-     (List 'positive)
-     (List 'range 'from Natural 'to Natural)
-     (List 'range 'from Integer 'to Integer)
-     (List 'random Positive-Integer)))
 
 (define-type Prompt-Value (U String Integer))
 
