@@ -44,7 +44,7 @@
                          (let ([cod (edge-cod e)]
                                [bps : (Boxof (Listof Prompt-Value)) (box ps-init)])
                            (: pop-bps (Prompt Any))
-                           (define (pop-bps _title op [_ (hash)])
+                           (define (pop-bps _title op)
                              (let ([ps (unbox bps)])
                                (set-box! bps (cdr ps))
                                (if (null? ps)
