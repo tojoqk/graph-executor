@@ -73,7 +73,7 @@
 (define current-auto-conflict-policy (make-parameter 'random))
 
 (: current-single-choose-policy (Parameterof (U 'skip 'choose)))
-(define current-single-choose-policy (make-parameter 'skip))
+(define current-single-choose-policy (make-parameter 'choose))
 
 (: find-graph (All (T S) (-> (Listof (Graph T S)) Symbol (Option (Graph T S)))))
 (define (find-graph gs g-id)
