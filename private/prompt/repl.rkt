@@ -2,13 +2,21 @@
 
 (require "../../prompt.rkt")
 
-(provide repl-prompt)
+(provide repl-prompt
+         current-repl-random-prompt-mode
+         current-repl-const-prompt-mode)
+
+(: current-repl-random-prompt-mode (Parameterof (U 'silent 'verbose)))
+(define current-repl-random-prompt-mode (make-parameter 'silent))
+
+(: current-repl-const-prompt-mode (Parameterof (U 'silent 'verbose)))
+(define current-repl-const-prompt-mode (make-parameter 'verbose))
 
 (: repl-prompt (All (A) (-> (-> String Void) (Prompt A))))
 (define ((repl-prompt log-prompt) title op [_ (hash)])
   (define-values (value prompt-text)
     (case (car op)
-      [(const) (values (third op) title)]
+      [(const) (values ((inst repl-const A) title op) title)]
       [(choose) ((inst repl-choose A) title op)]
       [(integer natural positive) (values (repl-input-number title op) title)]
       [(string) (values (repl-string title op) title)]
@@ -104,7 +112,18 @@
 
 (: repl-random (-> String (List 'random Positive-Integer) Natural))
 (define (repl-random title op)
-  (printf "* ~a\n" title)
   (let ([r (random (second op))])
-    (printf "(random) > ~a\n" r)
+    (case (current-repl-random-prompt-mode)
+      ((verbose)
+       (printf "* ~a\n" title)
+       (printf "(random) > ~a\n" r)))
     r))
+
+(: repl-const (All (A)
+                   (-> String
+                       (List 'const (-> Any Boolean : #:+ A) (∩ A Prompt-Value))
+                       (∩ A Prompt-Value))))
+(define (repl-const title op)
+  (case (current-repl-const-prompt-mode)
+    [(verbose) (printf "* ~a\n> ~a\n" title (third op))])
+  (assert (third op) (second op)))

@@ -6,7 +6,9 @@
 (require "../executor.rkt")
 (require "../history.rkt")
 
-(provide repl-run repl-choose repl-prompt/log)
+(provide repl-run repl-choose repl-prompt/log
+         current-repl-random-prompt-mode
+         current-repl-const-prompt-mode)
 
 (: repl-run (All (T S) (-> (Listof (Graph T S)) (Node T S) S
                            (Values (Node T S) S History))))
