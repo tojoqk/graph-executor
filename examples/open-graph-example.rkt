@@ -17,7 +17,7 @@
 
   (: insert-money (-> Vending-State Vending-State))
   (define (insert-money st)
-    (let ([amount (prompt "How much?" `(range from 1 to ,(v-state-wallet st)))])
+    (let ([amount (prompt "How much?" `(range 1 ,(v-state-wallet st)))])
       (struct-copy v-state st
                    [wallet (- (v-state-wallet st) amount)]
                    [inserted (+ (v-state-inserted st) amount)])))

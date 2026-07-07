@@ -83,12 +83,12 @@
           (retry)
           value))))
 
-(: repl-range (case-> (-> String (List 'range 'from Natural 'to Natural) Natural)
-                      (-> String (List 'range 'from Integer 'to Integer) Integer)))
+(: repl-range (case-> (-> String (List 'range Natural Natural) Natural)
+                      (-> String (List 'range Integer Integer) Integer)))
 (define (repl-range title op)
   (printf "* ~a\n" title)
-  (let ([from (third op)]
-        [to (fifth op)])
+  (let ([from (second op)]
+        [to (third op)])
     (let retry ()
       (printf "(~a..~a)? " from to)
       (let ([line (read-line)])

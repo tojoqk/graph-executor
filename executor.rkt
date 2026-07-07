@@ -55,7 +55,7 @@
                                        [(integer) (assert (assert p exact?) integer?)]
                                        [(natural) (assert (assert p exact?) natural?)]
                                        [(positive) (assert (assert p exact?) positive-integer?)]
-                                       [(range) (if (natural? (third op))
+                                       [(range) (if (natural? (second op))
                                                     (assert (assert p exact?) natural?)
                                                     (assert (assert p exact?) integer?))]
                                        [(random) (assert p natural?)])))))
