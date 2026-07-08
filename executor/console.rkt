@@ -73,6 +73,7 @@
     (define (message-with-log val)
       (let ([str (~a val)])
         (set-box! bh (cons (make-history-message str) (unbox bh)))
+        (newline)
         (displayln val)))
     (define st-1
       (parameterize ([current-prompt ((inst console-prompt/log Any) log-edge-prompt)]

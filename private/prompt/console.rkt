@@ -32,6 +32,7 @@
   (define (choice->target c) (if (pair? c) (car c) c))
   (let ([choices (third op)]
         [out (open-output-string)])
+    (newline)
     (fprintf out "* ~a\n" title)
     (for ([choice choices]
           [i : Positive-Integer (in-naturals 1)])
@@ -59,6 +60,7 @@
                              (-> String (List 'natural) Natural)
                              (-> String (List 'positive) Positive-Integer)))
 (define (console-input-number title op)
+  (newline)
   (printf "* ~a\n" title)
   (let retry ()
     (printf "? " (car op))
@@ -77,6 +79,7 @@
 
 (: console-string (case-> (-> String (List 'string) String)))
 (define (console-string title op)
+  (newline)
   (printf "* ~a\n" title)
   (let retry ()
     (printf "? ")
@@ -90,6 +93,7 @@
                       (-> String (List 'range Natural Natural) Natural)
                       (-> String (List 'range Integer Integer) Integer)))
 (define (console-range title op)
+  (newline)
   (printf "* ~a\n" title)
   (let ([from (second op)]
         [to (third op)])
@@ -110,6 +114,7 @@
   (let ([r (random (second op))])
     (case (current-console-random-prompt-display)
       [(show)
+       (newline)
        (printf "* ~a\n" title)
        (printf "(random) > ~a\n" r)
        r]
