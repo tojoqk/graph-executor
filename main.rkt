@@ -10,9 +10,9 @@
 (require "visualizer/dot.rkt")
 
 (provide current-node-prompt
-         Node node-maker node-graph-name node-name
-         Edge Bridge make-bridge make-edge edge-dom edge-cod
-         OpenGraph Graph make-open-graph make-graph graph-name
+         Node node-maker node-graph-name node-name node->any-node
+         Edge Bridge make-bridge bridge->any-edge make-edge edge->any-edge edge-dom edge-cod
+         OpenGraph Graph make-open-graph open-graph->any-graph make-graph graph->any-graph graph-name
          make-dot-bridge make-dot-edge
          replay
          current-auto-conflict-policy current-single-choose-policy
