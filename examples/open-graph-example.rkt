@@ -40,7 +40,7 @@
   (< 0 (v-state-inserted st)))
 
 (: vending-graph (-> String
-                     (Node Any Any)
+                     AnyNode
                      (-> Vending-State Any)
                      (Values (OpenGraph Vending-Node-Type Vending-State)
                              (Node Vending-Node-Type Vending-State))))
