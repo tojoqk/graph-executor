@@ -63,12 +63,9 @@
 (define (console-step st e h)
   (let ([n (edge-cod e)]
         [bh : (Boxof History) (box h)])
-    (: log-edge-prompt (-> String Prompt-Value Void))
-    (define (log-edge-prompt title val)
-      (set-box! bh (cons (make-history-prompt val title) (unbox bh))))
-    (: log-node-prompt (-> String Prompt-Value Void))
-    (define (log-node-prompt title val)
-      (set-box! bh (cons (make-history-prompt val title) (unbox bh))))
+    (: log-prompt (-> Prompt-Type Prompt-Value String Void))
+    (define (log-prompt type val title)
+      (set-box! bh (cons (make-history-prompt type val title) (unbox bh))))
     (: message-with-log (-> Any Void))
     (define (message-with-log val)
       (let ([str (~a val)])
@@ -76,7 +73,7 @@
         (newline)
         (displayln val)))
     (define st-1
-      (parameterize ([current-prompt ((inst console-prompt/log Any) log-edge-prompt)]
+      (parameterize ([current-prompt ((inst console-prompt/log Any) log-prompt)]
                      [current-message message-with-log])
         ((edge-trans e) st)))
     (when (current-console-trace-display?)
@@ -84,7 +81,7 @@
     (cond [(node-desc n) => displayln])
     (set-box! bh (cons (make-history-node (node-name n) (node-desc n)) (unbox bh)))
     (define st-2
-      (parameterize ([current-prompt ((inst console-prompt/log Any) log-node-prompt)]
+      (parameterize ([current-prompt ((inst console-prompt/log Any) log-prompt)]
                      [current-message message-with-log])
         ((node-trans n) st-1)))
     (values st-2 n (unbox bh))))
@@ -110,12 +107,12 @@
                                   h)))]
             [else (error 'console-choose "unexpected error")]))))
 
-(: console-prompt/log (All (A) (-> (-> String Prompt-Value Void) (Prompt A))))
+(: console-prompt/log (All (A) (-> (-> Prompt-Type Prompt-Value String Void) (Prompt A))))
 (define ((console-prompt/log k) title op [_ (hash)])
   (let ([prompt-text-box : (Boxof String) (box "")])
     (: log-prompt (-> String Void))
     (define (log-prompt text)
       (set-box! prompt-text-box text))
     (let ([value (((inst console-prompt A) log-prompt) title op)])
-      (k (unbox prompt-text-box) value)
+      (k (first op) value (unbox prompt-text-box))
       value)))

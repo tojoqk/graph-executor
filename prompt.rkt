@@ -1,6 +1,6 @@
 #lang typed/racket
 
-(provide Prompt Prompt-Value current-prompt prompt)
+(provide Prompt Prompt-Type Prompt-Value current-prompt prompt)
 
 (define-type (Prompt A)
   (case-> (-> String (List 'choose
@@ -17,6 +17,7 @@
           (-> String (List 'range Integer Integer) Integer)
           (-> String (List 'random Positive-Integer) Natural)))
 
+(define-type Prompt-Type (U 'choose 'string 'integer 'natural 'positive 'range 'random))
 (define-type Prompt-Value (U String Integer))
 
 (: current-prompt (Parameterof (Option (Prompt Any))))

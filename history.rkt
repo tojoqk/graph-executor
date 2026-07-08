@@ -36,15 +36,16 @@
 (define (make-history-edge mode name prompt [attributes ((inst hash Symbol Attribute-Value))])
   (history-edge mode name prompt attributes))
 
-(struct history-prompt ([value : Prompt-Value]
+(struct history-prompt ([type : Prompt-Type]
+                        [value : Prompt-Value]
                         [text : String]
                         [attributes : (Immutable-HashTable Symbol Attribute-Value)])
   #:prefab
   #:type-name History-Prompt)
 
-(: make-history-prompt (->* (Prompt-Value String) ((Immutable-HashTable Symbol Attribute-Value)) History-Prompt))
-(define (make-history-prompt value text [attributes ((inst hash Symbol Attribute-Value))])
-  (history-prompt value text attributes))
+(: make-history-prompt (->* (Prompt-Type Prompt-Value String) ((Immutable-HashTable Symbol Attribute-Value)) History-Prompt))
+(define (make-history-prompt type value text [attributes ((inst hash Symbol Attribute-Value))])
+  (history-prompt type value text attributes))
 
 (struct history-message ([content : String]
                          [attributes : (Immutable-HashTable Symbol Attribute-Value)])
