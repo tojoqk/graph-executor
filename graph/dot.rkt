@@ -5,20 +5,20 @@
 
 (provide make-dot-bridge make-dot-edge edge-dot-minlen)
 
-(: make-dot-bridge (All (T1 S1 T2 S2)
+(: make-dot-bridge (All (T S)
                         (-> String
                             [#:mode (Option EdgeMode)]
                             [#:half? Boolean]
-                            #:dom (Node T1 S1)
-                            #:cod (Node T2 S2)
+                            #:dom (Node T S)
+                            #:cod (Node Any Any)
                             [#:desc (Option String)]
-                            [#:when (Option (-> S1 Any))]
-                            #:trans (-> S1 S2)
+                            [#:when (Option (-> S Any))]
+                            #:trans (-> S Any)
                             [#:priority (Option Integer)]
                             [#:weight (Option Exact-Positive-Integer)]
                             [#:dot-minlen (Option Natural)]
                             [#:attributes (Immutable-HashTable Symbol Any)]
-                            (Bridge T1 S1 T2 S2))))
+                            (Bridge T S))))
 (define (make-dot-bridge name
                          #:mode [mode #f]
                          #:half? [half? #f]
@@ -31,18 +31,18 @@
                          #:weight [weight #f]
                          #:dot-minlen [dot-minlen #f]
                          #:attributes [attrs ((inst hash Symbol Any))])
-  ((inst make-bridge* T1 S1 T2 S2) name
-                                   #:mode mode
-                                   #:half? half?
-                                   #:dom dom
-                                   #:cod cod
-                                   #:desc desc
-                                   #:when when
-                                   #:trans (or tr (inst identity S))
-                                   #:priority priority
-                                   #:weight weight
-                                   #:attributes (hash-union attrs
-                                                            (hash 'dot-minlen dot-minlen))))
+  ((inst make-bridge* T S) name
+                           #:mode mode
+                           #:half? half?
+                           #:dom dom
+                           #:cod cod
+                           #:desc desc
+                           #:when when
+                           #:trans (or tr (inst identity S))
+                           #:priority priority
+                           #:weight weight
+                           #:attributes (hash-union attrs
+                                                    (hash 'dot-minlen dot-minlen))))
 
 (: make-dot-edge (All (T S)
                       (-> String
@@ -70,18 +70,18 @@
                        #:weight [weight #f]
                        #:dot-minlen [dot-minlen #f]
                        #:attributes [attrs ((inst hash Symbol Any))])
-  ((inst make-dot-bridge T S T S) name
-                                  #:mode mode
-                                  #:half? half?
-                                  #:dom dom
-                                  #:cod cod
-                                  #:desc desc
-                                  #:when when
-                                  #:trans (or tr (inst identity S))
-                                  #:priority priority
-                                  #:weight weight
-                                  #:dot-minlen dot-minlen
-                                  #:attributes attrs))
+  ((inst make-edge* T S) name
+                         #:mode mode
+                         #:half? half?
+                         #:dom dom
+                         #:cod cod
+                         #:desc desc
+                         #:when when
+                         #:trans (or tr (inst identity S))
+                         #:priority priority
+                         #:weight weight
+                         #:attributes (hash-union attrs
+                                                    (hash 'dot-minlen dot-minlen))))
 
 (: edge-dot-minlen (All (T S) (-> (Edge T S) Natural)))
 (define (edge-dot-minlen e)
