@@ -85,18 +85,18 @@
 (module+ main
   (require graph-executor
            racket/cmdline)
-  (: repl-mode (Boxof Boolean))
-  (define repl-mode (box #f))
+  (: console-mode (Boxof Boolean))
+  (define console-mode (box #f))
   (command-line
    #:program "graph-example"
    #:once-each
-   [("--repl") "Run repl" (set-box! repl-mode #t)]
+   [("--console") "Run console" (set-box! console-mode #t)]
    #:args ()
    (define-values (v-graph node-init) (vending-graph "Vending Machine Model"))
-   (if (unbox repl-mode)
+   (if (unbox console-mode)
        (let ([state-init (v-state 400 0)])
          (let-values ([(node-current state-current history)
-                       (repl-run (list v-graph) node-init state-init)])
+                       (console-run (list v-graph) node-init state-init)])
            (pretty-write `((init (graph ,(node-graph-name node-init))
                                  (node ,(node-name node-init))
                                  (state ,state-init))

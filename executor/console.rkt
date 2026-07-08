@@ -3,31 +3,31 @@
 (require "../graph.rkt")
 (require "../prompt.rkt")
 (require "../message.rkt")
-(require "../private/prompt/repl.rkt")
+(require "../private/prompt/console.rkt")
 (require "../executor.rkt")
 (require "../history.rkt")
 
-(provide repl-run repl-choose repl-prompt/log
-         current-repl-random-prompt-display
-         current-repl-trace-display current-repl-trace-display?)
+(provide console-run console-choose console-prompt/log
+         current-console-random-prompt-display
+         current-console-trace-display current-console-trace-display?)
 
-(: current-repl-trace-display (Parameterof (U 'show 'hide)))
-(define current-repl-trace-display (make-parameter 'show))
+(: current-console-trace-display (Parameterof (U 'show 'hide)))
+(define current-console-trace-display (make-parameter 'show))
 
-(: current-repl-trace-display? (-> Boolean))
-(define (current-repl-trace-display?)
-  (case (current-repl-trace-display)
+(: current-console-trace-display? (-> Boolean))
+(define (current-console-trace-display?)
+  (case (current-console-trace-display)
     [(show) #t]
     [(hide) #f]))
 
-(: repl-run (All (T S) (-> (Listof (Graph T S)) (Node T S) S
+(: console-run (All (T S) (-> (Listof (Graph T S)) (Node T S) S
                            (Values (Node T S) S History))))
-(define (repl-run gs entry initial-state)
+(define (console-run gs entry initial-state)
   (let loop ([n entry]
              [st initial-state]
              [h : History '()])
     (define (terminate)
-      (when (current-repl-trace-display?)
+      (when (current-console-trace-display?)
         (displayln ">> Terminated"))
       (values n st h))
     (cond [(find-graph gs (node-graph-id n))
@@ -37,10 +37,10 @@
                     [(terminated) (terminate)]
                     [(auto)
                      (let ([chosen-edge (auto-choose ne)])
-                       (when (current-repl-trace-display?)
+                       (when (current-console-trace-display?)
                          (displayln (format ">> [Auto] ~a" (edge-name chosen-edge))))
                        (define-values (next-st next-node next-h)
-                         (repl-step st chosen-edge
+                         (console-step st chosen-edge
                                     (cons (make-history-edge 'auto
                                                              (edge-name chosen-edge)
                                                              (string-join `(,(node-name n)
@@ -53,14 +53,14 @@
                        (loop next-node next-st next-h))]
                     [(choose)
                      (define-values (chosen-edge next-h-1)
-                       (repl-choose ne h))
+                       (console-choose ne h))
                      (define-values (next-st next-node next-h-2)
-                       (repl-step st chosen-edge next-h-1))
+                       (console-step st chosen-edge next-h-1))
                      (loop next-node next-st next-h-2)])))]
           [else (terminate)])))
 
-(: repl-step (All (T S) (-> S (Edge T S) History (values S (Node T S) History))))
-(define (repl-step st e h)
+(: console-step (All (T S) (-> S (Edge T S) History (values S (Node T S) History))))
+(define (console-step st e h)
   (let ([n (edge-cod e)]
         [bh : (Boxof History) (box h)])
     (: log-edge-prompt (-> String Prompt-Value Void))
@@ -75,24 +75,24 @@
         (set-box! bh (cons (make-history-message str) (unbox bh)))
         (displayln val)))
     (define st-1
-      (parameterize ([current-prompt ((inst repl-prompt/log Any) log-edge-prompt)]
+      (parameterize ([current-prompt ((inst console-prompt/log Any) log-edge-prompt)]
                      [current-message message-with-log])
         ((edge-trans e) st)))
-    (when (current-repl-trace-display?)
+    (when (current-console-trace-display?)
       (printf "--- Current Node: ~a (Graph: ~a) ---\n" (node-name n) (node-graph-name n)))
     (cond [(node-desc n) => displayln])
     (set-box! bh (cons (make-history-node (node-name n) (node-desc n)) (unbox bh)))
     (define st-2
-      (parameterize ([current-prompt ((inst repl-prompt/log Any) log-node-prompt)]
+      (parameterize ([current-prompt ((inst console-prompt/log Any) log-node-prompt)]
                      [current-message message-with-log])
         ((node-trans n) st-1)))
     (values st-2 n (unbox bh))))
 
-(: repl-choose (All (T S)
+(: console-choose (All (T S)
                     (-> (List 'choose (Pairof (Edge T S) (Listof (Edge T S))))
                         History
                         (Values (Edge T S) History))))
-(define (repl-choose ne h)
+(define (console-choose ne h)
   (let* ([edges : (Pairof (Edge T S) (Listof (Edge T S))) (second ne)]
          [edge-names ((inst map String (Edge T S)) edge-name edges)]
          [dom : (Node T S) (edge-dom (car edges))]
@@ -101,20 +101,20 @@
     (: log-prompt-text (-> String Void))
     (define (log-prompt-text prompt-text)
       (set-box! prompt-text-box prompt-text))
-    (let ([name : String ((repl-prompt log-prompt-text) title `(choose ,string? ,edge-names))])
+    (let ([name : String ((console-prompt log-prompt-text) title `(choose ,string? ,edge-names))])
       (cond [(findf (lambda ([edge : (Edge T S)]) (string=? name (edge-name edge))) edges)
              => (lambda ([e : (Edge T S)])
                   (values e (cons (make-history-edge 'choose (edge-name e)
                                                      (unbox prompt-text-box))
                                   h)))]
-            [else (error 'repl-choose "unexpected error")]))))
+            [else (error 'console-choose "unexpected error")]))))
 
-(: repl-prompt/log (All (A) (-> (-> String Prompt-Value Void) (Prompt A))))
-(define ((repl-prompt/log k) title op [_ (hash)])
+(: console-prompt/log (All (A) (-> (-> String Prompt-Value Void) (Prompt A))))
+(define ((console-prompt/log k) title op [_ (hash)])
   (let ([prompt-text-box : (Boxof String) (box "")])
     (: log-prompt (-> String Void))
     (define (log-prompt text)
       (set-box! prompt-text-box text))
-    (let ([value (((inst repl-prompt A) log-prompt) title op)])
+    (let ([value (((inst console-prompt A) log-prompt) title op)])
       (k (unbox prompt-text-box) value)
       value)))

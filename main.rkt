@@ -6,7 +6,7 @@
 (require "prompt.rkt")
 (require "message.rkt")
 (require "history.rkt")
-(require "executor/repl.rkt")
+(require "executor/console.rkt")
 (require "visualizer/dot.rkt")
 
 (provide current-node-prompt
@@ -20,5 +20,5 @@
          History history? Journal journal? history->journal
          prompt
          message
-         repl-run current-repl-random-prompt-display current-repl-trace-display
+         console-run current-console-random-prompt-display current-console-trace-display
          write-dot)

@@ -2,31 +2,31 @@
 
 (require "../../prompt.rkt")
 
-(provide repl-prompt
-         current-repl-random-prompt-display)
+(provide console-prompt
+         current-console-random-prompt-display)
 
-(: current-repl-random-prompt-display (Parameterof (U 'show 'hide)))
-(define current-repl-random-prompt-display (make-parameter 'hide))
+(: current-console-random-prompt-display (Parameterof (U 'show 'hide)))
+(define current-console-random-prompt-display (make-parameter 'hide))
 
-(: repl-prompt (All (A) (-> (-> String Void) (Prompt A))))
-(define ((repl-prompt log-prompt) title op)
+(: console-prompt (All (A) (-> (-> String Void) (Prompt A))))
+(define ((console-prompt log-prompt) title op)
   (define-values (value prompt-text)
     (case (car op)
-      [(choose) ((inst repl-choose A) title op)]
-      [(integer natural positive) (values (repl-input-number title op) title)]
-      [(string) (values (repl-string title op) title)]
-      [(range) (values (repl-range title op) title)]
-      [(random) (values (repl-random title op) title)]))
+      [(choose) ((inst console-choose A) title op)]
+      [(integer natural positive) (values (console-input-number title op) title)]
+      [(string) (values (console-string title op) title)]
+      [(range) (values (console-range title op) title)]
+      [(random) (values (console-random title op) title)]))
   (log-prompt prompt-text)
   value)
 
-(: repl-choose (All (A)
+(: console-choose (All (A)
                     (-> String (List 'choose
                                      (-> Any Boolean : #:+ A)
                                      (Listof (U (∩ String A)
                                                 (List (∩ String A) String))))
                         (Values (∩ String A) String))))
-(define (repl-choose title op)
+(define (console-choose title op)
   (: choice->target (-> (U (∩ String A) (List (∩ String A) String))
                         (∩ String A)))
   (define (choice->target c) (if (pair? c) (car c) c))
@@ -55,10 +55,10 @@
                           (retry)))]
                 [else (retry)]))))))
 
-(: repl-input-number (case-> (-> String (List 'integer) Integer)
+(: console-input-number (case-> (-> String (List 'integer) Integer)
                              (-> String (List 'natural) Natural)
                              (-> String (List 'positive) Positive-Integer)))
-(define (repl-input-number title op)
+(define (console-input-number title op)
   (printf "* ~a\n" title)
   (let retry ()
     (printf "? " (car op))
@@ -75,8 +75,8 @@
                      (if (and (exact? value) (positive-integer? value)) value (retry))]))]
             [else (retry)]))))
 
-(: repl-string (case-> (-> String (List 'string) String)))
-(define (repl-string title op)
+(: console-string (case-> (-> String (List 'string) String)))
+(define (console-string title op)
   (printf "* ~a\n" title)
   (let retry ()
     (printf "? ")
@@ -86,10 +86,10 @@
           (retry)
           value))))
 
-(: repl-range (case-> (-> String (List 'range Positive-Integer Positive-Integer) Positive-Integer)
+(: console-range (case-> (-> String (List 'range Positive-Integer Positive-Integer) Positive-Integer)
                       (-> String (List 'range Natural Natural) Natural)
                       (-> String (List 'range Integer Integer) Integer)))
-(define (repl-range title op)
+(define (console-range title op)
   (printf "* ~a\n" title)
   (let ([from (second op)]
         [to (third op)])
@@ -105,10 +105,10 @@
                         (retry)))]
               [else (retry)])))))
 
-(: repl-random (-> String (List 'random Positive-Integer) Natural))
-(define (repl-random title op)
+(: console-random (-> String (List 'random Positive-Integer) Natural))
+(define (console-random title op)
   (let ([r (random (second op))])
-    (case (current-repl-random-prompt-display)
+    (case (current-console-random-prompt-display)
       [(show)
        (printf "* ~a\n" title)
        (printf "(random) > ~a\n" r)
