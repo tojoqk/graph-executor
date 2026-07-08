@@ -1,13 +1,13 @@
 #lang typed/racket
 
 (provide current-seen-ids current-node-prompt
-         Node node-maker* node-maker
+         Node AnyNode node-maker* node-maker
          node-graph-id node-graph-name node-id node-name node-type node-desc node-trans node-prompt node-attributes
          node->any-node
-         Edge* Bridge Edge EdgeMode make-bridge* make-bridge make-edge* make-edge
+         Edge* Bridge Edge AnyEdge EdgeMode make-bridge* make-bridge make-edge* make-edge
          edge-id edge-name edge-mode edge-half? edge-dom edge-cod edge-desc edge-when edge-trans edge-priority edge-weight edge-attributes
          bridge->any-edge edge->any-edge
-         Graph* OpenGraph Graph make-open-graph make-graph
+         Graph* OpenGraph Graph AnyGraph make-open-graph make-graph
          graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges graph-bridges
          open-graph->any-graph graph->any-graph)
 
@@ -47,6 +47,8 @@
   #:transparent
   #:type-name Node)
 
+(define-type AnyNode (Node Any Any))
+
 (: node-maker* (All (T S)
                     (-> String
                         (-> String
@@ -75,7 +77,7 @@
 (define ((node-maker graph-name) name #:type type #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f])
   (((inst node-maker* T S) graph-name) name #:type type #:desc desc #:trans tr #:prompt pmt #:attributes ((inst hash Symbol Any))))
 
-(: node->any-node (All (T S) (-> (Node T S) (-> Any Any : #:+ S) (Node Any Any))))
+(: node->any-node (All (T S) (-> (Node T S) (-> Any Any : #:+ S) AnyNode)))
 (define (node->any-node n p?)
   (struct-copy node n [trans (lambda ([x : Any]) ((node-trans n) (assert x p?)))]))
 
@@ -98,6 +100,7 @@
 
 (define-type (Bridge T S) (Edge* T S Any Any))
 (define-type (Edge T S) (Edge* T S T S))
+(define-type AnyEdge (Edge Any Any))
 
 (: make-generic-edge* (All (T1 S1 T2 S2)
                            (-> String
@@ -280,7 +283,7 @@
 
 (: bridge->any-edge (All (T S) (-> (Bridge T S)
                                    (-> Any Any : #:+ S)
-                                   (Edge Any Any))))
+                                   AnyEdge)))
 (define (bridge->any-edge b p?)
   (struct-copy edge b
                [dom (node->any-node (edge-dom b) p?)]
@@ -289,7 +292,7 @@
 
 (: edge->any-edge (All (T S) (-> (Edge T S)
                                  (-> Any Any : #:+ S)
-                                 (Edge Any Any))))
+                                 AnyEdge)))
 (define (edge->any-edge e p?)
   (struct-copy edge e
                [dom (node->any-node (edge-dom e) p?)]
@@ -309,6 +312,7 @@
 
 (define-type (OpenGraph T S) (Graph* T S Any Any))
 (define-type (Graph T S) (Graph* T S T S))
+(define-type AnyGraph (Graph Any Any))
 
 (: make-generic-graph (All (T1 S1 T2 S2)
                            (-> String
@@ -368,7 +372,7 @@
 
 (: open-graph->any-graph (All (T S) (-> (OpenGraph T S)
                                         (-> Any Any : #:+ S)
-                                        (Graph Any Any))))
+                                        AnyGraph)))
 (define (open-graph->any-graph g p?)
   (struct-copy graph g
                [edges (map (lambda ([e : (Edge T S)])
@@ -380,7 +384,7 @@
 
 (: graph->any-graph (All (T S) (-> (Graph T S)
                                    (-> Any Any : #:+ S)
-                                   (Graph Any Any))))
+                                   AnyGraph)))
 (define (graph->any-graph g p?)
   (struct-copy graph g
                [edges (map (lambda ([e : (Edge T S)])
