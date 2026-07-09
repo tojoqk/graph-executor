@@ -63,7 +63,7 @@
   (newline)
   (printf "* ~a\n" title)
   (let retry ()
-    (printf "? " (car op))
+    (printf "? ")
     (let ([line (read-line)])
       (cond [(eof-object? line) (retry)]
             [(string->number line)
