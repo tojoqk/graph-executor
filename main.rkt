@@ -19,7 +19,7 @@
          current-auto-conflict-policy current-single-choose-policy
          current-node? current-edge?
          Journal
-         History
+         History History-Record history-record-type history-record-node
          prompt
          message
          console-run current-console-random-prompt-display current-console-trace-display

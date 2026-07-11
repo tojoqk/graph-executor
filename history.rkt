@@ -10,7 +10,7 @@
          History-Edge (except-out (struct-out history-edge) history-edge?)
          History-Auto (except-out (struct-out history-auto) history-auto?)
          History-Choose (except-out (struct-out history-choose) history-choose?)
-         History History-Record
+         History History-Record history-record-node history-record-type
          history->journal)
 
 (struct (T S) history-item ([events : (Listof (U Message-Info Prompt-Info))])
@@ -37,9 +37,15 @@
 
 (define-type (History T S) (Listof (History-Record T S)))
 
-(: history-edge-node (All (T S) (-> (History-Edge T S) (Node T S))))
-(define (history-edge-node item)
-  (edge-dom (history-edge-edge item)))
+(: history-record-node (All (T S) (-> (History-Record T S) (Node T S))))
+(define (history-record-node rec)
+  (case (car rec)
+    [(node) (history-node-node (cdr rec))]
+    [(auto choose) (edge-dom (history-edge-edge (cdr rec)))]))
+
+(: history-record-type (All (T S) (-> (History-Record T S) T)))
+(define (history-record-type rec)
+  (node-type (history-record-node rec)))
 
 (: history->journal (All (T S) (-> (History T S) Journal)))
 (define (history->journal h)
