@@ -10,7 +10,8 @@
          History-Edge (except-out (struct-out history-edge) history-edge?)
          History-Auto (except-out (struct-out history-auto) history-auto?)
          History-Choose (except-out (struct-out history-choose) history-choose?)
-         History History-Record)
+         History History-Record
+         history->journal)
 
 (struct (T S) history-item ([events : (Listof (U Message-Info Prompt-Info))])
   #:transparent
