@@ -21,10 +21,10 @@
     [(show) #t]
     [(hide) #f]))
 
-(: console-run (All (T S) (->* ((Listof (Graph T S)) (Node T S) S)
-                               (Journal)
-                               (Values (Node T S) S Journal))))
-(define (console-run gs entry initial-state [j '()])
+(: console-run (All (T S) (-> (Listof (Graph T S)) (Node T S) S
+                              [#:journal Journal]
+                              (Values (Node T S) S Journal))))
+(define (console-run gs entry initial-state #:journal [j '()])
   (define-values (n st _) (replay gs entry initial-state j))
   (let loop ([n n]
              [st st]
