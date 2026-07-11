@@ -3,7 +3,7 @@
 (require "../graph.rkt")
 (require "../prompt.rkt")
 (require "../message.rkt")
-(require "../private/prompt/console.rkt")
+(require "../prompt/console.rkt")
 (require "../executor.rkt")
 (require "../journal.rkt")
 

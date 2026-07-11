@@ -1,6 +1,6 @@
 #lang typed/racket
 
-(require "../../prompt.rkt")
+(require "../prompt.rkt")
 
 (provide console-prompt
          current-console-random-prompt-display)
