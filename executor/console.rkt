@@ -20,12 +20,14 @@
     [(show) #t]
     [(hide) #f]))
 
-(: console-run (All (T S) (-> (Listof (Graph T S)) (Node T S) S
-                              (Values (Node T S) S Journal))))
-(define (console-run gs entry initial-state)
-  (let loop ([n entry]
-             [st initial-state]
-             [j : Journal '()])
+(: console-run (All (T S) (->* ((Listof (Graph T S)) (Node T S) S)
+                               (Journal)
+                               (Values (Node T S) S Journal))))
+(define (console-run gs entry initial-state [j '()])
+  (define-values (n st _) (replay gs entry initial-state j))
+  (let loop ([n n]
+             [st st]
+             [j : Journal j])
     (define (terminate)
       (when (current-console-trace-display?)
         (displayln ">> Terminated"))
