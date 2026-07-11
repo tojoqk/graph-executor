@@ -6,6 +6,7 @@
 (require "prompt.rkt")
 (require "message.rkt")
 (require "history.rkt")
+(require "journal.rkt")
 (require "executor/console.rkt")
 (require "visualizer/dot.rkt")
 
@@ -17,7 +18,8 @@
          replay
          current-auto-conflict-policy current-single-choose-policy
          current-node? current-edge?
-         History history? Journal journal? history->journal
+         Journal
+         History
          prompt
          message
          console-run current-console-random-prompt-display current-console-trace-display

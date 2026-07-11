@@ -132,7 +132,7 @@
                         (graph->any-graph t-graph terminal?)))
    (if (unbox console-mode)
        (let ([state-init (v-state 400 0)])
-         (let-values ([(node-current state-current history)
+         (let-values ([(node-current state-current journal)
                        (console-run graphs
                                     (node->any-node node-init v-state?)
                                     state-init)])
@@ -142,5 +142,5 @@
                            (current (graph ,(node-graph-name node-current))
                                     (node ,(node-name node-current))
                                     (state ,state-current))
-                           (journal ,@(history->journal history))))))
+                           (journal ,journal)))))
        (write-dot graphs (node->any-node node-init v-state?)))))

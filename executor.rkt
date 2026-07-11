@@ -1,6 +1,7 @@
 #lang typed/racket
 
 (require "graph.rkt")
+(require "journal.rkt")
 (require "history.rkt")
 (require "prompt.rkt")
 (require "message.rkt")
@@ -28,46 +29,125 @@
         [else #f]))
 
 (: replay (All (T S) (-> (Listof (Graph T S)) (Node T S) S Journal
-                         (Values (Node T S) S))))
+                         (Values (Node T S) S (History T S)))))
 (define (replay gs n st j)
-  (let ([ne (next-edges gs st n)])
-    (if (null? j)
-        (values n st)
-        (case (car ne)
-          [(choose auto)
-           (let* ([edges (cadr ne)]
-                  [j-rec (car j)]
-                  [name (car j-rec)]
-                  [ps-init (cdr j-rec)])
-             (cond [(findf (lambda ([e : (Edge T S)]) (string=? name (edge-name e))) edges)
-                    => (lambda ([e : (Edge T S)])
-                         (let ([cod (edge-cod e)]
-                               [bps : (Boxof (Listof Prompt-Value)) (box ps-init)])
-                           (: pop-bps (Prompt Any))
-                           (define (pop-bps _title op)
-                             (let ([ps (unbox bps)])
-                               (set-box! bps (cdr ps))
-                               (if (null? ps)
-                                   (error 'replay "unexpected end of prompt values")
-                                   (let ([p (car ps)])
-                                     (case (car op)
-                                       [(const) p]
-                                       [(choose string) (assert p string?)]
-                                       [(integer) (assert (assert p exact?) integer?)]
-                                       [(natural) (assert (assert p exact?) natural?)]
-                                       [(positive) (assert (assert p exact?) positive-integer?)]
-                                       [(range) (assert p exact?)
-                                                (assert p integer?)
-                                                (if (and (<= (second op) p) (<= p (third op)))
-                                                    p
-                                                    (error 'retry "range error" p))]
-                                       [(random) (assert p natural?)])))))
-                           (replay gs cod (parameterize ([current-prompt pop-bps]
-                                                         [current-message (lambda (_) (void))])
-                                            ((node-trans cod) ((edge-trans e) st)))
-                                   (cdr j))))]
-                   [else (error 'replay "edge not found")]))]
-          [(terminated) (error 'replay "unexpected termination")]))))
+  (let loop ([n n] [st st] [j (reverse j)] [h : (History T S) '()])
+    (let ([ne (next-edges gs st n)])
+      (if (null? j)
+          (values n st h)
+          (case (car ne)
+            [(choose auto)
+             (let* ([edges (cadr ne)]
+                    [j-rec (car j)]
+                    [name (caar j-rec)]
+                    [attrs (cdar j-rec)]
+                    [ps-init (reverse (cdr j-rec))]
+                    [edge-events : (Boxof (Listof (U Message-Info Prompt-Info))) (box '())]
+                    [node-events : (Boxof (Listof (U Message-Info Prompt-Info))) (box '())])
+               (cond [(findf (lambda ([e : (Edge T S)]) (string=? name (edge-name e))) edges)
+                      => (lambda ([e : (Edge T S)])
+                           (let ([cod (edge-cod e)]
+                                 [bps : (Boxof (Listof (Pairof Prompt-Value Prompt-Attributes))) (box ps-init)])
+                             (: pop-bps (-> (U 'edge 'node) (Prompt Any)))
+                             (define ((pop-bps type) title op)
+                               (define evs-box
+                                 (case type
+                                   [(node) node-events]
+                                   [(edge) edge-events]))
+                               (: push-event! (-> Prompt-Info Void))
+                               (define (push-event! x)
+                                 (set-box! evs-box (cons x (unbox evs-box))))
+                               (let ([ps (unbox bps)])
+                                 (set-box! bps (cdr ps))
+                                 (if (null? ps)
+                                     (error 'replay "unexpected end of prompt values")
+                                     (let ([val (caar ps)]
+                                           [attrs (cdar ps)])
+                                       (case (car op)
+                                         [(choose)
+                                          (assert val string?)
+                                          (push-event! (prompt-info-choose title
+                                                                           attrs
+                                                                           val
+                                                                           (third op)))
+                                          val]
+                                         [(string)
+                                          (assert val string?)
+                                          (push-event! (prompt-info-string title attrs val))
+                                          val]
+                                         [(integer)
+                                          (assert (assert val exact?) integer?)
+                                          (push-event! (prompt-info-integer title attrs val))
+                                          val]
+                                         [(natural)
+                                          (assert (assert val exact?) natural?)
+                                          (push-event! (prompt-info-natural title attrs val))
+                                          val]
+                                         [(positive)
+                                          (assert (assert val exact?) positive-integer?)
+                                          (push-event! (prompt-info-positive title attrs val))
+                                          val]
+                                         [(range) (assert val exact?)
+                                                  (assert val integer?)
+                                                  (let ([min (second op)] [max : Integer (third op)])
+                                                    (cond
+                                                      [(and (positive? min) (<= min val) (<= val max))
+                                                       (push-event! (prompt-info-range-positive title attrs val min max))
+                                                       val]
+                                                      [(and (natural? min)
+                                                            (<= min val) (<= val max))
+                                                       (push-event! (prompt-info-range-natural title attrs val min max))
+                                                       val]
+                                                      [(and (<= min val) (<= val max))
+                                                       (push-event! (prompt-info-range-integer title attrs val min max))
+                                                       val]
+                                                      [else
+                                                       (error 'retry "range error" val)]))]
+                                         [(random)
+                                          (assert val natural?)
+                                          (push-event! (prompt-info-random title attrs val (second op)))
+                                          val])))))
+                             (: message-to-log (-> (U 'edge 'node) (-> Any Void)))
+                             (define ((message-to-log type) msg)
+                               (define evs-box
+                                 (case type
+                                   [(node) node-events]
+                                   [(edge) edge-events]))
+                               (: push-event! (-> Message-Info Void))
+                               (define (push-event! x)
+                                 (set-box! evs-box (cons x (unbox evs-box))))
+                               (push-event! (message-info msg)))
+                             (let ([next-st
+                                    (parameterize ([current-message (message-to-log 'node)]
+                                                   [current-prompt (pop-bps 'node)])
+                                      ((node-trans cod)
+                                       (parameterize ([current-message (message-to-log 'edge)]
+                                                      [current-prompt (pop-bps 'edge)])
+                                         ((edge-trans e) st))))])
+                               (loop cod
+                                     next-st
+                                     (cdr j)
+                                     (list* (cons 'node
+                                                  (history-node
+                                                   (find-graph gs (node-graph-id cod))
+                                                   (unbox node-events)
+                                                   cod))
+                                            (if (eq? (edge-mode e) 'auto)
+                                                (cons 'auto
+                                                      (history-auto
+                                                       (find-graph gs (node-graph-id n))
+                                                       (unbox edge-events)
+                                                       e))
+                                                (cons 'choose
+                                                      (history-choose
+                                                       (find-graph gs (node-graph-id n))
+                                                       (unbox edge-events)
+                                                       e
+                                                       (second ne)
+                                                       attrs)))
+                                            h)))))]
+                     [else (error 'replay "edge not found")]))]
+            [(terminated) (error 'replay "unexpected termination")])))))
 
 (: current-auto-conflict-policy (Parameterof (U 'random 'choose)))
 (define current-auto-conflict-policy (make-parameter 'random))
@@ -75,7 +155,7 @@
 (: current-single-choose-policy (Parameterof (U 'skip 'choose)))
 (define current-single-choose-policy (make-parameter 'choose))
 
-(: find-graph (All (T S) (-> (Listof (Graph T S)) Symbol (Option (Graph T S)))))
+(: find-graph (All (T S) (-> (Listof (Graph T S)) Symbol (Graph T S))))
 (define (find-graph gs g-id)
   (cond [(memf (lambda ([g : (Graph T S)]) (equal? (graph-id g) g-id)) gs) => car]
         [else (error 'find-graph "not found" g-id)]))
@@ -88,24 +168,22 @@
                           (List 'choose (Pairof (Edge T S) (Listof (Edge T S))))
                           (List 'terminated)))))
 (define (next-edges gs st n)
-  (cond [(find-graph gs (node-graph-id n))
-         => (lambda ([g : (Graph T S)])
-              (let* ([es (edge-sort (filter-state st (remove-annotation (filter-node n (graph-all-edges g)))))]
-                     [aes (auto-edges es)])
-                (if (null? aes)
-                    (if (null? es)
-                        (list 'terminated)
-                        (if (null? (cdr es))
-                            (let ([policy (current-single-choose-policy)])
-                              (cond [(eq? policy 'skip) (list 'auto es)]
-                                    [(eq? policy 'choose) (list 'choose es)]))
-                            (list 'choose es)))
-                    (if (null? (cdr aes))
-                        (list 'auto aes)
-                        (let ([policy (current-auto-conflict-policy)])
-                          (cond [(eq? policy 'random) (list 'auto aes)]
-                                [(eq? policy 'choose) (list 'choose aes)]))))))]
-        [else (list 'terminated)]))
+  (let* ([g (find-graph gs (node-graph-id n))]
+         [es (edge-sort (filter-state st (remove-annotation (filter-node n (graph-all-edges g)))))]
+         [aes (auto-edges es)])
+    (if (null? aes)
+        (if (null? es)
+            (list 'terminated)
+            (if (null? (cdr es))
+                (let ([policy (current-single-choose-policy)])
+                  (cond [(eq? policy 'skip) (list 'auto es)]
+                        [(eq? policy 'choose) (list 'choose es)]))
+                (list 'choose es)))
+        (if (null? (cdr aes))
+            (list 'auto aes)
+            (let ([policy (current-auto-conflict-policy)])
+              (cond [(eq? policy 'random) (list 'auto aes)]
+                    [(eq? policy 'choose) (list 'choose aes)]))))))
 
 (: auto-choose (All (T S)
                     (-> (List 'auto (Pairof (Edge T S) (Listof (Edge T S)))) (Edge T S))))

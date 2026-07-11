@@ -1,91 +1,133 @@
 #lang typed/racket
 
+(require "graph.rkt")
 (require "prompt.rkt")
+(require "message.rkt")
 
-(provide History history? History-Record
-         History-Node make-history-node history-node?
-         history-node-name history-node-desc history-node-attributes
-         History-Edge make-history-edge history-edge?
-         history-edge-mode history-edge-name history-edge-prompt history-edge-attributes
-         History-Prompt make-history-prompt history-prompt?
-         history-prompt-value history-prompt-text history-prompt-attributes
-         History-Message make-history-message history-message? history-message-content history-message-attributes
-         Journal journal? history->journal)
+(provide Prompt-Info
+         (rename-out [prompt-info?? prompt-info?])
+         (except-out (struct-out prompt-info) prompt-info? make-prompt-info)
+         Prompt-Info-Choose (struct-out prompt-info-choose)
+         Prompt-Info-String (struct-out prompt-info-string)
+         Prompt-Info-Integer (struct-out prompt-info-integer)
+         Prompt-Info-Natural (struct-out prompt-info-natural)
+         Prompt-Info-Positive (struct-out prompt-info-positive)
+         Prompt-Info-Range prompt-info-range?
+         prompt-info-range-value prompt-info-range-minimum prompt-info-range-maximum
+         Prompt-Info-Range-Integer (struct-out prompt-info-range-integer)
+         Prompt-Info-Range-Natural (struct-out prompt-info-range-natural)
+         Prompt-Info-Range-Positive (struct-out prompt-info-range-positive)
+         Prompt-Info-Random (struct-out prompt-info-random)
+         Message-Info (struct-out message-info)
 
-(define-type Attribute-Value (U Symbol String Integer Boolean))
+         (except-out (struct-out history-item) history-item?)
+         History-Node (except-out (struct-out history-node) history-node?)
+         History-Edge (except-out (struct-out history-edge) history-edge?)
+         History-Auto (except-out (struct-out history-auto) history-auto?)
+         History-Choose (except-out (struct-out history-choose) history-choose?)
+         History)
 
-(struct history-node ([name : String]
-                      [desc : (Option String)]
-                      [attributes : (Immutable-HashTable Symbol Attribute-Value)])
-  #:prefab
-  #:type-name History-Node)
+(define-type Prompt-Info (U Prompt-Info-Choose
+                            Prompt-Info-String
+                            Prompt-Info-Integer
+                            Prompt-Info-Natural
+                            Prompt-Info-Positive
+                            Prompt-Info-Range
+                            Prompt-Info-Random))
 
-(: make-history-node (->* (String (Option String)) ((Immutable-HashTable Symbol Attribute-Value)) History-Node))
-(define (make-history-node name desc [attributes ((inst hash Symbol Attribute-Value))])
-  (history-node name desc attributes))
+(define-predicate prompt-info?? Prompt-Info)
 
-(struct history-edge ([mode : (U 'choose 'auto)]
-                      [name : String]
-                      [prompt : String]
-                      [attributes : (Immutable-HashTable Symbol
-                                                         Attribute-Value)])
-  #:prefab
-  #:type-name History-Edge)
+(struct prompt-info ([title : String]
+                     [attributes : Prompt-Attributes])
+  #:constructor-name make-prompt-info
+  #:transparent)
+(struct prompt-info-choose prompt-info ([value : String]
+                                        [items : (Listof (U (List String String) String))])
+  #:type-name Prompt-Info-Choose
+  #:transparent)
+(struct prompt-info-string prompt-info ([value : String])
+  #:type-name Prompt-Info-String
+  #:transparent)
+(struct prompt-info-integer prompt-info ([value : Integer])
+  #:type-name Prompt-Info-Integer
+  #:transparent)
+(struct prompt-info-natural prompt-info ([value : Natural])
+  #:type-name Prompt-Info-Natural
+  #:transparent)
+(struct prompt-info-positive prompt-info ([value : Positive-Integer])
+  #:type-name Prompt-Info-Positive
+  #:transparent)
+(struct prompt-info-range-integer prompt-info ([value : Integer]
+                                               [maximum : Integer]
+                                               [minimum : Integer])
+  #:type-name Prompt-Info-Range-Integer
+  #:transparent)
+(struct prompt-info-range-natural prompt-info ([value : Natural]
+                                               [maximum : Natural]
+                                               [minimum : Natural])
+  #:type-name Prompt-Info-Range-Natural
+  #:transparent)
+(struct prompt-info-range-positive prompt-info ([value : Positive-Integer]
+                                                [maximum : Positive-Integer]
+                                                [minimum : Positive-Integer])
+  #:type-name Prompt-Info-Range-Positive
+  #:transparent)
 
-(: make-history-edge (->* ((U 'choose 'auto) String String) ((Immutable-HashTable Symbol Attribute-Value)) History-Edge))
-(define (make-history-edge mode name prompt [attributes ((inst hash Symbol Attribute-Value))])
-  (history-edge mode name prompt attributes))
+(define-type Prompt-Info-Range (U Prompt-Info-Range-Integer
+                                  Prompt-Info-Range-Natural
+                                  Prompt-Info-Range-Positive))
+(define-predicate prompt-info-range? Prompt-Info-Range)
 
-(struct history-prompt ([type : Prompt-Type]
-                        [value : Prompt-Value]
-                        [text : String]
-                        [attributes : (Immutable-HashTable Symbol Attribute-Value)])
-  #:prefab
-  #:type-name History-Prompt)
+(: prompt-info-range-value (-> Prompt-Info-Range Integer))
+(define (prompt-info-range-value x)
+  (cond [(prompt-info-range-integer? x) (prompt-info-range-integer-value x)]
+        [(prompt-info-range-natural? x) (prompt-info-range-natural-value x)]
+        [(prompt-info-range-positive? x) (prompt-info-range-positive-value x)]))
 
-(: make-history-prompt (->* (Prompt-Type Prompt-Value String) ((Immutable-HashTable Symbol Attribute-Value)) History-Prompt))
-(define (make-history-prompt type value text [attributes ((inst hash Symbol Attribute-Value))])
-  (history-prompt type value text attributes))
+(: prompt-info-range-minimum (-> Prompt-Info-Range Integer))
+(define (prompt-info-range-minimum x)
+  (cond [(prompt-info-range-integer? x) (prompt-info-range-integer-minimum x)]
+        [(prompt-info-range-natural? x) (prompt-info-range-natural-minimum x)]
+        [(prompt-info-range-positive? x) (prompt-info-range-positive-minimum x)]))
 
-(struct history-message ([content : String]
-                         [attributes : (Immutable-HashTable Symbol Attribute-Value)])
-  #:prefab
-  #:type-name History-Message)
+(: prompt-info-range-maximum (-> Prompt-Info-Range Integer))
+(define (prompt-info-range-maximum x)
+  (cond [(prompt-info-range-integer? x) (prompt-info-range-integer-maximum x)]
+        [(prompt-info-range-natural? x) (prompt-info-range-natural-maximum x)]
+        [(prompt-info-range-positive? x) (prompt-info-range-positive-maximum x)]))
 
-(: make-history-message (->* (String) ((Immutable-HashTable Symbol Attribute-Value)) History-Message))
-(define (make-history-message val [attributes ((inst hash Symbol Attribute-Value))])
-  (history-message val attributes))
+(struct prompt-info-random prompt-info ([value : Natural]
+                                        [bound : Positive-Integer])
+  #:type-name Prompt-Info-Random
+  #:transparent)
 
-(define-type History-Record (U History-Edge History-Node History-Prompt History-Message))
-(define-type History (Listof History-Record))
-(define-predicate history? History)
+(struct message-info ([message : Any])
+  #:type-name Message-Info
+  #:transparent)
 
-(define-type Journal-Record (Pairof String (Listof Prompt-Value)))
-(define-type Journal (Listof Journal-Record))
-(define-predicate journal? Journal)
+(struct (T S) history-item ([graph : (Graph T S)]
+                            [events : (Listof (U Message-Info Prompt-Info))])
+  #:transparent
+  #:type-name History-Item)
 
-(: take-to-choose (-> (Pairof History-Record (Listof History-Record))
-                      (Values String (Listof Prompt-Value) History)))
-(define (take-to-choose rs)
-  (let loop ([rs rs] [ps : (Listof Prompt-Value) '()])
-    (let ([fst (car rs)]
-          [rst (cdr rs)])
-      (cond [(history-edge? fst) (values (history-edge-name fst) ps rst)]
-            [(history-prompt? fst)
-             (if (null? rst)
-                 (error 'history->journal "invalid history")
-                 (loop (cdr rs) (cons (history-prompt-value fst) ps)))]
-            [(or (history-node? fst)
-                 (history-message? fst))
-             (loop (cdr rs) ps)]))))
+(struct (T S) history-node history-item ([node : (Node T S)])
+  #:type-name History-Node
+  #:transparent)
+(struct (T S) history-edge history-item ([edge : (Edge T S)])
+  #:type-name History-Edge
+  #:transparent)
+(struct (T S) history-auto history-edge ()
+  #:type-name History-Auto
+  #:transparent)
+(struct (T S) history-choose history-edge ([items : (Pairof (Edge T S) (Listof (Edge T S)))]
+                                           [attributes : Prompt-Attributes])
+  #:type-name History-Choose
+  #:transparent)
 
-(: history->journal (-> History Journal))
-(define (history->journal rs)
-  (if (null? rs)
-      '()
-      (let loop ([rs : (Pairof History-Record (Listof History-Record)) rs]
-                 [acc : Journal '()])
-        (define-values (e ps rest-rs) (take-to-choose rs))
-        (if (null? rest-rs)
-            ((inst cons Journal-Record Journal) (cons e ps) acc)
-            (loop rest-rs ((inst cons Journal-Record Journal) (cons e ps) acc))))))
+(define-type (History T S) (Listof (U (Pairof 'node (History-Node T S))
+                                      (Pairof 'auto (History-Auto T S))
+                                      (Pairof 'choose (History-Choose T S)))))
+
+(: history-edge-node (All (T S) (-> (History-Edge T S) (Node T S))))
+(define (history-edge-node item)
+  (edge-dom (history-edge-edge item)))

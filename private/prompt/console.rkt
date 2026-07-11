@@ -8,24 +8,22 @@
 (: current-console-random-prompt-display (Parameterof (U 'show 'hide)))
 (define current-console-random-prompt-display (make-parameter 'hide))
 
-(: console-prompt (All (A) (-> (-> String Void) (Prompt A))))
-(define ((console-prompt log-prompt) title op)
-  (define-values (value prompt-text)
-    (case (car op)
-      [(choose) ((inst console-choose A) title op)]
-      [(integer natural positive) (values (console-input-number title op) title)]
-      [(string) (values (console-string title op) title)]
-      [(range) (values (console-range title op) title)]
-      [(random) (values (console-random title op) title)]))
-  (log-prompt prompt-text)
-  value)
+(: console-prompt (All (A) (Prompt-Implementation A)))
+(define (console-prompt title op)
+  (values (case (car op)
+            [(choose) ((inst console-choose A) title op)]
+            [(integer natural positive) (console-input-number title op)]
+            [(string) (console-string title op)]
+            [(range) (console-range title op)]
+            [(random) (console-random title op)])
+          '()))
 
 (: console-choose (All (A)
-                    (-> String (List 'choose
-                                     (-> Any Boolean : #:+ A)
-                                     (Listof (U (∩ String A)
-                                                (List (∩ String A) String))))
-                        (Values (∩ String A) String))))
+                       (-> String (List 'choose
+                                        (-> Any Boolean : #:+ A)
+                                        (Listof (U (∩ String A)
+                                                   (List (∩ String A) String))))
+                           (∩ String A))))
 (define (console-choose title op)
   (: choice->target (-> (U (∩ String A) (List (∩ String A) String))
                         (∩ String A)))
@@ -52,7 +50,7 @@
                       (if (and (exact? n)
                                (positive-integer? n)
                                (<= n (length choices)))
-                          (values (choice->target (list-ref choices (sub1 n))) text)
+                          (choice->target (list-ref choices (sub1 n)))
                           (retry)))]
                 [else (retry)]))))))
 
