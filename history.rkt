@@ -9,7 +9,7 @@
          History-Edge (except-out (struct-out history-edge) history-edge?)
          History-Auto (except-out (struct-out history-auto) history-auto?)
          History-Choose (except-out (struct-out history-choose) history-choose?)
-         History)
+         History History-Record)
 
 (struct (T S) history-item ([events : (Listof (U Message-Info Prompt-Info))])
   #:transparent
@@ -29,9 +29,11 @@
   #:type-name History-Choose
   #:transparent)
 
-(define-type (History T S) (Listof (U (Pairof 'node (History-Node T S))
-                                      (Pairof 'auto (History-Auto T S))
-                                      (Pairof 'choose (History-Choose T S)))))
+(define-type (History-Record T S) (U (Pairof 'node (History-Node T S))
+                                     (Pairof 'auto (History-Auto T S))
+                                     (Pairof 'choose (History-Choose T S))))
+
+(define-type (History T S) (Listof (History-Record T S)))
 
 (: history-edge-node (All (T S) (-> (History-Edge T S) (Node T S))))
 (define (history-edge-node item)
