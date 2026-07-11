@@ -1,6 +1,7 @@
 #lang typed/racket
 
-(provide Message message current-message)
+(provide Message message current-message
+         Message-Info (struct-out message-info))
 
 (define-type Message (-> Any Void))
 
@@ -11,3 +12,7 @@
 (define (message obj)
   (cond [(current-message) => (lambda ([msg : Message]) (msg obj))]
         [else (error 'message "called outside of trans")]))
+
+(struct message-info ([message : Any])
+  #:type-name Message-Info
+  #:transparent)

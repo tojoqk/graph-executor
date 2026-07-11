@@ -5,6 +5,7 @@
 (require "history.rkt")
 (require "prompt.rkt")
 (require "message.rkt")
+(require "event-logger.rkt")
 
 (provide replay
          find-graph next-edges auto-choose
@@ -41,22 +42,20 @@
                     [j-rec (car j)]
                     [name (caar j-rec)]
                     [attrs (cdar j-rec)]
-                    [ps-init (reverse (cdr j-rec))]
-                    [edge-events : (Boxof (Listof (U Message-Info Prompt-Info))) (box '())]
-                    [node-events : (Boxof (Listof (U Message-Info Prompt-Info))) (box '())])
+                    [ps-init (reverse (cdr j-rec))])
                (cond [(findf (lambda ([e : (Edge T S)]) (string=? name (edge-name e))) edges)
                       => (lambda ([e : (Edge T S)])
-                           (let ([cod (edge-cod e)]
-                                 [bps : (Boxof (Listof (Pairof Prompt-Value Prompt-Attributes))) (box ps-init)])
-                             (: pop-bps (-> (U 'edge 'node) (Prompt Any)))
+                           (let* ([cod (edge-cod e)]
+                                  [mode (edge-mode e)]
+                                  [logger  (if (eq? mode 'auto)
+                                               (make-event-logger e cod)
+                                               (make-event-logger e edges attrs cod))]
+                                  [bps : (Boxof (Listof (Pairof Prompt-Value Prompt-Attributes))) (box ps-init)])
+                             (: pop-bps (-> (U 'edge 'node) Prompt-Implementation))
                              (define ((pop-bps type) title op)
-                               (define evs-box
-                                 (case type
-                                   [(node) node-events]
-                                   [(edge) edge-events]))
                                (: push-event! (-> Prompt-Info Void))
                                (define (push-event! x)
-                                 (set-box! evs-box (cons x (unbox evs-box))))
+                                 (event-logger-prompt-log! logger type x))
                                (let ([ps (unbox bps)])
                                  (set-box! bps (cdr ps))
                                  (if (null? ps)
@@ -66,57 +65,48 @@
                                        (case (car op)
                                          [(choose)
                                           (assert val string?)
-                                          (push-event! (prompt-info-choose title
-                                                                           attrs
-                                                                           val
-                                                                           (third op)))
-                                          val]
+                                          (let ([info (prompt-info-choose title attrs val (third op))])
+                                            (push-event! info)
+                                            info)]
                                          [(string)
                                           (assert val string?)
-                                          (push-event! (prompt-info-string title attrs val))
-                                          val]
+                                          (let ([info (prompt-info-string title attrs val)])
+                                            (push-event! info)
+                                            info)]
                                          [(integer)
                                           (assert (assert val exact?) integer?)
-                                          (push-event! (prompt-info-integer title attrs val))
-                                          val]
+                                          (let ([info (prompt-info-integer title attrs val)])
+                                            (push-event! info)
+                                            info)]
                                          [(natural)
                                           (assert (assert val exact?) natural?)
-                                          (push-event! (prompt-info-natural title attrs val))
-                                          val]
+                                          (let ([info (prompt-info-natural title attrs val)])
+                                            (push-event! info)
+                                            info)]
                                          [(positive)
                                           (assert (assert val exact?) positive-integer?)
-                                          (push-event! (prompt-info-positive title attrs val))
-                                          val]
-                                         [(range) (assert val exact?)
-                                                  (assert val integer?)
-                                                  (let ([min (second op)] [max : Integer (third op)])
-                                                    (cond
-                                                      [(and (positive? min) (<= min val) (<= val max))
-                                                       (push-event! (prompt-info-range-positive title attrs val min max))
-                                                       val]
-                                                      [(and (natural? min)
-                                                            (<= min val) (<= val max))
-                                                       (push-event! (prompt-info-range-natural title attrs val min max))
-                                                       val]
-                                                      [(and (<= min val) (<= val max))
-                                                       (push-event! (prompt-info-range-integer title attrs val min max))
-                                                       val]
-                                                      [else
-                                                       (error 'retry "range error" val)]))]
+                                          (let ([info (prompt-info-positive title attrs val)])
+                                            (push-event! info)
+                                            info)]
+                                         [(range)
+                                          (assert val exact?)
+                                          (assert val integer?)
+                                          (let ([min (second op)] [max : Integer (third op)])
+                                            (cond
+                                              [(and (<= min val) (<= val max))
+                                               (let ([info (prompt-info-range title attrs val min max)])
+                                                 (push-event! info)
+                                                 info)]
+                                              [else
+                                               (error 'retry "range error" val)]))]
                                          [(random)
                                           (assert val natural?)
-                                          (push-event! (prompt-info-random title attrs val (second op)))
-                                          val])))))
+                                          (let ([info (prompt-info-random title attrs val (second op))])
+                                            (push-event! info)
+                                            info)])))))
                              (: message-to-log (-> (U 'edge 'node) (-> Any Void)))
                              (define ((message-to-log type) msg)
-                               (define evs-box
-                                 (case type
-                                   [(node) node-events]
-                                   [(edge) edge-events]))
-                               (: push-event! (-> Message-Info Void))
-                               (define (push-event! x)
-                                 (set-box! evs-box (cons x (unbox evs-box))))
-                               (push-event! (message-info msg)))
+                               (event-logger-message-log! logger type msg))
                              (let ([next-st
                                     (parameterize ([current-message (message-to-log 'node)]
                                                    [current-prompt (pop-bps 'node)])
@@ -127,24 +117,8 @@
                                (loop cod
                                      next-st
                                      (cdr j)
-                                     (list* (cons 'node
-                                                  (history-node
-                                                   (find-graph gs (node-graph-id cod))
-                                                   (unbox node-events)
-                                                   cod))
-                                            (if (eq? (edge-mode e) 'auto)
-                                                (cons 'auto
-                                                      (history-auto
-                                                       (find-graph gs (node-graph-id n))
-                                                       (unbox edge-events)
-                                                       e))
-                                                (cons 'choose
-                                                      (history-choose
-                                                       (find-graph gs (node-graph-id n))
-                                                       (unbox edge-events)
-                                                       e
-                                                       (second ne)
-                                                       attrs)))
+                                     (list* (event-logger->history-node logger)
+                                            (event-logger->history-edge logger)
                                             h)))))]
                      [else (error 'replay "edge not found")]))]
             [(terminated) (error 'replay "unexpected termination")])))))
