@@ -7,7 +7,7 @@
 (require "../executor.rkt")
 (require "../journal.rkt")
 
-(provide console-run console-choose console-prompt/log
+(provide console-run console-choose
          current-console-random-prompt-display
          current-console-trace-display current-console-trace-display?)
 
