@@ -9,7 +9,7 @@
          any-bridge any-edge
          Graph* OpenGraph Graph AnyGraph make-open-graph
          graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges graph-bridges
-         any-graph graph-close)
+         any-graph close-graphs)
 
 (: current-seen-ids (Parameterof (Setof Symbol)))
 (define current-seen-ids (make-parameter ((inst set Symbol))))
@@ -359,6 +359,11 @@
                [edges (map (any-edge p?) (graph-edges g))]
                [bridges (map (any-bridge p?) (graph-bridges g))]))
 
-(: graph-close (All (T S) (-> (OpenGraph T S) (Graph T S))))
-(define (graph-close g)
-  (struct-copy graph g [bridges '()]))
+(: close-graphs (All (T S)
+                     (-> (Listof (OpenGraph T S))
+                         (Listof (Graph T S)))))
+(define (close-graphs gs)
+  (: graph-close (All (T S) (-> (OpenGraph T S) (Graph T S))))
+  (define (graph-close g)
+    (struct-copy graph g [bridges '()]))
+  ((inst map (Graph T S) (OpenGraph T S)) graph-close gs))

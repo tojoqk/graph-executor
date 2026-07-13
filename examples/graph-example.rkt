@@ -93,7 +93,7 @@
    [("--console") "Run console" (set-box! console-mode #t)]
    #:args ()
    (define-values (v-graph node-init) (vending-graph "Vending Machine Model"))
-   (define graphs (list (graph-close v-graph)))
+   (define graphs (close-graphs (list v-graph)))
    (if (unbox console-mode)
        (let ([state-init (v-state 400 0)])
          (let-values ([(node-current state-current journal)
