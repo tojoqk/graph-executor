@@ -7,9 +7,9 @@
          Edge* Bridge Edge AnyEdge EdgeMode make-bridge* make-bridge make-edge* make-edge
          edge-id edge-name edge-mode edge-half? edge-dom edge-cod edge-desc edge-when edge-trans edge-priority edge-weight edge-attributes
          any-bridge any-edge
-         Graph* OpenGraph Graph AnyGraph make-open-graph make-graph
+         Graph* OpenGraph Graph AnyGraph make-graph
          graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges graph-bridges
-         any-open-graph any-graph)
+         any-graph graph-close)
 
 (: current-seen-ids (Parameterof (Setof Symbol)))
 (define current-seen-ids (make-parameter ((inst set Symbol))))
@@ -334,14 +334,14 @@
            (and parent-name (make-graph-id parent-name)) parent-name
            desc (or edges '()) (or bridges '()))))
 
-(: make-open-graph (All (T S)
+(: make-graph (All (T S)
                         (-> String
                             [#:parent-name (Option String)]
                             [#:desc (Option String)]
                             [#:edges (Option (Listof (Edge T S)))]
                             [#:bridges (Option (Listof (Bridge T S)))]
                             (OpenGraph T S))))
-(define (make-open-graph name
+(define (make-graph name
                          #:parent-name [parent-name #f]
                          #:desc [desc #f]
                          #:edges [edges #f]
@@ -352,36 +352,13 @@
                                          #:edges edges
                                          #:bridges bridges))
 
-(: make-graph (All (T S)
-                   (-> String
-                       [#:parent-name (Option String)]
-                       [#:desc (Option String)]
-                       [#:edges (Option (Listof (Edge T S)))]
-                       [#:bridges (Option (Listof (Edge T S)))]
-                       (Graph T S))))
-(define (make-graph name
-                    #:parent-name [parent-name #f]
-                    #:desc [desc #f]
-                    #:edges [edges #f]
-                    #:bridges [bridges #f])
-  ((inst make-generic-graph T S T S) name
-                                     #:parent-name parent-name
-                                     #:desc desc
-                                     #:edges edges
-                                     #:bridges bridges))
-
-(: any-open-graph (All (T S) (-> (-> Any Any : #:+ S)
-                                 (-> (OpenGraph T S)
-                                     AnyGraph))))
-(define ((any-open-graph p?) g)
+(: any-graph (All (T S) (-> (-> Any Any : #:+ S)
+                            (-> (OpenGraph T S) AnyGraph))))
+(define ((any-graph p?) g)
   (struct-copy graph g
                [edges (map (any-edge p?) (graph-edges g))]
                [bridges (map (any-bridge p?) (graph-bridges g))]))
 
-(: any-graph (All (T S) (-> (-> Any Any : #:+ S)
-                            (-> (Graph T S)
-                                AnyGraph))))
-(define ((any-graph p?) g)
-  (struct-copy graph g
-               [edges (map (any-edge p?) (graph-edges g))]
-               [bridges (map (any-edge p?) (graph-bridges g))]))
+(: graph-close (All (T S) (-> (OpenGraph T S) (Graph T S))))
+(define (graph-close g)
+  (struct-copy graph g [bridges '()]))

@@ -44,7 +44,7 @@
   (< 0 (v-state-inserted st)))
 
 (: vending-graph (-> String
-                     (Values (Graph Vending-Node-Type Vending-State)
+                     (Values (OpenGraph Vending-Node-Type Vending-State)
                              (Node Vending-Node-Type Vending-State))))
 (define (vending-graph graph-name)
   (define v-node ((inst node-maker Vending-Node-Type Vending-State) graph-name))
@@ -93,10 +93,11 @@
    [("--console") "Run console" (set-box! console-mode #t)]
    #:args ()
    (define-values (v-graph node-init) (vending-graph "Vending Machine Model"))
+   (define graphs (list (graph-close v-graph)))
    (if (unbox console-mode)
        (let ([state-init (v-state 400 0)])
          (let-values ([(node-current state-current journal)
-                       (console-run (list v-graph) node-init state-init)])
+                       (console-run graphs node-init state-init)])
            (pretty-write `((init (graph ,(node-graph-name node-init))
                                  (node ,(node-name node-init))
                                  (state ,state-init))
@@ -104,4 +105,4 @@
                                     (node ,(node-name node-current))
                                     (state ,state-current))
                            (journal ,journal)))))
-       (write-dot (list v-graph) node-init))))
+       (write-dot graphs node-init))))

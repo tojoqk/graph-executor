@@ -13,7 +13,7 @@
 (provide current-node-prompt
          Node AnyNode node-maker node-graph-name node-name any-node
          Edge Bridge AnyEdge make-bridge any-bridge make-edge any-edge edge-dom edge-cod
-         OpenGraph Graph AnyGraph make-open-graph any-open-graph make-graph any-graph graph-name
+         OpenGraph Graph AnyGraph make-graph any-graph graph-close graph-name
          make-dot-bridge make-dot-edge
          replay
          current-auto-conflict-policy current-single-choose-policy

@@ -47,7 +47,7 @@
   (define v-node ((inst node-maker Vending-Node-Type Vending-State) g))
   (define v-edge (inst make-edge Vending-Node-Type Vending-State))
   (define v-bridge (inst make-dot-bridge Vending-Node-Type Vending-State))
-  (define v-graph (inst make-open-graph Vending-Node-Type Vending-State))
+  (define v-graph (inst make-graph Vending-Node-Type Vending-State))
 
   (define idle       (v-node "Idle (Accepting Coins)" #:type 'start))
   (define has-coins  (v-node "Selecting Item"         #:type 'normal))
@@ -91,7 +91,7 @@
   #:transparent)
 
 (: terminal-graph (-> String
-                      (Values (-> (Graph Terminal-Node-Type Terminal))
+                      (Values (-> (OpenGraph Terminal-Node-Type Terminal))
                               (Node Terminal-Node-Type Terminal))))
 (define (terminal-graph g)
   (define t-node ((inst node-maker Terminal-Node-Type Terminal) g))
@@ -114,7 +114,7 @@
 
 (: wire (-> (Values (Listof AnyGraph) AnyNode)))
 (define (wire)
-  (define v-any-graph (any-open-graph v-state?))
+  (define v-any-graph (any-graph v-state?))
   (define t-any-graph (any-graph terminal?))
   (define t-any-node (any-node terminal?))
   (define v-any-node (any-node v-state?))
