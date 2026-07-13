@@ -40,11 +40,10 @@
   (< 0 (v-state-inserted st)))
 
 (: vending-graph (-> String
-                     AnyNode
-                     (-> Vending-State Any)
-                     (Values (OpenGraph Vending-Node-Type Vending-State)
+                     (Values (-> AnyNode (-> Vending-State Any)
+                                 (OpenGraph Vending-Node-Type Vending-State))
                              (Node Vending-Node-Type Vending-State))))
-(define (vending-graph g output output-edge)
+(define (vending-graph g)
   (define v-node ((inst node-maker Vending-Node-Type Vending-State) g))
   (define v-edge (inst make-edge Vending-Node-Type Vending-State))
   (define v-bridge (inst make-dot-bridge Vending-Node-Type Vending-State))
@@ -56,32 +55,33 @@
   (define ret-change (v-node "Returning Change"       #:type 'normal))
 
   (values
-   (v-graph
-    g
-    #:edges
-    (list
-     (v-edge "Insert Money" #:dom idle #:cod has-coins
-             #:when (can-insert? 100)
-             #:trans insert-money)
-     (v-edge "Insert More" #:dom has-coins #:cod has-coins
-             #:when (can-insert? 100)
-             #:trans insert-money)
-     (v-edge "Purchase Drink (150 Yen)" #:dom has-coins #:cod dispensing
-             #:when (price-met? 150)
-             #:trans (purchase 150))
-     (v-edge "Dispense Done (Remaining Inserted)" #:mode 'auto #:dom dispensing #:cod has-coins
-             #:when inserted?)
-     (v-edge "Dispense Done (Just Zero)" #:mode 'auto #:dom dispensing #:cod idle
-             #:when (negate inserted?))
-     (v-edge "Press Return Lever" #:dom has-coins #:cod ret-change
-             #:when inserted?
-             #:trans reset-money)
-     (v-edge "Change Dispatched" #:mode 'auto #:dom ret-change #:cod idle))
-    #:bridges
-    (list
-     (v-bridge "Walk Away" #:dom idle #:cod output
-               #:trans output-edge
-               #:dot-minlen 3)))
+   (lambda (output output-edge)
+     (v-graph
+      g
+      #:edges
+      (list
+       (v-edge "Insert Money" #:dom idle #:cod has-coins
+               #:when (can-insert? 100)
+               #:trans insert-money)
+       (v-edge "Insert More" #:dom has-coins #:cod has-coins
+               #:when (can-insert? 100)
+               #:trans insert-money)
+       (v-edge "Purchase Drink (150 Yen)" #:dom has-coins #:cod dispensing
+               #:when (price-met? 150)
+               #:trans (purchase 150))
+       (v-edge "Dispense Done (Remaining Inserted)" #:mode 'auto #:dom dispensing #:cod has-coins
+               #:when inserted?)
+       (v-edge "Dispense Done (Just Zero)" #:mode 'auto #:dom dispensing #:cod idle
+               #:when (negate inserted?))
+       (v-edge "Press Return Lever" #:dom has-coins #:cod ret-change
+               #:when inserted?
+               #:trans reset-money)
+       (v-edge "Change Dispatched" #:mode 'auto #:dom ret-change #:cod idle))
+      #:bridges
+      (list
+       (v-bridge "Walk Away" #:dom idle #:cod output
+                 #:trans output-edge
+                 #:dot-minlen 3))))
    idle))
 
 (define-type Terminal-Node-Type 'terminal)
@@ -91,7 +91,7 @@
   #:transparent)
 
 (: terminal-graph (-> String
-                      (Values (Graph Terminal-Node-Type Terminal)
+                      (Values (-> (Graph Terminal-Node-Type Terminal))
                               (Node Terminal-Node-Type Terminal))))
 (define (terminal-graph g)
   (define t-node ((inst node-maker Terminal-Node-Type Terminal) g))
@@ -101,15 +101,32 @@
   (define terminal (t-node "Terminal" #:type 'terminal))
 
   (values
-   (t-graph g
-            #:edges
-            (list
-             (t-edge "Terminate" #:mode 'auto #:dom entry #:cod terminal)))
+   (lambda ()
+     (t-graph g
+              #:edges
+              (list
+               (t-edge "Terminate" #:mode 'auto #:dom entry #:cod terminal))))
    entry))
 
 (: vending-graph->terminal-graph (-> Vending-State Terminal))
 (define (vending-graph->terminal-graph x)
   (terminal (v-state-wallet x)))
+
+(: wire (-> (Values (Listof AnyGraph) AnyNode)))
+(define (wire)
+  (define v-any-graph (any-open-graph v-state?))
+  (define t-any-graph (any-graph terminal?))
+  (define t-any-node (any-node terminal?))
+  (define v-any-node (any-node v-state?))
+  (define-values (gen-t-graph t-entry)
+    (terminal-graph "Terminal"))
+  (define-values (gen-v-graph v-entry)
+    (vending-graph "Vending Machine Model"))
+
+  (values (list (v-any-graph (gen-v-graph (t-any-node t-entry)
+                                          vending-graph->terminal-graph))
+                (t-any-graph (gen-t-graph)))
+          (v-any-node v-entry)))
 
 (module+ main
   (require graph-executor
@@ -121,26 +138,10 @@
    #:once-each
    [("--console") "Run console" (set-box! console-mode #t)]
    #:args ()
-   (define-values (t-graph t-entry)
-     (terminal-graph "Terminal"))
-   (define-values (v-graph node-init)
-     (vending-graph "Vending Machine Model"
-                    (node->any-node t-entry terminal?)
-                    vending-graph->terminal-graph))
-   (: graphs (Listof (Graph Any Any)))
-   (define graphs (list (open-graph->any-graph v-graph v-state?)
-                        (graph->any-graph t-graph terminal?)))
+   (define-values (graphs entry) (wire))
    (if (unbox console-mode)
        (let ([state-init (v-state 400 0)])
-         (let-values ([(node-current state-current journal)
-                       (console-run graphs
-                                    (node->any-node node-init v-state?)
-                                    state-init)])
-           (pretty-write `((init (graph ,(node-graph-name node-init))
-                                 (node ,(node-name node-init))
-                                 (state ,state-init))
-                           (current (graph ,(node-graph-name node-current))
-                                    (node ,(node-name node-current))
-                                    (state ,state-current))
-                           (journal ,journal)))))
-       (write-dot graphs (node->any-node node-init v-state?)))))
+         (let-values ([(_node-current _state-current journal)
+                       (console-run graphs entry state-init)])
+           (writeln journal)))
+       (write-dot graphs entry))))
