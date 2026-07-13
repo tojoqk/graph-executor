@@ -7,7 +7,7 @@
          Edge* Bridge Edge AnyEdge EdgeMode make-bridge* make-bridge make-edge* make-edge
          edge-id edge-name edge-mode edge-half? edge-dom edge-cod edge-desc edge-when edge-trans edge-priority edge-weight edge-attributes
          any-bridge any-edge
-         Graph* OpenGraph Graph AnyGraph make-graph
+         Graph* OpenGraph Graph AnyGraph make-open-graph
          graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges graph-bridges
          any-graph graph-close)
 
@@ -334,14 +334,14 @@
            (and parent-name (make-graph-id parent-name)) parent-name
            desc (or edges '()) (or bridges '()))))
 
-(: make-graph (All (T S)
+(: make-open-graph (All (T S)
                         (-> String
                             [#:parent-name (Option String)]
                             [#:desc (Option String)]
                             [#:edges (Option (Listof (Edge T S)))]
                             [#:bridges (Option (Listof (Bridge T S)))]
                             (OpenGraph T S))))
-(define (make-graph name
+(define (make-open-graph name
                          #:parent-name [parent-name #f]
                          #:desc [desc #f]
                          #:edges [edges #f]

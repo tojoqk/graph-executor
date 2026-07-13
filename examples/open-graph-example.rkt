@@ -47,7 +47,7 @@
   (define v-node ((inst node-maker Vending-Node-Type Vending-State) g))
   (define v-edge (inst make-edge Vending-Node-Type Vending-State))
   (define v-bridge (inst make-dot-bridge Vending-Node-Type Vending-State))
-  (define v-graph (inst make-graph Vending-Node-Type Vending-State))
+  (define v-graph (inst make-open-graph Vending-Node-Type Vending-State))
 
   (define idle       (v-node "Idle (Accepting Coins)" #:type 'start))
   (define has-coins  (v-node "Selecting Item"         #:type 'normal))
@@ -95,7 +95,7 @@
                               (Node Terminal-Node-Type Terminal))))
 (define (terminal-graph g)
   (define t-node ((inst node-maker Terminal-Node-Type Terminal) g))
-  (define t-graph (inst make-graph Terminal-Node-Type Terminal))
+  (define t-graph (inst make-open-graph Terminal-Node-Type Terminal))
   (define t-edge (inst make-edge Terminal-Node-Type Terminal))
   (define entry (t-node "Terminal Entry" #:type 'terminal))
   (define terminal (t-node "Terminal" #:type 'terminal))

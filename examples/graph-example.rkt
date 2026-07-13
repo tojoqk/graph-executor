@@ -49,7 +49,7 @@
 (define (vending-graph graph-name)
   (define v-node ((inst node-maker Vending-Node-Type Vending-State) graph-name))
   (define v-edge (inst make-dot-edge Vending-Node-Type Vending-State))
-  (define v-graph (inst make-graph Vending-Node-Type Vending-State))
+  (define v-graph (inst make-open-graph Vending-Node-Type Vending-State))
 
   (define idle       (v-node "Idle (Accepting Coins)" #:type 'start))
   (define has-coins  (v-node "Selecting Item"         #:type 'normal))
