@@ -83,9 +83,9 @@
                                           (let ([info (prompt-info-natural title attrs val)])
                                             (push-event! info)
                                             info)]
-                                         [(positive)
+                                         [(positive-integer)
                                           (assert (assert val exact?) positive-integer?)
-                                          (let ([info (prompt-info-positive title attrs val)])
+                                          (let ([info (prompt-info-positive-integer title attrs val)])
                                             (push-event! info)
                                             info)]
                                          [(range)

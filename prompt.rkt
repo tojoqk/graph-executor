@@ -9,7 +9,7 @@
          Prompt-Info-String (struct-out prompt-info-string)
          Prompt-Info-Integer (struct-out prompt-info-integer)
          Prompt-Info-Natural (struct-out prompt-info-natural)
-         Prompt-Info-Positive (struct-out prompt-info-positive)
+         Prompt-Info-Positive-Integer (struct-out prompt-info-positive-integer)
          Prompt-Info-Range (struct-out prompt-info-range)
          Prompt-Info-Random (struct-out prompt-info-random))
 
@@ -22,7 +22,7 @@
           (-> String (List 'string) String)
           (-> String (List 'integer) Integer)
           (-> String (List 'natural) Natural)
-          (-> String (List 'positive) Positive-Integer)
+          (-> String (List 'positive-integer) Positive-Integer)
           (-> String (List 'range Positive-Integer Positive-Integer) Positive-Integer)
           (-> String (List 'range Natural Natural) Natural)
           (-> String (List 'range Integer Integer) Integer)
@@ -30,7 +30,7 @@
 
 (define-type Prompt-Attributes (Listof (Pairof Symbol (U String Symbol Integer))))
 
-(define-type Prompt-Type (U 'choose 'string 'integer 'natural 'positive 'range 'random))
+(define-type Prompt-Type (U 'choose 'string 'integer 'natural 'positive-integer 'range 'random))
 (define-type Prompt-Value (U String Integer))
 
 (: current-prompt (Parameterof (Option Prompt-Implementation)))
@@ -60,7 +60,7 @@
           (-> String (List 'string) Prompt-Info-String)
           (-> String (List 'integer) Prompt-Info-Integer)
           (-> String (List 'natural) Prompt-Info-Natural)
-          (-> String (List 'positive) Prompt-Info-Positive)
+          (-> String (List 'positive-integer) Prompt-Info-Positive-Integer)
           (-> String (List 'range Integer Integer) Prompt-Info-Range)
           (-> String (List 'random Positive-Integer) Prompt-Info-Random)))
 
@@ -68,7 +68,7 @@
                              (-> Prompt-Info-String String)
                              (-> Prompt-Info-Integer Integer)
                              (-> Prompt-Info-Natural Natural)
-                             (-> Prompt-Info-Positive Positive-Integer)
+                             (-> Prompt-Info-Positive-Integer Positive-Integer)
                              (-> Prompt-Info-Range Integer)
                              (-> Prompt-Info-Random Natural)
                              (-> Prompt-Info Prompt-Value)))
@@ -77,7 +77,7 @@
         [(prompt-info-string? pi) (prompt-info-string-value pi)]
         [(prompt-info-integer? pi) (prompt-info-integer-value pi)]
         [(prompt-info-natural? pi) (prompt-info-natural-value pi)]
-        [(prompt-info-positive? pi) (prompt-info-positive-value pi)]
+        [(prompt-info-positive-integer? pi) (prompt-info-positive-integer-value pi)]
         [(prompt-info-range? pi) (prompt-info-range-value pi)]
         [(prompt-info-random? pi) (prompt-info-random-value pi)]))
 
@@ -85,7 +85,7 @@
                             Prompt-Info-String
                             Prompt-Info-Integer
                             Prompt-Info-Natural
-                            Prompt-Info-Positive
+                            Prompt-Info-Positive-Integer
                             Prompt-Info-Range
                             Prompt-Info-Random))
 
@@ -108,8 +108,8 @@
 (struct prompt-info-natural prompt-info ([value : Natural])
   #:type-name Prompt-Info-Natural
   #:transparent)
-(struct prompt-info-positive prompt-info ([value : Positive-Integer])
-  #:type-name Prompt-Info-Positive
+(struct prompt-info-positive-integer prompt-info ([value : Positive-Integer])
+  #:type-name Prompt-Info-Positive-Integer
   #:transparent)
 (struct prompt-info-range prompt-info ([value : Integer]
                                        [maximum : Integer]

@@ -12,7 +12,7 @@
 (define (console-prompt title op)
   (case (car op)
     [(choose) (console-choose title op)]
-    [(integer natural positive) (console-input-number title op)]
+    [(integer natural positive-integer) (console-input-number title op)]
     [(string) (console-string title op)]
     [(range) (console-range title op)]
     [(random) (console-random title op)]))
@@ -57,7 +57,7 @@
 
 (: console-input-number (case-> (-> String (List 'integer) Prompt-Info-Integer)
                                 (-> String (List 'natural) Prompt-Info-Natural)
-                                (-> String (List 'positive) Prompt-Info-Positive)))
+                                (-> String (List 'positive-integer) Prompt-Info-Positive-Integer)))
 (define (console-input-number title op)
   (newline)
   (printf "* ~a\n" title)
@@ -76,9 +76,9 @@
                      (if (and (exact? value) (natural? value))
                          (prompt-info-natural title '() value)
                          (retry))]
-                    [(positive)
+                    [(positive-integer)
                      (if (and (exact? value) (positive-integer? value))
-                         (prompt-info-positive title '() value)
+                         (prompt-info-positive-integer title '() value)
                          (retry))]))]
             [else (retry)]))))
 
