@@ -12,7 +12,7 @@
 
 (provide current-node-prompt
          Node AnyNode node-maker node-graph-name node-name any-node
-         Edge Bridge AnyEdge make-bridge any-bridge make-edge any-edge edge-dom edge-cod
+         Edge AnyEdge Bridge make-edge make-bridge any-bridge any-edge edge-dom edge-cod
          Graph OpenGraph AnyGraph make-graph make-open-graph any-graph graph-name
          make-dot-bridge make-dot-edge
          replay
