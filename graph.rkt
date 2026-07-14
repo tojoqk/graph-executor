@@ -391,7 +391,7 @@
               (or bridges '())))
 
 (: any-graph (All (T S) (-> (-> Any Any : #:+ S)
-                            (-> (OpenGraph T S) AnyGraph))))
+                            (-> (U (Graph T S) (OpenGraph T S)) AnyGraph))))
 (define ((any-graph p?) g)
   (if (open-graph? g)
       (struct-copy graph (open-graph-graph g)
