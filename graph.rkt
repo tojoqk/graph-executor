@@ -117,43 +117,43 @@
 
 (: make-generic-edge* (All (T S)
                            (case-> (-> 'edge
-                                       String
-                                       [#:mode (Option EdgeMode)]
-                                       [#:half? Boolean]
+                                       #:name String
+                                       #:mode (Option EdgeMode)
+                                       #:half? Boolean
                                        #:dom (Node T S)
                                        #:cod (Node T S)
-                                       [#:desc (Option String)]
-                                       [#:when (Option (-> S Any))]
+                                       #:desc (Option String)
+                                       #:when (Option (-> S Any))
                                        #:trans (-> S S)
-                                       [#:priority (Option Integer)]
-                                       [#:weight (Option Exact-Positive-Integer)]
-                                       [#:attributes (Immutable-HashTable Symbol Any)]
+                                       #:priority (Option Integer)
+                                       #:weight (Option Exact-Positive-Integer)
+                                       #:attributes (Immutable-HashTable Symbol Any)
                                        (Edge T S))
                                    (-> 'bridge
-                                       String
-                                       [#:mode (Option EdgeMode)]
-                                       [#:half? Boolean]
+                                       #:name String
+                                       #:mode (Option EdgeMode)
+                                       #:half? Boolean
                                        #:dom (Node T S)
                                        #:cod (Node Any Any)
-                                       [#:desc (Option String)]
-                                       [#:when (Option (-> S Any))]
+                                       #:desc (Option String)
+                                       #:when (Option (-> S Any))
                                        #:trans (-> S Any)
-                                       [#:priority (Option Integer)]
-                                       [#:weight (Option Exact-Positive-Integer)]
-                                       [#:attributes (Immutable-HashTable Symbol Any)]
+                                       #:priority (Option Integer)
+                                       #:weight (Option Exact-Positive-Integer)
+                                       #:attributes (Immutable-HashTable Symbol Any)
                                        (Bridge T S)))))
 (define (make-generic-edge* type
-                            name
-                            #:mode [mode #f]
-                            #:half? [half? #f]
+                            #:name name
+                            #:mode mode
+                            #:half? half?
                             #:dom dom
                             #:cod cod
-                            #:desc [desc #f]
-                            #:when [when #f]
+                            #:desc desc
+                            #:when when
                             #:trans tr
-                            #:priority [priority #f]
-                            #:weight [weight #f]
-                            #:attributes [attrs ((inst hash Symbol Any))])
+                            #:priority priority
+                            #:weight weight
+                            #:attributes attrs)
   (let ([edge-id (make-edge-id name dom)])
     (cond [(set-member? (current-seen-ids) edge-id)
            (error "make-edge, make-bridge*: duplicate ID" edge-id)]
@@ -171,31 +171,31 @@
      attrs)))
 
 (: make-bridge* (All (T S)
-                     (-> String
-                         [#:mode (Option EdgeMode)]
-                         [#:half? Boolean]
+                     (-> #:name String
+                         #:mode (Option EdgeMode)
+                         #:half?  Boolean
                          #:dom (Node T S)
                          #:cod (Node Any Any)
-                         [#:desc (Option String)]
-                         [#:when (Option (-> S Any))]
+                         #:desc (Option String)
+                         #:when (Option (-> S Any))
                          #:trans (-> S Any)
-                         [#:priority (Option Integer)]
-                         [#:weight (Option Exact-Positive-Integer)]
-                         [#:attributes (Immutable-HashTable Symbol Any)]
+                         #:priority (Option Integer)
+                         #:weight (Option Exact-Positive-Integer)
+                         #:attributes (Immutable-HashTable Symbol Any)
                          (Bridge T S))))
-(define (make-bridge* name
-                      #:mode [mode #f]
-                      #:half? [half? #f]
+(define (make-bridge* #:name name
+                      #:mode mode
+                      #:half? half?
                       #:dom dom
                       #:cod cod
-                      #:desc [desc #f]
-                      #:when [when #f]
+                      #:desc desc
+                      #:when when
                       #:trans tr
-                      #:priority [priority #f]
-                      #:weight [weight #f]
-                      #:attributes [attrs ((inst hash Symbol Any))])
+                      #:priority priority
+                      #:weight weight
+                      #:attributes attrs)
   ((inst make-generic-edge* T S) 'bridge
-                                 name
+                                 #:name name
                                  #:mode mode
                                  #:half? half?
                                  #:dom dom
@@ -229,7 +229,7 @@
                      #:trans tr
                      #:priority [priority #f]
                      #:weight [weight #f])
-  ((inst make-bridge* T S) name
+  ((inst make-bridge* T S) #:name name
                            #:mode mode
                            #:half? half?
                            #:dom dom
@@ -242,31 +242,31 @@
                            #:attributes ((inst hash Symbol Any))))
 
 (: make-edge* (All (T S)
-                   (-> String
-                       [#:mode (Option EdgeMode)]
-                       [#:half? Boolean]
+                   (-> #:name String
+                       #:mode (Option EdgeMode)
+                       #:half? Boolean
                        #:dom (Node T S)
                        #:cod (Node T S)
-                       [#:desc (Option String)]
-                       [#:when (Option (-> S Any))]
-                       [#:trans (Option (-> S S))]
-                       [#:priority (Option Integer)]
-                       [#:weight (Option Exact-Positive-Integer)]
-                       [#:attributes (Immutable-HashTable Symbol Any)]
+                       #:desc (Option String)
+                       #:when (Option (-> S Any))
+                       #:trans (Option (-> S S))
+                       #:priority (Option Integer)
+                       #:weight (Option Exact-Positive-Integer)
+                       #:attributes (Immutable-HashTable Symbol Any)
                        (Edge T S))))
-(define (make-edge* name
-                    #:mode [mode #f]
-                    #:half? [half? #f]
+(define (make-edge* #:name name
+                    #:mode mode
+                    #:half? half?
                     #:dom dom
                     #:cod cod
-                    #:desc [desc #f]
-                    #:when [when #f]
-                    #:trans [tr #f]
-                    #:priority [priority #f]
-                    #:weight [weight #f]
-                    #:attributes [attrs ((inst hash Symbol Any))])
+                    #:desc desc
+                    #:when when
+                    #:trans tr
+                    #:priority priority
+                    #:weight weight
+                    #:attributes attrs)
   ((inst make-generic-edge* T S) 'edge
-                                 name
+                                 #:name name
                                  #:mode mode
                                  #:half? half?
                                  #:dom dom
@@ -300,7 +300,7 @@
                    #:trans [tr #f]
                    #:priority [priority #f]
                    #:weight [weight #f])
-  ((inst make-edge* T S) name
+  ((inst make-edge* T S) #:name name
                          #:mode mode
                          #:half? half?
                          #:dom dom
