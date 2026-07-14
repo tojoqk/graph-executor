@@ -31,7 +31,7 @@
                          #:weight [weight #f]
                          #:dot-minlen [dot-minlen #f]
                          #:attributes [attrs ((inst hash Symbol Any))])
-  ((inst make-bridge* T S) name
+  ((inst make-bridge* T S) #:name name
                            #:mode mode
                            #:half? half?
                            #:dom dom
@@ -70,7 +70,7 @@
                        #:weight [weight #f]
                        #:dot-minlen [dot-minlen #f]
                        #:attributes [attrs ((inst hash Symbol Any))])
-  ((inst make-edge* T S) name
+  ((inst make-edge* T S) #:name name
                          #:mode mode
                          #:half? half?
                          #:dom dom
