@@ -44,12 +44,12 @@
   (< 0 (v-state-inserted st)))
 
 (: vending-graph (-> String
-                     (Values (OpenGraph Vending-Node-Type Vending-State)
+                     (Values (Graph Vending-Node-Type Vending-State)
                              (Node Vending-Node-Type Vending-State))))
 (define (vending-graph graph-name)
   (define v-node ((inst node-maker Vending-Node-Type Vending-State) graph-name))
   (define v-edge (inst make-dot-edge Vending-Node-Type Vending-State))
-  (define v-graph (inst make-open-graph Vending-Node-Type Vending-State))
+  (define v-graph (inst make-graph Vending-Node-Type Vending-State))
 
   (define idle       (v-node "Idle (Accepting Coins)" #:type 'start))
   (define has-coins  (v-node "Selecting Item"         #:type 'normal))
@@ -93,7 +93,7 @@
    [("--console") "Run console" (set-box! console-mode #t)]
    #:args ()
    (define-values (v-graph node-init) (vending-graph "Vending Machine Model"))
-   (define graphs (close-graphs (list v-graph)))
+   (define graphs (list v-graph))
    (if (unbox console-mode)
        (let ([state-init (v-state 400 0)])
          (let-values ([(node-current state-current journal)

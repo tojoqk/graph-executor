@@ -7,9 +7,9 @@
          Edge* Bridge Edge AnyEdge EdgeMode make-bridge* make-bridge make-edge* make-edge
          edge-id edge-name edge-mode edge-half? edge-dom edge-cod edge-desc edge-when edge-trans edge-priority edge-weight edge-attributes
          any-bridge any-edge
-         Graph* OpenGraph Graph AnyGraph make-open-graph
-         graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges graph-bridges
-         any-graph close-graphs)
+         Graph AnyGraph OpenGraph make-graph make-open-graph
+         graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges
+         any-graph)
 
 (: current-seen-ids (Parameterof (Setof Symbol)))
 (define current-seen-ids (make-parameter ((inst set Symbol))))
@@ -300,39 +300,39 @@
                [trans (lambda (x) ((edge-trans e) (assert x p?)))]
                [when (lambda (x) ((edge-when e) (assert x p?)))]))
 
-(struct (T1 S1 T2 S2) graph ([id : Symbol]
-                             [name : String]
-                             [parent-id : (Option Symbol)]
-                             [parent-name : (Option String)]
-                             [desc : (Option String)]
-                             [edges : (Listof (Edge T1 S1))]
-                             [bridges : (Listof (Edge* T1 S1 T2 S2))])
+(struct (T S) graph ([id : Symbol]
+                     [name : String]
+                     [parent-id : (Option Symbol)]
+                     [parent-name : (Option String)]
+                     [desc : (Option String)]
+                     [edges : (Listof (Edge T S))])
   #:transparent
-  #:type-name Graph*)
+  #:type-name Graph)
 
-(define-type (OpenGraph T S) (Graph* T S Any Any))
-(define-type (Graph T S) (Graph* T S T S))
 (define-type AnyGraph (Graph Any Any))
 
-(: make-generic-graph (All (T1 S1 T2 S2)
-                           (-> String
-                               [#:parent-name (Option String)]
-                               [#:desc (Option String)]
-                               [#:edges (Option (Listof (Edge T1 S1)))]
-                               [#:bridges (Option (Listof (Edge* T1 S1 T2 S2)))]
-                               (Graph* T1 S1 T2 S2))))
-(define (make-generic-graph name
-                            #:parent-name [parent-name #f]
-                            #:desc [desc #f]
-                            #:edges [edges #f]
-                            #:bridges [bridges #f])
+(: make-graph (All (T S) (-> String
+                             [#:parent-name (Option String)]
+                             [#:desc (Option String)]
+                             [#:edges (Option (Listof (Edge T S)))]
+                             (Graph T S))))
+(define (make-graph name
+                    #:parent-name [parent-name #f]
+                    #:desc [desc #f]
+                    #:edges [edges #f])
   (let ([graph-id (make-graph-id name)])
     (cond [(set-member? (current-seen-ids) graph-id)
-           (error "make-graph*: duplicate ID" graph-id)]
+           (error "make-graph: duplicate ID" graph-id)]
           [else (current-seen-ids (set-add (current-seen-ids) graph-id))])
     (graph (make-graph-id name) name
            (and parent-name (make-graph-id parent-name)) parent-name
-           desc (or edges '()) (or bridges '()))))
+           desc
+           (or edges '()))))
+
+(struct (T S) open-graph ([graph : (Graph T S)]
+                          [bridges : (Listof (Bridge T S))])
+  #:transparent
+  #:type-name OpenGraph)
 
 (: make-open-graph (All (T S)
                         (-> String
@@ -346,24 +346,18 @@
                          #:desc [desc #f]
                          #:edges [edges #f]
                          #:bridges [bridges #f])
-  ((inst make-generic-graph T S Any Any) name
-                                         #:parent-name parent-name
-                                         #:desc desc
-                                         #:edges edges
-                                         #:bridges bridges))
+  (open-graph ((inst make-graph T S) name
+                                     #:parent-name parent-name
+                                     #:desc desc
+                                     #:edges edges)
+              (or bridges '())))
 
 (: any-graph (All (T S) (-> (-> Any Any : #:+ S)
                             (-> (OpenGraph T S) AnyGraph))))
 (define ((any-graph p?) g)
-  (struct-copy graph g
-               [edges (map (any-edge p?) (graph-edges g))]
-               [bridges (map (any-bridge p?) (graph-bridges g))]))
-
-(: close-graphs (All (T S)
-                     (-> (Listof (OpenGraph T S))
-                         (Listof (Graph T S)))))
-(define (close-graphs gs)
-  (: graph-close (All (T S) (-> (OpenGraph T S) (Graph T S))))
-  (define (graph-close g)
-    (struct-copy graph g [bridges '()]))
-  ((inst map (Graph T S) (OpenGraph T S)) graph-close gs))
+  (if (open-graph? g)
+      (struct-copy graph (open-graph-graph g)
+                   [edges (append (map (any-edge p?) (graph-edges (open-graph-graph g)))
+                                  (map (any-bridge p?) (open-graph-bridges g)))])
+      (struct-copy graph g
+                   [edges (map (any-edge p?) (graph-edges g))])))

@@ -143,7 +143,7 @@
                           (List 'terminated)))))
 (define (next-edges gs st n)
   (let* ([g (find-graph gs (node-graph-id n))]
-         [es (edge-sort (filter-state st (remove-annotation (filter-node n (graph-all-edges g)))))]
+         [es (edge-sort (filter-state st (remove-annotation (filter-node n (graph-edges g)))))]
          [aes (auto-edges es)])
     (if (null? aes)
         (if (null? es)
@@ -216,10 +216,6 @@
                        acc))
                   (edge-weight (car es))
                   (cdr es)))
-
-(: graph-all-edges (All (T S) (-> (Graph T S) (Listof (Edge T S)))))
-(define (graph-all-edges g)
-  ((inst append (Edge T S)) (graph-edges g) (graph-bridges g)))
 
 (: filter-node (All (T S) (-> (Node T S) (Listof (Edge T S)) (Listof (Edge T S)))))
 (define (filter-node n es)

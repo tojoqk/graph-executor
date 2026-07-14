@@ -60,16 +60,14 @@
     (cond [(set-member? seen (node-id n)) (values '() seen)]
           [(find-graph gs (node-graph-id n))
            => (lambda ([g : (Graph T S)])
-                (let ([edges (filter-dom n (graph-edges g))]
-                      [bridges (filter-dom n (graph-bridges g))])
+                (let ([edges (filter-dom n (graph-edges g))])
                   (let* ([visnodes (append (list ((node->visnode g) n))
-                                           ((inst map (VisNode T S) (Edge T S)) (edge->visnode g) edges)
-                                           ((inst map (VisNode T S) (Edge T S)) (edge->visnode g) bridges))]
+                                           ((inst map (VisNode T S) (Edge T S)) (edge->visnode g) edges))]
                          [seen (set-union seen (list->set ((inst map Symbol (VisNode T S)) visnode-id visnodes)))])
                     (for/fold : (Values (Listof (VisNode T S)) (Setof Symbol))
                               ([visnodes visnodes]
                                [seen seen])
-                              ([edge (append edges bridges)])
+                              ([edge edges])
                       (: new-visnodes (Listof (VisNode T S)))
                       (: new-seen (Setof Symbol))
                       (define-values (new-visnodes new-seen)
@@ -99,7 +97,7 @@
 (: graphs->nested (All (T S) (-> (Listof (Graph T S)) (Listof (Nested-Graphs T S)))))
 (define (graphs->nested gs)
   (let ([ht : (Mutable-HashTable Symbol (Listof (Graph T S))) (make-hash)])
-    (define get-parent-id (inst graph-parent-id T S T S))
+    (define get-parent-id (inst graph-parent-id T S))
     (: roots-box (Boxof (Listof (Graph T S))))
     (define roots-box (box '()))
     (for-each (lambda ([g : (Graph T S)])
