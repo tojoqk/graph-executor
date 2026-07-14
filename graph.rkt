@@ -1,7 +1,7 @@
 #lang typed/racket
 
 (provide current-seen-ids current-node-prompt
-         Node AnyNode node-maker* node-maker
+         Node AnyNode make-node* node-maker
          node-graph-id node-graph-name node-id node-name node-type node-desc node-trans node-prompt node-attributes
          any-node
          Edge* Bridge Edge AnyEdge EdgeMode make-bridge* make-bridge make-edge* make-edge
@@ -49,16 +49,16 @@
 
 (define-type AnyNode (Node Any Any))
 
-(: node-maker* (All (T S)
-                    (-> String
-                        (-> String
-                            #:type T
-                            [#:desc (Option String)]
-                            [#:trans (Option (-> S S))]
-                            [#:prompt (Option String)]
-                            [#:attributes (Immutable-HashTable Symbol Any)]
-                            (Node T S)))))
-(define ((node-maker* graph-name) name #:type type #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f] #:attributes [attrs ((inst hash Symbol Any))])
+(: make-node* (All (T S)
+                   (-> #:graph-name String
+                       #:name String
+                       #:type T
+                       #:desc (Option String)
+                       #:trans (-> S S)
+                       #:prompt (Option String)
+                       #:attributes (Immutable-HashTable Symbol Any)
+                       (Node T S))))
+(define (make-node* #:graph-name graph-name #:name name #:type type #:desc desc #:trans tr #:prompt pmt #:attributes attrs)
   (let ([graph-id (make-graph-id graph-name)]
         [node-id (make-node-id graph-name name)])
     (cond [(set-member? (current-seen-ids) node-id)
@@ -75,7 +75,7 @@
                            [#:prompt (Option String)]
                            (Node T S)))))
 (define ((node-maker graph-name) name #:type type #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f])
-  (((inst node-maker* T S) graph-name) name #:type type #:desc desc #:trans tr #:prompt pmt #:attributes ((inst hash Symbol Any))))
+  ((inst make-node* T S) #:graph-name graph-name #:name name #:type type #:desc desc #:trans (or tr identity) #:prompt pmt #:attributes ((inst hash Symbol Any))))
 
 (: any-node (All (T S) (-> (-> Any Any : #:+ S) (-> (Node T S) AnyNode))))
 (define ((any-node p?) n)
