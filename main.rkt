@@ -11,10 +11,10 @@
 (require "visualizer/dot.rkt")
 
 (provide current-node-prompt
-         Node AnyNode node-maker node-graph-name node-name any-node
-         Edge AnyEdge Bridge make-edge make-bridge any-bridge any-edge edge-dom edge-cod
-         Graph OpenGraph AnyGraph make-graph make-open-graph any-graph graph-name
-         make-dot-bridge make-dot-edge
+         Node AnyNode node node-graph-name node-name any-node
+         Edge AnyEdge Bridge edge bridge any-bridge any-edge edge-dom edge-cod
+         Graph OpenGraph AnyGraph graph open-graph any-graph graph-name
+         dot-bridge dot-edge
          replay
          current-auto-conflict-policy current-single-choose-policy
          current-node? current-edge?

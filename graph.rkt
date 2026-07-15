@@ -1,13 +1,13 @@
 #lang typed/racket
 
 (provide current-seen-ids current-node-prompt
-         Node AnyNode make-node* node-maker
+         Node AnyNode (rename-out [make-node* make-node] [node-maker node])
          node-graph-id node-graph-name node-id node-name node-type node-desc node-trans node-prompt node-attributes
          any-node
-         Edge AnyEdge Bridge EdgeMode make-edge* make-edge make-bridge* make-bridge
+         Edge AnyEdge Bridge EdgeMode (rename-out [make-edge* make-edge] [make-edge edge] [make-bridge* make-bridge] [make-bridge bridge])
          edge-id edge-name edge-mode edge-half? edge-dom edge-cod edge-desc edge-when edge-trans edge-priority edge-weight edge-attributes
          any-bridge any-edge
-         Graph AnyGraph OpenGraph make-graph make-open-graph
+         Graph AnyGraph OpenGraph (rename-out [make-graph graph]) (rename-out [make-open-graph open-graph])
          graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges
          any-graph)
 
