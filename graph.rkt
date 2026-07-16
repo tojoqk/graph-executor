@@ -42,7 +42,7 @@
                     [type : T]
                     [desc : (Option String)]
                     [trans : (-> S S)]
-                    [prompt : String]
+                    [prompt : (-> S String)]
                     [attributes : (Immutable-HashTable Symbol Any)])
   #:transparent
   #:type-name Node)
@@ -55,7 +55,7 @@
                       #:type T
                       #:desc (Option String)
                       #:trans (-> S S)
-                      #:prompt (Option String)
+                      #:prompt (Option (U String (-> S String)))
                       #:attributes (Immutable-HashTable Symbol Any)
                       (Node T S))))
 (define (make-node #:graph-name graph-name #:name name #:type type #:desc desc #:trans tr #:prompt pmt #:attributes attrs)
@@ -64,7 +64,11 @@
     (cond [(set-member? (current-seen-ids) node-id)
            (error "node: duplicate ID" node-id)]
           [else (current-seen-ids (set-add (current-seen-ids) node-id))])
-    (node graph-id graph-name node-id name type desc (or tr (inst identity S)) (or pmt (current-node-prompt)) attrs)))
+    (node graph-id graph-name node-id name type desc (or tr (inst identity S))
+          (cond [(not pmt) (const (current-node-prompt))]
+                [(string? pmt) (const pmt)]
+                [else pmt])
+          attrs)))
 
 (: node* (All (T S)
               (-> String
@@ -72,14 +76,16 @@
                       #:type T
                       [#:desc (Option String)]
                       [#:trans (Option (-> S S))]
-                      [#:prompt (Option String)]
+                      [#:prompt (Option (U String (-> S String)))]
                       (Node T S)))))
 (define ((node* graph-name) name #:type type #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f])
   ((inst make-node T S) #:graph-name graph-name #:name name #:type type #:desc desc #:trans (or tr identity) #:prompt pmt #:attributes ((inst hash Symbol Any))))
 
 (: any-node (All (T S) (-> (-> Any Any : #:+ S) (-> (Node T S) AnyNode))))
 (define ((any-node p?) n)
-  (struct-copy node n [trans (lambda ([x : Any]) ((node-trans n) (assert x p?)))]))
+  (struct-copy node n
+               [trans (lambda ([x : Any]) ((node-trans n) (assert x p?)))]
+               [prompt (lambda ([x : Any]) ((node-prompt n) (assert x p?)))]))
 
 (define-type EdgeMode (U 'auto 'choose 'annotation))
 

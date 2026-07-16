@@ -13,6 +13,7 @@
 (define-type (Event-Logger T S)
   (List (U (List 'auto (Edge T S))
            (List 'choose (Edge T S)
+                 String
                  (Pairof (Edge T S) (Listof (Edge T S)))
                  Prompt-Attributes))
         (Boxof (Listof (U Message-Info Prompt-Info)))
@@ -23,6 +24,7 @@
                           (case->
                            (-> (Edge T S) (Node T S) (Event-Logger T S))
                            (-> (Edge T S)
+                               String
                                (Pairof (Edge T S) (Listof (Edge T S)))
                                Prompt-Attributes
                                (Node T S)
@@ -31,8 +33,8 @@
   (case-lambda
     [(e n)
      (list (list 'auto e) (box '()) n (box '()))]
-    [(e edges attrs n)
-     (list (list 'choose e edges attrs)
+    [(e pmt edges attrs n)
+     (list (list 'choose e pmt edges attrs)
            (box '())
            n
            (box '()))]))
@@ -70,10 +72,11 @@
        (cons 'auto (history-auto (unbox bx) e)))]
     [(choose)
      (let ([e (second (car logger))]
-           [items (third (car logger))]
-           [attrs (fourth (car logger))]
+           [pmt (third (car logger))]
+           [items (fourth (car logger))]
+           [attrs (fifth (car logger))]
            [bx (second logger)])
-       (cons 'choose (history-choose (unbox bx) e items attrs)))]))
+       (cons 'choose (history-choose (unbox bx) e pmt items attrs)))]))
 
 (: event-logger->history-node (All (T S) (-> (Event-Logger T S)
                                              (Pairof 'node (History-Node T S)))))
@@ -101,7 +104,7 @@
          ,@(append (prompt-values (unbox n-bx))
                    (prompt-values (unbox e-bx))))]
       [(choose)
-       (let ([attrs (fourth (car logger))])
+       (let ([attrs (fifth (car logger))])
          `((,(edge-name e) ,@attrs)
            ,@(append (prompt-values (unbox n-bx))
                      (prompt-values (unbox e-bx)))))])))

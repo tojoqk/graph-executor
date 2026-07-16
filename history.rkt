@@ -26,7 +26,8 @@
 (struct (T S) history-auto history-edge ()
   #:type-name History-Auto
   #:transparent)
-(struct (T S) history-choose history-edge ([items : (Pairof (Edge T S) (Listof (Edge T S)))]
+(struct (T S) history-choose history-edge ([prompt : String]
+                                           [items : (Pairof (Edge T S) (Listof (Edge T S)))]
                                            [attributes : Prompt-Attributes])
   #:type-name History-Choose
   #:transparent)

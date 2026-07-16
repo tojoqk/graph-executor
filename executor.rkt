@@ -49,7 +49,8 @@
                                   [mode (edge-mode e)]
                                   [logger  (if (eq? mode 'auto)
                                                (make-event-logger e cod)
-                                               (make-event-logger e edges attrs cod))]
+                                               (let ([pmt ((node-prompt cod) st)])
+                                                 (make-event-logger e pmt edges attrs cod)))]
                                   [bps : (Boxof (Listof (Pairof Prompt-Value Prompt-Attributes))) (box ps-init)])
                              (: pop-bps (-> (U 'edge 'node) Prompt-Implementation))
                              (define ((pop-bps type) title op)

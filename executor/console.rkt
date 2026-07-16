@@ -46,8 +46,10 @@
                    next-st
                    (cons (event-logger->journal-entry logger) j))))]
         [(choose)
-         (let-values ([(chosen-edge attrs) (console-choose ne)])
+         (define choose-pmt ((node-prompt n) st))
+         (let-values ([(chosen-edge attrs) (console-choose choose-pmt ne)])
            (let* ([logger (make-event-logger chosen-edge
+                                             choose-pmt
                                              (second ne)
                                              attrs
                                              (edge-cod chosen-edge))]
@@ -75,13 +77,13 @@
              (cond [(node-desc n) => displayln]))))))))
 
 (: console-choose (All (T S)
-                       (-> (List 'choose (Pairof (Edge T S) (Listof (Edge T S))))
+                       (-> String
+                           (List 'choose (Pairof (Edge T S) (Listof (Edge T S))))
                            (Values (Edge T S) Prompt-Attributes))))
-(define (console-choose ne)
+(define (console-choose title ne)
   (let* ([edges : (Pairof (Edge T S) (Listof (Edge T S))) (second ne)]
          [edge-names ((inst map String (Edge T S)) edge-name edges)]
-         [dom : (Node T S) (edge-dom (car edges))]
-         [title : String (node-prompt dom)])
+         [dom : (Node T S) (edge-dom (car edges))])
     (let* ([info (console-prompt title `(choose ,string? ,edge-names))]
            [name (prompt-info-choose-value info)]
            [attrs (prompt-info-attributes info)])
