@@ -63,21 +63,21 @@
     #:edges
     (list
      (v-edge "Insert 100 Yen" #:dom idle #:cod has-coins
-             #:when (can-insert? 100)
-             #:trans (insert-money 100))
+             #:when (code (can-insert? 100))
+             #:trans (code (insert-money 100)))
      (v-edge "Insert More" #:dom has-coins #:cod has-coins
-             #:when (can-insert? 100)
-             #:trans (insert-money 100))
+             #:when (code (can-insert? 100))
+             #:trans (code (insert-money 100)))
      (v-edge "Purchase Drink (150 Yen)" #:dom has-coins #:cod dispensing
-             #:when (price-met? 150)
-             #:trans (purchase 150))
+             #:when (code (price-met? 150))
+             #:trans (code (purchase 150)))
      (v-edge "Dispense Done (Remaining Inserted)" #:mode 'auto #:dom dispensing #:cod has-coins
-             #:when inserted?)
+             #:when (code inserted?))
      (v-edge "Dispense Done (Just Zero)" #:mode 'auto #:dom dispensing #:cod idle
-             #:when (negate inserted?))
+             #:when (code (negate inserted?)))
      (v-edge "Press Return Lever" #:dom has-coins #:cod ret-change
-             #:when inserted?
-             #:trans reset-money)
+             #:when (code inserted?)
+             #:trans (code reset-money))
      (v-edge "Change Dispatched" #:mode 'auto #:dom ret-change #:cod idle)
      (v-edge "Walk Away" #:dom idle #:cod terminal #:dot-minlen 2)))
    idle))

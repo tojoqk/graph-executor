@@ -12,8 +12,8 @@
                        #:dom (Node T S)
                        #:cod (Node Any Any)
                        [#:desc (Option String)]
-                       [#:when (Option (-> S Any))]
-                       #:trans (-> S Any)
+                       [#:when (Option (Code (-> S Any)))]
+                       #:trans (Code (-> S Any))
                        [#:priority (Option Integer)]
                        [#:weight (Option Exact-Positive-Integer)]
                        [#:dot-minlen (Option Natural)]
@@ -51,8 +51,8 @@
                      #:dom (Node T S)
                      #:cod (Node T S)
                      [#:desc (Option String)]
-                     [#:when (Option (-> S Any))]
-                     [#:trans (Option (-> S S))]
+                     [#:when (Option (Code (-> S Any)))]
+                     [#:trans (Option (Code (-> S S)))]
                      [#:priority (Option Integer)]
                      [#:weight (Option Exact-Positive-Integer)]
                      [#:dot-minlen (Option Natural)]
@@ -77,7 +77,7 @@
                         #:cod cod
                         #:desc desc
                         #:when when
-                        #:trans (or tr (inst identity S))
+                        #:trans (or tr (make-code #f (inst identity S)))
                         #:priority priority
                         #:weight weight
                         #:attributes (hash-union attrs

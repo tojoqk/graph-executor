@@ -1,15 +1,25 @@
 #lang typed/racket
 
-(provide current-seen-ids current-node-prompt
+(provide Code (rename-out [code* code] [code make-code])
+         current-seen-ids current-node-prompt
          Node AnyNode make-node (rename-out [node* node])
-         node-graph-id node-graph-name node-id node-name node-type node-desc node-trans node-prompt node-attributes
+         node-graph-id node-graph-name node-id node-name node-type node-desc node-trans node-trans-sexp node-prompt node-prompt-sexp node-attributes
          any-node
          Edge AnyEdge Bridge EdgeMode make-edge make-bridge (rename-out [edge* edge] [bridge* bridge])
-         edge-id edge-name edge-mode edge-half? edge-dom edge-cod edge-desc edge-when edge-trans edge-priority edge-weight edge-attributes
+         edge-id edge-name edge-mode edge-half? edge-dom edge-cod edge-desc edge-when edge-when-sexp edge-trans edge-trans-sexp edge-priority edge-weight edge-attributes
          any-bridge any-edge
          Graph AnyGraph OpenGraph (rename-out [graph* graph]) (rename-out [open-graph* open-graph])
          graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges
          any-graph)
+
+(struct (A) code ([sexp : Sexp]
+                  [value : A])
+  #:transparent
+  #:type-name Code)
+
+(define-syntax code*
+  (syntax-rules ()
+    [(_ expr) (code 'expr expr)]))
 
 (: current-seen-ids (Parameterof (Setof Symbol)))
 (define current-seen-ids (make-parameter ((inst set Symbol))))
@@ -41,11 +51,27 @@
                     [name : String]
                     [type : T]
                     [desc : (Option String)]
-                    [trans : (-> S S)]
-                    [prompt : (-> S String)]
+                    [trans-code : (Code (-> S S))]
+                    [prompt-code : (Code (-> S String))]
                     [attributes : (Immutable-HashTable Symbol Any)])
   #:transparent
   #:type-name Node)
+
+(: node-trans (All (T S) (-> (Node T S) (-> S S))))
+(define (node-trans n)
+  (code-value (node-trans-code n)))
+
+(: node-trans-sexp (All (T S) (-> (Node T S) Sexp)))
+(define (node-trans-sexp n)
+  (code-sexp (node-trans-code n)))
+
+(: node-prompt (All (T S) (-> (Node T S) (-> S String))))
+(define (node-prompt n)
+  (code-value (node-prompt-code n)))
+
+(: node-prompt-sexp (All (T S) (-> (Node T S) Sexp)))
+(define (node-prompt-sexp n)
+  (code-sexp (node-prompt-code n)))
 
 (define-type AnyNode (Node Any Any))
 
@@ -54,8 +80,8 @@
                       #:name String
                       #:type T
                       #:desc (Option String)
-                      #:trans (-> S S)
-                      #:prompt (Option (U String (-> S String)))
+                      #:trans (Option (Code (-> S S)))
+                      #:prompt (Option (U String (Code (-> S String))))
                       #:attributes (Immutable-HashTable Symbol Any)
                       (Node T S))))
 (define (make-node #:graph-name graph-name #:name name #:type type #:desc desc #:trans tr #:prompt pmt #:attributes attrs)
@@ -64,9 +90,10 @@
     (cond [(set-member? (current-seen-ids) node-id)
            (error "node: duplicate ID" node-id)]
           [else (current-seen-ids (set-add (current-seen-ids) node-id))])
-    (node graph-id graph-name node-id name type desc (or tr (inst identity S))
-          (cond [(not pmt) (const (current-node-prompt))]
-                [(string? pmt) (const pmt)]
+    (node graph-id graph-name node-id name type desc
+          (or tr (code #f identity))
+          (cond [(not pmt) (code #f (const (current-node-prompt)))]
+                [(string? pmt) (code pmt (const pmt))]
                 [else pmt])
           attrs)))
 
@@ -75,17 +102,22 @@
                   (-> String
                       #:type T
                       [#:desc (Option String)]
-                      [#:trans (Option (-> S S))]
-                      [#:prompt (Option (U String (-> S String)))]
+                      [#:trans (Option (Code (-> S S)))]
+                      [#:prompt (Option (U String (Code (-> S String))))]
                       (Node T S)))))
 (define ((node* graph-name) name #:type type #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f])
-  ((inst make-node T S) #:graph-name graph-name #:name name #:type type #:desc desc #:trans (or tr identity) #:prompt pmt #:attributes ((inst hash Symbol Any))))
+  ((inst make-node T S) #:graph-name graph-name #:name name #:type type #:desc desc
+                        #:trans tr
+                        #:prompt pmt
+                        #:attributes ((inst hash Symbol Any))))
 
 (: any-node (All (T S) (-> (-> Any Any : #:+ S) (-> (Node T S) AnyNode))))
 (define ((any-node p?) n)
   (struct-copy node n
-               [trans (lambda ([x : Any]) ((node-trans n) (assert x p?)))]
-               [prompt (lambda ([x : Any]) ((node-prompt n) (assert x p?)))]))
+               [trans-code (code (node-trans-sexp n)
+                                 (lambda ([x : Any]) ((node-trans n) (assert x p?))))]
+               [prompt-code (code (node-prompt-sexp n)
+                                  (lambda ([x : Any]) ((node-prompt n) (assert x p?))))]))
 
 (define-type EdgeMode (U 'auto 'choose 'annotation))
 
@@ -96,13 +128,30 @@
                     [dom : (Node T S)]
                     [cod : (Node T S)]
                     [desc : (Option String)]
-                    [when : (-> S Any)]
-                    [trans : (-> S S)]
+                    [when-code : (Code (-> S Any))]
+                    [trans-code : (Code (-> S S))]
                     [priority : Integer]
                     [weight : Exact-Positive-Integer]
                     [attributes : (Immutable-HashTable Symbol Any)])
   #:transparent
   #:type-name Edge)
+
+(: edge-trans (All (T S) (-> (Edge T S) (-> S S))))
+(define (edge-trans e)
+  (code-value (edge-trans-code e)))
+
+(: edge-trans-sexp (All (T S) (-> (Edge T S) Sexp)))
+(define (edge-trans-sexp e)
+  (code-sexp (edge-trans-code e)))
+
+(: edge-when (All (T S) (-> (Edge T S) (-> S Any))))
+(define (edge-when e)
+  (code-value (edge-when-code e)))
+
+(: edge-when-sexp (All (T S) (-> (Edge T S) Sexp)))
+(define (edge-when-sexp e)
+  (code-sexp (edge-when-code e)))
+
 
 (struct (T S) bridge ([id : Symbol]
                       [name : String]
@@ -111,13 +160,30 @@
                       [dom : (Node T S)]
                       [cod : (Node Any Any)]
                       [desc : (Option String)]
-                      [when : (-> S Any)]
-                      [trans : (-> S Any)]
+                      [when-code : (Code (-> S Any))]
+                      [trans-code : (Code (-> S Any))]
                       [priority : Integer]
                       [weight : Exact-Positive-Integer]
                       [attributes : (Immutable-HashTable Symbol Any)])
   #:transparent
   #:type-name Bridge)
+
+(: bridge-trans (All (T S) (-> (Bridge T S) (-> S Any))))
+(define (bridge-trans e)
+  (code-value (bridge-trans-code e)))
+
+(: bridge-trans-sexp (All (T S) (-> (Bridge T S) Sexp)))
+(define (bridge-trans-sexp e)
+  (code-sexp (bridge-trans-code e)))
+
+(: bridge-when (All (T S) (-> (Bridge T S) (-> S Any))))
+(define (bridge-when e)
+  (code-value (bridge-when-code e)))
+
+(: bridge-when-sexp (All (T S) (-> (Bridge T S) Sexp)))
+(define (bridge-when-sexp e)
+  (code-sexp (bridge-when-code e)))
+
 
 (define-type AnyEdge (Edge Any Any))
 
@@ -129,8 +195,8 @@
                                        #:dom (Node T S)
                                        #:cod (Node T S)
                                        #:desc (Option String)
-                                       #:when (Option (-> S Any))
-                                       #:trans (-> S S)
+                                       #:when (Option (Code (-> S Any)))
+                                       #:trans (Code (-> S S))
                                        #:priority (Option Integer)
                                        #:weight (Option Exact-Positive-Integer)
                                        #:attributes (Immutable-HashTable Symbol Any)
@@ -142,8 +208,8 @@
                                        #:dom (Node T S)
                                        #:cod (Node Any Any)
                                        #:desc (Option String)
-                                       #:when (Option (-> S Any))
-                                       #:trans (-> S Any)
+                                       #:when (Option (Code (-> S Any)))
+                                       #:trans (Code (-> S Any))
                                        #:priority (Option Integer)
                                        #:weight (Option Exact-Positive-Integer)
                                        #:attributes (Immutable-HashTable Symbol Any)
@@ -170,7 +236,7 @@
      half?
      dom cod
      desc
-     (or when (const #t))
+     (or when (code #f (const #t)))
      tr
      (or priority 0)
      (or weight 1)
@@ -183,8 +249,8 @@
                         #:dom (Node T S)
                         #:cod (Node Any Any)
                         #:desc (Option String)
-                        #:when (Option (-> S Any))
-                        #:trans (-> S Any)
+                        #:when (Option (Code (-> S Any)))
+                        #:trans (Code (-> S Any))
                         #:priority (Option Integer)
                         #:weight (Option Exact-Positive-Integer)
                         #:attributes (Immutable-HashTable Symbol Any)
@@ -220,8 +286,8 @@
                     #:dom (Node T S)
                     #:cod (Node Any Any)
                     [#:desc (Option String)]
-                    [#:when (Option (-> S Any))]
-                    #:trans (-> S Any)
+                    [#:when (Option (Code (-> S Any)))]
+                    #:trans (Code (-> S Any))
                     [#:priority (Option Integer)]
                     [#:weight (Option Exact-Positive-Integer)]
                     (Bridge T S))))
@@ -254,8 +320,8 @@
                       #:dom (Node T S)
                       #:cod (Node T S)
                       #:desc (Option String)
-                      #:when (Option (-> S Any))
-                      #:trans (Option (-> S S))
+                      #:when (Option (Code (-> S Any)))
+                      #:trans (Option (Code (-> S S)))
                       #:priority (Option Integer)
                       #:weight (Option Exact-Positive-Integer)
                       #:attributes (Immutable-HashTable Symbol Any)
@@ -279,7 +345,7 @@
                                  #:cod cod
                                  #:desc desc
                                  #:when when
-                                 #:trans (or tr (inst identity S))
+                                 #:trans (or tr (code #f (inst identity S)))
                                  #:priority priority
                                  #:weight weight
                                  #:attributes attrs))
@@ -291,8 +357,8 @@
                   #:dom (Node T S)
                   #:cod (Node T S)
                   [#:desc (Option String)]
-                  [#:when (Option (-> S Any))]
-                  [#:trans (Option (-> S S))]
+                  [#:when (Option (Code (-> S Any)))]
+                  [#:trans (Option (Code (-> S S)))]
                   [#:priority (Option Integer)]
                   [#:weight (Option Exact-Positive-Integer)]
                   (Edge T S))))
@@ -313,7 +379,7 @@
                         #:cod cod
                         #:desc desc
                         #:when when
-                        #:trans (or tr (inst identity S))
+                        #:trans (or tr (code #f (inst identity S)))
                         #:priority priority
                         #:weight weight
                         #:attributes ((inst hash Symbol Any))))
@@ -328,8 +394,8 @@
         ((any-node p?) (bridge-dom b))
         ((inst bridge-cod T S) b)
         (bridge-desc b)
-        (lambda (x) ((bridge-when b) (assert x p?)))
-        (lambda (x) ((bridge-trans b) (assert x p?)))
+        (code (bridge-when-sexp b) (lambda (x) ((bridge-when b) (assert x p?))))
+        (code (bridge-trans-sexp b) (lambda (x) ((bridge-trans b) (assert x p?))))
         (bridge-priority b)
         (bridge-weight b)
         (bridge-attributes b)))
@@ -341,8 +407,10 @@
   (struct-copy edge e
                [dom ((any-node p?) (edge-dom e))]
                [cod ((any-node p?) (edge-cod e))]
-               [trans (lambda (x) ((edge-trans e) (assert x p?)))]
-               [when (lambda (x) ((edge-when e) (assert x p?)))]))
+               [trans-code (code (edge-trans-sexp e)
+                                 (lambda (x) ((edge-trans e) (assert x p?))))]
+               [when-code (code (edge-when-sexp e)
+                                (lambda (x) ((edge-when e) (assert x p?))))]))
 
 (struct (T S) graph ([id : Symbol]
                      [name : String]

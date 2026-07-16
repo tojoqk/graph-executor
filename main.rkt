@@ -10,7 +10,8 @@
 (require "executor/console.rkt")
 (require "visualizer/dot.rkt")
 
-(provide current-node-prompt
+(provide Code code
+         current-node-prompt
          Node AnyNode node node-graph-name node-name any-node
          Edge AnyEdge Bridge edge bridge any-bridge any-edge edge-dom edge-cod
          Graph OpenGraph AnyGraph graph open-graph any-graph graph-name

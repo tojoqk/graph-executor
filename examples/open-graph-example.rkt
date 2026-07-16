@@ -40,7 +40,7 @@
   (< 0 (v-state-inserted st)))
 
 (: vending-graph (-> String
-                     (Values (-> AnyNode (-> Vending-State Any)
+                     (Values (-> AnyNode (Code (-> Vending-State Any))
                                  (OpenGraph Vending-Node-Type Vending-State))
                              (Node Vending-Node-Type Vending-State))))
 (define (vending-graph g)
@@ -61,21 +61,21 @@
       #:edges
       (list
        (v-edge "Insert Money" #:dom idle #:cod has-coins
-               #:when (can-insert? 100)
-               #:trans insert-money)
+               #:when (code (can-insert? 100))
+               #:trans (code insert-money))
        (v-edge "Insert More" #:dom has-coins #:cod has-coins
-               #:when (can-insert? 100)
-               #:trans insert-money)
+               #:when (code (can-insert? 100))
+               #:trans (code insert-money))
        (v-edge "Purchase Drink (150 Yen)" #:dom has-coins #:cod dispensing
-               #:when (price-met? 150)
-               #:trans (purchase 150))
+               #:when (code (price-met? 150))
+               #:trans (code (purchase 150)))
        (v-edge "Dispense Done (Remaining Inserted)" #:mode 'auto #:dom dispensing #:cod has-coins
-               #:when inserted?)
+               #:when (code inserted?))
        (v-edge "Dispense Done (Just Zero)" #:mode 'auto #:dom dispensing #:cod idle
-               #:when (negate inserted?))
+               #:when (code (negate inserted?)))
        (v-edge "Press Return Lever" #:dom has-coins #:cod ret-change
-               #:when inserted?
-               #:trans reset-money)
+               #:when (code inserted?)
+               #:trans (code reset-money))
        (v-edge "Change Dispatched" #:mode 'auto #:dom ret-change #:cod idle))
       #:bridges
       (list
@@ -124,7 +124,7 @@
     (vending-graph "Vending Machine Model"))
 
   (values (list (v-any-graph (gen-v-graph (t-any-node t-entry)
-                                          vending-graph->terminal-graph))
+                                          (code vending-graph->terminal-graph)))
                 (t-any-graph (gen-t-graph)))
           (v-any-node v-entry)))
 
