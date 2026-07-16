@@ -227,6 +227,14 @@
                                 (format-node-attributes
                                  (string-join `(,(mark-node-title (node-name (caddr v)))
                                                 ,@(cond [(node-desc (caddr v)) => list]
+                                                        [else '()])
+                                                ,@(cond [(node-prompt-sexp (caddr v))
+                                                         => (lambda (x)
+                                                              (list (format "prompt: ~s" x)))]
+                                                        [else '()])
+                                                ,@(cond [(node-trans-sexp (caddr v))
+                                                         => (lambda (x)
+                                                              (list (format "trans: ~s" x)))]
                                                         [else '()]))
                                               "\n")
                                  ((graph-config-node config) (caddr v)
@@ -237,6 +245,14 @@
                                 (format-node-attributes
                                  (string-join `(,(mark-edge-title (edge-name (caddr v)))
                                                 ,@(cond [(edge-desc (caddr v)) => list]
+                                                        [else '()])
+                                                ,@(cond [(edge-when-sexp (caddr v))
+                                                         => (lambda (x)
+                                                              (list (format "when: ~s" x)))]
+                                                        [else '()])
+                                                ,@(cond [(edge-trans-sexp (caddr v))
+                                                         => (lambda (x)
+                                                              (list (format "trans: ~s" x)))]
                                                         [else '()]))
                                               "\n")
                                  ((graph-config-edge-node config) (caddr v)
