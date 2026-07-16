@@ -10,7 +10,11 @@
 
 (provide console-run console-choose
          current-console-random-prompt-display
-         current-console-trace-display current-console-trace-display?)
+         current-console-trace-display current-console-trace-display?
+         current-console-quit-command)
+
+(: current-console-quit-command (Parameterof (Option (List Symbol String))))
+(define current-console-quit-command (make-parameter '(q "Quit")))
 
 (: current-console-trace-display (Parameterof (U 'show 'hide)))
 (define current-console-trace-display (make-parameter 'show))
@@ -47,16 +51,18 @@
                    (cons (event-logger->journal-entry logger) j))))]
         [(choose)
          (define choose-pmt ((node-prompt n) st))
-         (let-values ([(chosen-edge attrs) (console-choose choose-pmt ne)])
-           (let* ([logger (make-event-logger chosen-edge
-                                             choose-pmt
-                                             (second ne)
-                                             attrs
-                                             (edge-cod chosen-edge))]
-                  [next-st (console-step st chosen-edge logger)])
-             (loop (edge-cod chosen-edge)
-                   next-st
-                   (cons (event-logger->journal-entry logger) j))))]))))
+         (let ([chosen-edge (console-choose choose-pmt ne)])
+           (if (eq? chosen-edge 'quit)
+               (terminate)
+               (let* ([logger (make-event-logger chosen-edge
+                                                 choose-pmt
+                                                 (second ne)
+                                                 '()
+                                                 (edge-cod chosen-edge))]
+                      [next-st (console-step st chosen-edge logger)])
+                 (loop (edge-cod chosen-edge)
+                       next-st
+                       (cons (event-logger->journal-entry logger) j)))))]))))
 
 (: console-step (All (T S) (-> S (Edge T S) (Event-Logger T S) S)))
 (define (console-step st e logger)
@@ -79,17 +85,14 @@
 (: console-choose (All (T S)
                        (-> String
                            (List 'choose (Pairof (Edge T S) (Listof (Edge T S))))
-                           (Values (Edge T S) Prompt-Attributes))))
+                           (U (Edge T S) 'quit))))
 (define (console-choose title ne)
   (let* ([edges : (Pairof (Edge T S) (Listof (Edge T S))) (second ne)]
          [edge-names ((inst map String (Edge T S)) edge-name edges)]
          [dom : (Node T S) (edge-dom (car edges))])
-    (let* ([info (console-prompt title `(choose ,string? ,edge-names))]
-           [name (prompt-info-choose-value info)]
-           [attrs (prompt-info-attributes info)])
-      (cond [(findf (lambda ([edge : (Edge T S)]) (string=? name (edge-name edge))) edges)
-             => (lambda ([e : (Edge T S)])
-                  (values e attrs))]
+    (let* ([name (choose-edge title edge-names)])
+      (cond [(eq? name 'quit) 'quit]
+            [(findf (lambda ([edge : (Edge T S)]) (string=? name (edge-name edge))) edges) => identity]
             [else (error 'console-choose "unexpected error")]))))
 
 (: console-prompt/log (All (T S) (-> (Event-Logger T S) (U 'edge 'node) Prompt-Implementation)))
@@ -97,3 +100,39 @@
   (let ([info (console-prompt title op)])
     (event-logger-prompt-log! logger type info)
     info))
+
+(: choose-edge (-> String (Listof (U String (List String String)))
+                   (Values (U String 'quit))))
+(define (choose-edge title choices)
+  (: choice->target (-> (U String (List String String))
+                        String))
+  (define (choice->target c) (if (pair? c) (car c) c))
+  (let ([out (open-output-string)])
+    (newline)
+    (fprintf out "* ~a\n" title)
+    (for ([choice choices]
+          [i : Positive-Integer (in-naturals 1)])
+      (if (pair? choice)
+          (cond [(car choice)
+                 => (lambda ([target : String])
+                      (fprintf out "- [~a] ~a: ~a\n" i (car choice) (cadr choice)))])
+          (fprintf out "  - [~a] ~a\n" i (choice->target choice))))
+    (cond [(current-console-quit-command)
+           => (lambda ([cmd : (List Symbol String)])
+                (fprintf out "  - [~a] ~a\n" (first cmd) (second cmd)))])
+    (let ([text (get-output-string out)])
+      (display text)
+      (let retry ()
+        (display "? ")
+        (let ([line (read-line)]
+              [quit-cmd (current-console-quit-command)])
+          (cond [(eof-object? line) (retry)]
+                [(string->number line)
+                 => (lambda ([n : Number])
+                      (if (and (exact? n)
+                               (positive-integer? n)
+                               (<= n (length choices)))
+                          (choice->target (list-ref choices (sub1 n)))
+                          (retry)))]
+                [(and quit-cmd (string=? (symbol->string (first quit-cmd)) (string-trim line))) 'quit]
+                [else (retry)]))))))
