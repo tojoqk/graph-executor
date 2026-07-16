@@ -17,6 +17,7 @@
          dot-bridge dot-edge
          replay
          current-auto-conflict-policy current-single-choose-policy
+         current-console-quit-command current-console-undo-command
          current-node? current-edge?
          Journal
          History History-Record history-record-type history-record-node

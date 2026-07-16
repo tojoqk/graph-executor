@@ -11,7 +11,7 @@
 (provide console-run console-choose
          current-console-random-prompt-display
          current-console-trace-display current-console-trace-display?
-         current-console-quit-command)
+         current-console-quit-command current-console-undo-command)
 
 (: current-console-undo-command (Parameterof (Option (List Symbol String))))
 (define current-console-undo-command (make-parameter '(u "Undo")))
