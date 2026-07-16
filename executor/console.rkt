@@ -13,6 +13,9 @@
          current-console-trace-display current-console-trace-display?
          current-console-quit-command)
 
+(: current-console-undo-command (Parameterof (Option (List Symbol String))))
+(define current-console-undo-command (make-parameter '(u "Undo")))
+
 (: current-console-quit-command (Parameterof (Option (List Symbol String))))
 (define current-console-quit-command (make-parameter '(q "Quit")))
 
@@ -52,17 +55,22 @@
         [(choose)
          (define choose-pmt ((node-prompt n) st))
          (let ([chosen-edge (console-choose choose-pmt ne)])
-           (if (eq? chosen-edge 'quit)
-               (terminate)
-               (let* ([logger (make-event-logger chosen-edge
-                                                 choose-pmt
-                                                 (second ne)
-                                                 '()
-                                                 (edge-cod chosen-edge))]
-                      [next-st (console-step st chosen-edge logger)])
-                 (loop (edge-cod chosen-edge)
-                       next-st
-                       (cons (event-logger->journal-entry logger) j)))))]))))
+           (cond [(eq? chosen-edge 'quit) (terminate)]
+                 [(eq? chosen-edge 'undo)
+                  (define undo-j (journal-undo j))
+                  (define-values (undo-n undo-st _)
+                    (replay gs entry initial-state (journal-undo j)))
+                  (loop undo-n undo-st undo-j)]
+                 [else
+                  (let* ([logger (make-event-logger chosen-edge
+                                                    choose-pmt
+                                                    (second ne)
+                                                    '()
+                                                    (edge-cod chosen-edge))]
+                         [next-st (console-step st chosen-edge logger)])
+                    (loop (edge-cod chosen-edge)
+                          next-st
+                          (cons (event-logger->journal-entry logger) j)))]))]))))
 
 (: console-step (All (T S) (-> S (Edge T S) (Event-Logger T S) S)))
 (define (console-step st e logger)
@@ -85,13 +93,14 @@
 (: console-choose (All (T S)
                        (-> String
                            (List 'choose (Pairof (Edge T S) (Listof (Edge T S))))
-                           (U (Edge T S) 'quit))))
+                           (U (Edge T S) 'quit 'undo))))
 (define (console-choose title ne)
   (let* ([edges : (Pairof (Edge T S) (Listof (Edge T S))) (second ne)]
          [edge-names ((inst map String (Edge T S)) edge-name edges)]
          [dom : (Node T S) (edge-dom (car edges))])
     (let* ([name (choose-edge title edge-names)])
       (cond [(eq? name 'quit) 'quit]
+            [(eq? name 'undo) 'undo]
             [(findf (lambda ([edge : (Edge T S)]) (string=? name (edge-name edge))) edges) => identity]
             [else (error 'console-choose "unexpected error")]))))
 
@@ -102,7 +111,7 @@
     info))
 
 (: choose-edge (-> String (Listof (U String (List String String)))
-                   (Values (U String 'quit))))
+                   (Values (U String 'quit 'undo))))
 (define (choose-edge title choices)
   (: choice->target (-> (U String (List String String))
                         String))
@@ -117,6 +126,9 @@
                  => (lambda ([target : String])
                       (fprintf out "- [~a] ~a: ~a\n" i (car choice) (cadr choice)))])
           (fprintf out "  - [~a] ~a\n" i (choice->target choice))))
+    (cond [(current-console-undo-command)
+           => (lambda ([cmd : (List Symbol String)])
+                (fprintf out "  - [~a] ~a\n" (first cmd) (second cmd)))])
     (cond [(current-console-quit-command)
            => (lambda ([cmd : (List Symbol String)])
                 (fprintf out "  - [~a] ~a\n" (first cmd) (second cmd)))])
@@ -125,7 +137,8 @@
       (let retry ()
         (display "? ")
         (let ([line (read-line)]
-              [quit-cmd (current-console-quit-command)])
+              [quit-cmd (current-console-quit-command)]
+              [undo-cmd (current-console-undo-command)])
           (cond [(eof-object? line) (retry)]
                 [(string->number line)
                  => (lambda ([n : Number])
@@ -135,4 +148,5 @@
                           (choice->target (list-ref choices (sub1 n)))
                           (retry)))]
                 [(and quit-cmd (string=? (symbol->string (first quit-cmd)) (string-trim line))) 'quit]
+                [(and undo-cmd (string=? (symbol->string (first undo-cmd)) (string-trim line))) 'undo]
                 [else (retry)]))))))

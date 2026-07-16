@@ -40,9 +40,9 @@
             [(choose auto)
              (let* ([edges (cadr ne)]
                     [j-rec (car j)]
-                    [name (caar j-rec)]
-                    [attrs (cdar j-rec)]
-                    [ps-init (reverse (cdr j-rec))])
+                    [name (caadr j-rec)]
+                    [attrs (cdadr j-rec)]
+                    [ps-init (reverse (cddr j-rec))])
                (cond [(findf (lambda ([e : (Edge T S)]) (string=? name (edge-name e))) edges)
                       => (lambda ([e : (Edge T S)])
                            (let* ([cod (edge-cod e)]

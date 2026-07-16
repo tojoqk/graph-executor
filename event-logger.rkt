@@ -100,11 +100,11 @@
                   xs))
     (case (caar logger)
       [(auto)
-       `((,(edge-name e))
-         ,@(append (prompt-values (unbox n-bx))
-                   (prompt-values (unbox e-bx))))]
+       `(auto (,(edge-name e))
+              ,@(append (prompt-values (unbox n-bx))
+                        (prompt-values (unbox e-bx))))]
       [(choose)
        (let ([attrs (fifth (car logger))])
-         `((,(edge-name e) ,@attrs)
-           ,@(append (prompt-values (unbox n-bx))
-                     (prompt-values (unbox e-bx)))))])))
+         `(choose (,(edge-name e) ,@attrs)
+                  ,@(append (prompt-values (unbox n-bx))
+                            (prompt-values (unbox e-bx)))))])))
