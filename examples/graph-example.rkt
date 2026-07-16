@@ -12,7 +12,7 @@
 (struct v-state ([wallet : Integer]
                  [inserted : Integer])
   #:type-name Vending-State
-  #:prefab)
+  #:transparent)
 
 (: insert-money (-> Integer (-> Vending-State Vending-State)))
 (define ((insert-money amount) st)
@@ -98,11 +98,5 @@
        (let ([state-init (v-state 400 0)])
          (let-values ([(node-current state-current journal)
                        (console-run graphs node-init state-init)])
-           (pretty-write `((init (graph ,(node-graph-name node-init))
-                                 (node ,(node-name node-init))
-                                 (state ,state-init))
-                           (current (graph ,(node-graph-name node-current))
-                                    (node ,(node-name node-current))
-                                    (state ,state-current))
-                           (journal ,journal)))))
+           (writeln journal)))
        (write-dot graphs node-init))))
