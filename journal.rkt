@@ -1,6 +1,6 @@
 #lang typed/racket
 
-(provide Journal Journal-Entry journal-undo)
+(provide Journal journal? Journal-Entry journal-undo)
 
 (require "prompt.rkt")
 
@@ -8,6 +8,7 @@
                                   (Pairof String Prompt-Attributes)
                                   (Listof (Pairof Prompt-Value Prompt-Attributes))))
 (define-type Journal (Listof Journal-Entry))
+(define-predicate journal? Journal)
 
 (: journal-undo (-> Journal Journal))
 (define (journal-undo j)

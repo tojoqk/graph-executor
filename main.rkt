@@ -20,7 +20,7 @@
          current-auto-conflict-policy current-single-choose-policy
          current-console-quit-command current-console-undo-command
          current-node? current-edge?
-         Journal
+         Journal journal?
          History History-Record history-record-type history-record-node
          prompt
          message
