@@ -14,11 +14,8 @@
          Prompt-Info-Random (struct-out prompt-info-random))
 
 (define-type (Prompt A)
-  (case-> (-> String (List 'choose
-                           (-> Any Boolean : #:+ A)
-                           (Listof (U (∩ A String)
-                                      (List (∩ A String) String))))
-              (∩ String A))
+  (case-> (-> String (List 'choose (-> Any Boolean : #:+ A) (Listof (∩ A String))) (∩ String A))
+          (-> String (List 'choose (Listof String)) String)
           (-> String (List 'string) String)
           (-> String (List 'integer) Integer)
           (-> String (List 'natural) Natural)
@@ -41,7 +38,9 @@
   (cond [(current-prompt) => (lambda ([p : Prompt-Implementation])
                                (let ([info (p title op)])
                                  (case (car op)
-                                   [(choose) (assert (prompt-info-choose-value info) (cadr op))]
+                                   [(choose) (if (procedure? (cadr op))
+                                                 (assert (prompt-info-choose-value info) (cadr op))
+                                                 (prompt-info-choose-value info))]
                                    [(range)
                                     (let ([val (prompt-info-range-value info)])
                                       (let ([from (second op)] [to (third op)])
@@ -52,10 +51,8 @@
         [else (error 'prompt "called outside of trans")]))
 
 (define-type Prompt-Implementation
-  (case-> (-> String (List 'choose
-                           Any
-                           (Listof (U String
-                                      (List String String))))
+  (case-> (-> String (U (List 'choose Procedure (Listof String))
+                        (List 'choose (Listof String)))
               Prompt-Info-Choose)
           (-> String (List 'string) Prompt-Info-String)
           (-> String (List 'integer) Prompt-Info-Integer)

@@ -17,26 +17,19 @@
     [(range) (console-range title op)]
     [(random) (console-random title op)]))
 
-(: console-choose (-> String (List 'choose
-                                   Any
-                                   (Listof (U String
-                                              (List String String))))
+(: console-choose (-> String (U (List 'choose Procedure (Listof String))
+                                (List 'choose (Listof String)))
                       Prompt-Info-Choose))
 (define (console-choose title op)
-  (: choice->target (-> (U String (List String String))
-                        String))
-  (define (choice->target c) (if (pair? c) (car c) c))
-  (let ([choices (third op)]
+  (let ([choices (if (procedure? (second op))
+                     (third op)
+                     (second op))]
         [out (open-output-string)])
     (newline)
     (fprintf out "* ~a\n" title)
     (for ([choice choices]
           [i : Positive-Integer (in-naturals 1)])
-      (if (pair? choice)
-          (cond [(car choice)
-                 => (lambda ([target : String])
-                      (fprintf out "- [~a] ~a: ~a\n" i (car choice) (cadr choice)))])
-          (fprintf out "  - [~a] ~a\n" i (choice->target choice))))
+      (fprintf out "  - [~a] ~a\n" i choice))
     (let ([text (get-output-string out)])
       (display text)
       (let retry ()
@@ -50,8 +43,8 @@
                                (<= n (length choices)))
                           (prompt-info-choose title
                                               '()
-                                              (choice->target (list-ref choices (sub1 n)))
-                                              (third op))
+                                              (list-ref choices (sub1 n))
+                                              choices)
                           (retry)))]
                 [else (retry)]))))))
 
