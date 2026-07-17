@@ -200,6 +200,12 @@
 (define current-dot-annotation-edge-config
   (make-parameter (make-dot-edge-config #:style '(dashed) #:color "black")))
 
+(: show-sexp (-> Sexp String))
+(define (show-sexp x)
+  (let ([out (open-output-string)])
+    (print x out 1)
+    (get-output-string out)))
+
 (: write-dot (All (T S) (-> (Listof (Graph T S)) (Node T S)
                             [#:config (DotConfig T S)]
                             [#:port Output-Port]
@@ -230,11 +236,11 @@
                                                         [else '()])
                                                 ,@(cond [(node-prompt-sexp (caddr v))
                                                          => (lambda (x)
-                                                              (list (format "prompt: ~s" x)))]
+                                                              (list (format "prompt: ~a" (show-sexp x))))]
                                                         [else '()])
                                                 ,@(cond [(node-trans-sexp (caddr v))
                                                          => (lambda (x)
-                                                              (list (format "trans: ~s" x)))]
+                                                              (list (format "trans: ~a" (show-sexp x))))]
                                                         [else '()]))
                                               "\n")
                                  ((graph-config-node config) (caddr v)
@@ -248,11 +254,11 @@
                                                         [else '()])
                                                 ,@(cond [(edge-when-sexp (caddr v))
                                                          => (lambda (x)
-                                                              (list (format "when: ~s" x)))]
+                                                              (list (format "when: ~a" (show-sexp x))))]
                                                         [else '()])
                                                 ,@(cond [(edge-trans-sexp (caddr v))
                                                          => (lambda (x)
-                                                              (list (format "trans: ~s" x)))]
+                                                              (list (format "trans: ~a" (show-sexp x))))]
                                                         [else '()]))
                                               "\n")
                                  ((graph-config-edge-node config) (caddr v)
