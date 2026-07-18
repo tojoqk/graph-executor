@@ -1,6 +1,6 @@
 #lang typed/racket
 
-(provide Code (rename-out [code* code] [code make-code])
+(provide Code (rename-out [code* code]) make-code
          current-seen-ids current-node-prompt
          Node AnyNode make-node (rename-out [node* node])
          node-graph-id node-graph-name node-id node-name node-type node-desc node-trans node-trans-sexp node-prompt node-prompt-sexp node-attributes
@@ -15,11 +15,12 @@
 (struct (A) code ([sexp : Sexp]
                   [value : A])
   #:transparent
+  #:constructor-name make-code
   #:type-name Code)
 
 (define-syntax code*
   (syntax-rules ()
-    [(_ expr) (code 'expr expr)]))
+    [(_ expr) (make-code 'expr expr)]))
 
 (: current-seen-ids (Parameterof (Setof Symbol)))
 (define current-seen-ids (make-parameter ((inst set Symbol))))
@@ -91,9 +92,9 @@
            (error "node: duplicate ID" node-id)]
           [else (current-seen-ids (set-add (current-seen-ids) node-id))])
     (node graph-id graph-name node-id name type desc
-          (or tr (code #f identity))
-          (cond [(not pmt) (code #f (const (current-node-prompt)))]
-                [(string? pmt) (code pmt (const pmt))]
+          (or tr (make-code #f identity))
+          (cond [(not pmt) (make-code #f (const (current-node-prompt)))]
+                [(string? pmt) (make-code pmt (const pmt))]
                 [else pmt])
           attrs)))
 
@@ -114,10 +115,10 @@
 (: any-node (All (T S) (-> (-> Any Any : #:+ S) (-> (Node T S) AnyNode))))
 (define ((any-node p?) n)
   (struct-copy node n
-               [trans-code (code (node-trans-sexp n)
-                                 (lambda ([x : Any]) ((node-trans n) (assert x p?))))]
-               [prompt-code (code (node-prompt-sexp n)
-                                  (lambda ([x : Any]) ((node-prompt n) (assert x p?))))]))
+               [trans-code (make-code (node-trans-sexp n)
+                                      (lambda ([x : Any]) ((node-trans n) (assert x p?))))]
+               [prompt-code (make-code (node-prompt-sexp n)
+                                       (lambda ([x : Any]) ((node-prompt n) (assert x p?))))]))
 
 (define-type EdgeMode (U 'auto 'choose 'annotation))
 
@@ -236,7 +237,7 @@
      half?
      dom cod
      desc
-     (or when (code #f (const #t)))
+     (or when (make-code #f (const #t)))
      tr
      (or priority 0)
      (or weight 1)
@@ -345,7 +346,7 @@
                                  #:cod cod
                                  #:desc desc
                                  #:when when
-                                 #:trans (or tr (code #f (inst identity S)))
+                                 #:trans (or tr (make-code #f (inst identity S)))
                                  #:priority priority
                                  #:weight weight
                                  #:attributes attrs))
@@ -379,7 +380,7 @@
                         #:cod cod
                         #:desc desc
                         #:when when
-                        #:trans (or tr (code #f (inst identity S)))
+                        #:trans (or tr (make-code #f (inst identity S)))
                         #:priority priority
                         #:weight weight
                         #:attributes ((inst hash Symbol Any))))
@@ -394,8 +395,8 @@
         ((any-node p?) (bridge-dom b))
         ((inst bridge-cod T S) b)
         (bridge-desc b)
-        (code (bridge-when-sexp b) (lambda (x) ((bridge-when b) (assert x p?))))
-        (code (bridge-trans-sexp b) (lambda (x) ((bridge-trans b) (assert x p?))))
+        (make-code (bridge-when-sexp b) (lambda (x) ((bridge-when b) (assert x p?))))
+        (make-code (bridge-trans-sexp b) (lambda (x) ((bridge-trans b) (assert x p?))))
         (bridge-priority b)
         (bridge-weight b)
         (bridge-attributes b)))
@@ -407,10 +408,10 @@
   (struct-copy edge e
                [dom ((any-node p?) (edge-dom e))]
                [cod ((any-node p?) (edge-cod e))]
-               [trans-code (code (edge-trans-sexp e)
-                                 (lambda (x) ((edge-trans e) (assert x p?))))]
-               [when-code (code (edge-when-sexp e)
-                                (lambda (x) ((edge-when e) (assert x p?))))]))
+               [trans-code (make-code (edge-trans-sexp e)
+                                      (lambda (x) ((edge-trans e) (assert x p?))))]
+               [when-code (make-code (edge-when-sexp e)
+                                     (lambda (x) ((edge-when e) (assert x p?))))]))
 
 (struct (T S) graph ([id : Symbol]
                      [name : String]
