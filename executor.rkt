@@ -66,7 +66,10 @@
                                        (case (car op)
                                          [(choose)
                                           (assert val string?)
-                                          (let ([info (prompt-info-choose title attrs val (third op))])
+                                          (let ([info (prompt-info-choose title attrs val
+                                                                          (if (procedure? (second op))
+                                                                              (third op)
+                                                                              (second op)))])
                                             (push-event! info)
                                             info)]
                                          [(string)
