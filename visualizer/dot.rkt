@@ -365,6 +365,6 @@
 
 (: show-priority (-> Integer String))
 (define (show-priority k)
-  (cond [(positive-integer? k) (format "priority: +~a" k)]
+  (cond [(positive-integer? k) (format "+~a" k)]
         [(zero? k) ""]
-        [else (format "priority: ~a" k)]))
+        [else (format "~a" k)]))
