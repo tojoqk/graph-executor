@@ -273,7 +273,7 @@
                          (dot-string (symbol->string (node-id (edge-dom (caddr v)))))
                          (dot-string (symbol->string (edge-id (caddr v))))
                          (format-edge-attributes
-                          ""
+                          (show-priority (edge-priority (caddr v)))
                           (if (edge-half? (caddr v))
                               ((graph-config-edge config) (caddr v) (make-dot-edge-config))
                               (struct-copy edge-config ((graph-config-edge config) (caddr v)
@@ -362,3 +362,9 @@
           [(#\newline) (display "\\n")]
           [else (write-char ch)]))
       (write-char #\"))))
+
+(: show-priority (-> Integer String))
+(define (show-priority k)
+  (cond [(positive-integer? k) (format "priority: +~a" k)]
+        [(zero? k) ""]
+        [else (format "priority: ~a" k)]))
