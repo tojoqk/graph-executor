@@ -110,12 +110,9 @@
     (event-logger-prompt-log! logger type info)
     info))
 
-(: choose-edge (-> String (Listof (U String (List String String)))
+(: choose-edge (-> String (Listof String)
                    (Values (U String 'quit 'undo))))
 (define (choose-edge title choices)
-  (: choice->target (-> (U String (List String String))
-                        String))
-  (define (choice->target c) (if (pair? c) (car c) c))
   (let ([out (open-output-string)])
     (newline)
     (fprintf out "* ~a\n" title)
@@ -145,7 +142,7 @@
                       (if (and (exact? n)
                                (positive-integer? n)
                                (<= n (length choices)))
-                          (choice->target (list-ref choices (sub1 n)))
+                          (list-ref choices (sub1 n))
                           (retry)))]
                 [(and quit-cmd (string=? (symbol->string (first quit-cmd)) (string-trim line))) 'quit]
                 [(and undo-cmd (string=? (symbol->string (first undo-cmd)) (string-trim line))) 'undo]
