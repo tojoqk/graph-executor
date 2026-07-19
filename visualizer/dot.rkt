@@ -3,17 +3,21 @@
 (require "../graph.rkt")
 (require "../graph/dot.rkt")
 (require "../private/visualizer.rkt")
+(require "../history.rkt")
 
-(provide write-dot
-         DotConfig make-dot-config
+(provide write-dot current-dot-visited-node? current-dot-visited-edge?
+         DotConfig (rename-out [%dot-config dot-config])
          DotNodeConfig make-dot-node-config
          DotEdgeConfig make-dot-edge-config
          DotColor DotRGBColor dot-rgb-color
          DotNodeShape DotNodeStyle
          DotArrowShape DotEdgeStyle
          current-dot-node-config
+         current-dot-visited-node-config
          current-dot-auto-edge-config
+         current-dot-visited-auto-edge-config
          current-dot-choose-edge-config
+         current-dot-visited-choose-edge-config
          current-dot-annotation-edge-config)
 
 (struct (T S) graph-config ([node : (-> (Node T S) DotNodeConfig DotNodeConfig)]
@@ -21,24 +25,35 @@
                             [edge : (-> (Edge T S) DotEdgeConfig DotEdgeConfig)])
   #:type-name DotConfig)
 
-(: make-dot-config (All (T S)
-                        (-> [#:node (Option (-> (Node T S) DotNodeConfig DotNodeConfig))]
-                            [#:edge-node (Option (-> (Edge T S) DotNodeConfig DotNodeConfig))]
-                            [#:edge (Option (-> (Edge T S) DotEdgeConfig DotEdgeConfig))]
-                            (DotConfig T S))))
-(define (make-dot-config #:node [node #f]
-                         #:edge-node [edge-node #f]
-                         #:edge [edge #f])
+(: %dot-config (All (T S)
+                    (-> [#:node (Option (-> (Node T S) DotNodeConfig DotNodeConfig))]
+                        [#:edge-node (Option (-> (Edge T S) DotNodeConfig DotNodeConfig))]
+                        [#:edge (Option (-> (Edge T S) DotEdgeConfig DotEdgeConfig))]
+                        (DotConfig T S))))
+(define (%dot-config #:node [node #f]
+                     #:edge-node [edge-node #f]
+                     #:edge [edge #f])
+  (: node-default (-> (Node T S) DotNodeConfig))
+  (define (node-default n)
+    (if (current-dot-visited-node? n)
+        (current-dot-visited-node-config)
+        (current-dot-node-config)))
   (: edge-default (-> (Edge T S) DotEdgeConfig))
   (define (edge-default e)
     (let ([mode (edge-mode e)])
-      (cond [(eq? mode 'auto) (current-dot-auto-edge-config)]
-            [(eq? mode 'choose) (current-dot-choose-edge-config)]
+      (cond [(eq? mode 'auto)
+             (if (current-dot-visited-edge? e)
+                 (current-dot-visited-auto-edge-config)
+                 (current-dot-auto-edge-config))]
+            [(eq? mode 'choose)
+             (if (current-dot-visited-edge? e)
+                 (current-dot-visited-choose-edge-config)
+                 (current-dot-choose-edge-config))]
             [(eq? mode 'annotation) (current-dot-annotation-edge-config)])))
   ((inst graph-config T S) (lambda ([n : (Node T S)] [_ : DotNodeConfig])
                              (if node
-                                 (node n (current-dot-node-config))
-                                 (current-dot-node-config)))
+                                 (node n (node-default n))
+                                 (node-default n)))
                            (lambda ([e : (Edge T S)] [_ : DotNodeConfig])
                              (if edge-node
                                  (edge-node e (current-dot-edge-node-config))
@@ -184,6 +199,11 @@
 (define current-dot-node-config
   (make-parameter (make-dot-node-config #:shape 'box #:style '(filled rounded))))
 
+(: current-dot-visited-node-config (Parameterof DotNodeConfig))
+(define current-dot-visited-node-config
+  (make-parameter (make-dot-node-config #:shape 'box #:style '(filled rounded)
+                                        #:color "darkgreen")))
+
 (: current-dot-edge-node-config (Parameterof DotNodeConfig))
 (define current-dot-edge-node-config
   (make-parameter (make-dot-node-config #:shape 'plaintext)))
@@ -192,9 +212,17 @@
 (define current-dot-auto-edge-config
   (make-parameter (make-dot-edge-config #:color "red")))
 
+(: current-dot-visited-auto-edge-config (Parameterof DotEdgeConfig))
+(define current-dot-visited-auto-edge-config
+  (make-parameter (make-dot-edge-config #:color "red:darkgreen")))
+
 (: current-dot-choose-edge-config (Parameterof DotEdgeConfig))
 (define current-dot-choose-edge-config
   (make-parameter (make-dot-edge-config #:color "blue")))
+
+(: current-dot-visited-choose-edge-config (Parameterof DotEdgeConfig))
+(define current-dot-visited-choose-edge-config
+  (make-parameter (make-dot-edge-config #:color "blue:darkgreen")))
 
 (: current-dot-annotation-edge-config (Parameterof DotEdgeConfig))
 (define current-dot-annotation-edge-config
@@ -209,10 +237,22 @@
 (: write-dot (All (T S) (-> (Listof (Graph T S)) (Node T S)
                             [#:config (DotConfig T S)]
                             [#:port Output-Port]
+                            [#:history (History T S)]
                             Void)))
 (define (write-dot gs node
-                   #:config [config ((inst make-dot-config T S))]
-                   #:port [port (current-output-port)])
+                   #:config [config ((inst %dot-config T S))]
+                   #:port [port (current-output-port)]
+                   #:history [h '()])
+  (parameterize ([current-visited-ids (history->visited-ids h)])
+    (%write-dot gs node #:config config #:port port)))
+
+(: %write-dot (All (T S) (-> (Listof (Graph T S)) (Node T S)
+                             #:config (DotConfig T S)
+                             #:port Output-Port
+                             Void)))
+(define (%write-dot gs node
+                    #:config config
+                    #:port port)
   (let ([visnodes (reachable-visnodes gs node)])
     (displayln (format "digraph G {") port)
     (displayln  "  graph [rankdir=TB]" port)
@@ -368,3 +408,22 @@
   (cond [(positive-integer? k) (format "+~a" k)]
         [(zero? k) ""]
         [else (format "~a" k)]))
+
+(: history->visited-ids (All (T S) (-> (History T S)  (Setof Symbol))))
+(define (history->visited-ids h)
+  (list->set (map (lambda ([r : (History-Record T S)])
+                    (case (car r)
+                      [(node) (node-id (history-node-node (cdr r)))]
+                      [(auto choose) (edge-id (history-edge-edge (cdr r)))]))
+                  h)))
+
+(: current-visited-ids (Parameterof (Setof Symbol)))
+(define current-visited-ids (make-parameter ((inst set Symbol))))
+
+(: current-dot-visited-node? (All (T S) (-> (Node T S) Boolean)))
+(define (current-dot-visited-node? n)
+  (set-member? (current-visited-ids) (node-id n)))
+
+(: current-dot-visited-edge? (All (T S) (-> (Edge T S) Boolean)))
+(define (current-dot-visited-edge? e)
+  (set-member? (current-visited-ids) (edge-id e)))
