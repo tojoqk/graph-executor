@@ -11,7 +11,8 @@
          find-graph next-edges auto-choose
          current-auto-conflict-policy current-single-choose-policy
          current-node-id current-node?
-         current-edge-id current-edge?)
+         current-edge-id current-edge?
+         find-edge)
 
 (: current-node-id (Parameterof (Option Symbol)))
 (define current-node-id (make-parameter #f))
@@ -226,3 +227,9 @@
   (filter (lambda ([e : (Edge T S)])
             (eq? (node-id n) (node-id (edge-dom e))))
           es))
+
+(: find-edge (All (T S) (-> (Pairof (Edge T S) (Listof (Edge T S))) String (Edge T S))))
+(define (find-edge es name)
+  (cond
+    [(findf (lambda ([e : (Edge T S)]) (string=? name (edge-name e))) es) => identity]
+    [else (error 'find-edge "not found")]))

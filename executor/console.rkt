@@ -39,13 +39,30 @@
   (let loop ([n n]
              [st st]
              [j : Journal j])
-    (define (terminate)
-      (when (current-console-trace-display?)
-        (displayln ">> Terminated"))
+    (define (quit)
       (values n st j))
+    (: command-dispatch (-> (U 'quit 'undo (Pairof 'print (-> Journal Any)))
+                            (Values (Node T S) S Journal)))
+    (define (command-dispatch cmd)
+      (cond [(eq? cmd 'quit) (quit)]
+            [(eq? cmd 'undo)
+             (define undo-j (journal-undo j))
+             (define-values (undo-n undo-st _)
+               (replay gs entry initial-state (journal-undo j)))
+             (loop undo-n undo-st undo-j)]
+            [(pair? cmd)
+             (case (car cmd)
+               [(print) (print ((cdr cmd) j))])
+             (loop n st j)]))
     (let ([ne (next-edges gs st n)])
       (case (car ne)
-        [(terminated) (terminate)]
+        [(terminated)
+         (when (current-console-trace-display?)
+           (displayln ">> Terminated"))
+         (define choose-pmt ((node-prompt n) st))
+         (if (current-console-quit-command)
+             (command-dispatch (console-choose choose-pmt '()))
+             (quit))]
         [(auto)
          (let* ([chosen-edge (auto-choose ne)]
                 [logger (make-event-logger chosen-edge (edge-cod chosen-edge))])
@@ -57,19 +74,9 @@
                    (cons (event-logger->journal-entry logger) j))))]
         [(choose)
          (define choose-pmt ((node-prompt n) st))
-         (let ([cmd (console-choose choose-pmt ne)])
-           (cond [(eq? cmd 'quit) (terminate)]
-                 [(eq? cmd 'undo)
-                  (define undo-j (journal-undo j))
-                  (define-values (undo-n undo-st _)
-                    (replay gs entry initial-state (journal-undo j)))
-                  (loop undo-n undo-st undo-j)]
-                 [(pair? cmd)
-                  (case (car cmd)
-                    [(print) (print ((cdr cmd) j))])
-                  (loop n st j)]
-                 [else
-                  (define chosen-edge cmd)
+         (let ([cmd (console-choose choose-pmt (map (inst edge-name T S) (second ne)))])
+           (cond [(string? cmd)
+                  (define chosen-edge (find-edge (second ne) cmd))
                   (let* ([logger (make-event-logger chosen-edge
                                                     choose-pmt
                                                     (second ne)
@@ -78,7 +85,8 @@
                          [next-st (console-step st chosen-edge logger)])
                     (loop (edge-cod chosen-edge)
                           next-st
-                          (cons (event-logger->journal-entry logger) j)))]))]))))
+                          (cons (event-logger->journal-entry logger) j)))]
+                 [else (command-dispatch cmd)]))]))))
 
 (: console-step (All (T S) (-> S (Edge T S) (Event-Logger T S) S)))
 (define (console-step st e logger)
@@ -98,40 +106,28 @@
              (printf "--- Current Node: ~a (Graph: ~a) ---\n" (node-name n) (node-graph-name n))
              (cond [(node-desc n) => displayln]))))))))
 
-(: console-choose (All (T S)
-                       (-> String
-                           (List 'choose (Pairof (Edge T S) (Listof (Edge T S))))
-                           (U (Edge T S) 'quit 'undo (Pairof 'print (-> Journal Any))))))
-(define (console-choose title ne)
-  (let* ([edges : (Pairof (Edge T S) (Listof (Edge T S))) (second ne)]
-         [edge-names ((inst map String (Edge T S)) edge-name edges)]
-         [dom : (Node T S) (edge-dom (car edges))])
-    (let* ([name (choose-edge title edge-names)])
-      (cond [(eq? name 'quit) 'quit]
-            [(eq? name 'undo) 'undo]
-            [(pair? name) (case (car name) [(print) name])]
-            [(findf (lambda ([edge : (Edge T S)]) (string=? name (edge-name edge))) edges) => identity]
-            [else (error 'console-choose "unexpected error")]))))
-
 (: console-prompt/log (All (T S) (-> (Event-Logger T S) (U 'edge 'node) Prompt-Implementation)))
 (define ((console-prompt/log logger type) title op)
   (let ([info (console-prompt title op)])
     (event-logger-prompt-log! logger type info)
     info))
 
-(: choose-edge (-> String (Listof String)
-                   (Values (U String 'quit 'undo (Pairof 'print (-> Journal Any))))))
-(define (choose-edge title choices)
+(: console-choose (case-> (-> String (Pairof String (Listof String))
+                              (Values (U String 'quit 'undo (Pairof 'print (-> Journal Any)))))
+                          (-> String Null
+                              (Values (U 'quit 'undo (Pairof 'print (-> Journal Any)))))))
+(define (console-choose title choices)
   (let ([out (open-output-string)])
     (newline)
     (fprintf out "* ~a\n" title)
-    (for ([choice choices]
-          [i : Positive-Integer (in-naturals 1)])
-      (if (pair? choice)
-          (cond [(car choice)
-                 => (lambda ([target : String])
-                      (fprintf out "- [~a] ~a: ~a\n" i (car choice) (cadr choice)))])
-          (fprintf out "  - [~a] ~a\n" i choice)))
+    (unless (null? choices)
+      (for ([choice choices]
+            [i : Positive-Integer (in-naturals 1)])
+        (if (pair? choice)
+            (cond [(car choice)
+                   => (lambda ([target : String])
+                        (fprintf out "- [~a] ~a: ~a\n" i (car choice) (cadr choice)))])
+            (fprintf out "  - [~a] ~a\n" i choice))))
     (for ([cmd `(,@(current-console-print-commands)
                  ,(current-console-undo-command)
                  ,(current-console-quit-command))])
