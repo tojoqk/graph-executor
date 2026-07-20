@@ -1,6 +1,6 @@
 #lang info
 (define collection "graph-executor")
-(define deps '("base" "typed-racket-lib"))
+(define deps '("base" "typed-racket-lib" "typed-racket-more"))
 (define build-deps '("scribble-lib" "racket-doc" "rackunit-lib"))
 (define scribblings '(("scribblings/graph-executor.scrbl" ())))
 (define pkg-desc "A library for modeling and executing directed graph structures")
