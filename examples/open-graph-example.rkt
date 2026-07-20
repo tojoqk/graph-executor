@@ -128,20 +128,39 @@
                 (t-any-graph (gen-t-graph)))
           (v-any-node v-entry)))
 
+(define-values (graphs node-init) (wire))
+(define state-init (v-state 400 0))
+
+(module+ console
+  (require typed/racket/draw)
+  (provide run)
+  (: render (case-> (-> (Instance Bitmap%)) (-> Journal (Instance Bitmap%))))
+  (define render
+    (case-lambda
+      [() (render '())]
+      [(j) (let-values ([(_node _state h) (replay graphs node-init state-init j)])
+             (render-dot graphs node-init #:history h))]))
+  (: run (case-> (-> Journal) (-> Journal Journal)))
+  (define run
+    (case-lambda
+      [() (run '())]
+      [(j) (parameterize ([current-console-print-commands (list (list 'r "Render Graph" render))])
+             (let-values ([(_node _state j-result)
+                           (console-run graphs node-init state-init #:journal j)])
+               j-result))])))
+
 (module+ main
-  (require graph-executor
-           racket/cmdline)
-  (: console-mode (Boxof Boolean))
-  (define console-mode (box #f))
+  (require racket/cmdline)
+  (: mode (Boxof (U 'dot 'console)))
+  (define mode (box 'dot))
+  (define program-name "open-graph-example")
   (command-line
-   #:program "graph-example"
-   #:once-each
-   [("--console") "Run console" (set-box! console-mode #t)]
+   #:program program-name
+   #:once-any
+   [("--console") "Run console" (set-box! mode 'console)]
+   [("--dot") "Generate dot" (set-box! mode 'dot)]
    #:args ()
-   (define-values (graphs entry) (wire))
-   (if (unbox console-mode)
-       (let ([state-init (v-state 400 0)])
-         (let-values ([(_node-current _state-current journal)
-                       (console-run graphs entry state-init)])
-           (writeln journal)))
-       (write-dot graphs entry))))
+   (case (unbox mode)
+     [(dot) (write-dot graphs node-init)]
+     [(console) (define-values (_node _state journal) (console-run graphs node-init state-init))
+                (writeln journal)])))
