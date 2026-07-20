@@ -58,6 +58,7 @@
       (case (car ne)
         [(terminated)
          (when (current-console-trace-display?)
+           (newline)
            (displayln ">> Terminated"))
          (define choose-pmt ((node-prompt n) st))
          (if (current-console-quit-command)
