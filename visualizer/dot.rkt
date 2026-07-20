@@ -4,8 +4,9 @@
 (require "../graph/dot.rkt")
 (require "../private/visualizer.rkt")
 (require "../history.rkt")
+(require typed/racket/draw)
 
-(provide write-dot current-dot-visited-node? current-dot-visited-edge?
+(provide write-dot render-dot current-dot-visited-node? current-dot-visited-edge?
          DotConfig (rename-out [%dot-config dot-config])
          DotNodeConfig make-dot-node-config
          DotEdgeConfig make-dot-edge-config
@@ -427,3 +428,20 @@
 (: current-dot-visited-edge? (All (T S) (-> (Edge T S) Boolean)))
 (define (current-dot-visited-edge? e)
   (set-member? (current-visited-ids) (edge-id e)))
+
+(: render-dot (All (T S) (-> (Listof (Graph T S))
+                             (Node T S)
+                             [#:config (DotConfig T S)]
+                             [#:history (History T S)]
+                             (Instance Bitmap%))))
+(define (render-dot gs node
+                    #:config [config ((inst %dot-config T S))]
+                    #:history [h '()])
+  (define bmp (make-bitmap 1 1))
+  (define p (process "dot -Tpng"))
+  (write-dot gs node #:config config #:history h #:port (second p))
+  (close-output-port (second p))
+  (send bmp load-file (first p))
+  (if (eq? ((fifth p) 'status) 'done-ok)
+      bmp
+      (error 'render-dot "fail load")))

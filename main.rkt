@@ -25,4 +25,4 @@
          prompt
          message
          console-run current-console-random-prompt-display current-console-trace-display
-         write-dot)
+         write-dot render-dot)
