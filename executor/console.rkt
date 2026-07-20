@@ -11,7 +11,7 @@
 (provide console-run console-choose
          current-console-random-prompt-display
          current-console-trace-display current-console-trace-display?
-         current-console-quit-command current-console-undo-command current-console-render-command)
+         current-console-quit-command current-console-undo-command current-console-print-commands)
 
 (: current-console-undo-command (Parameterof (Option (List Symbol String))))
 (define current-console-undo-command (make-parameter '(u "Undo")))
@@ -19,8 +19,8 @@
 (: current-console-quit-command (Parameterof (Option (List Symbol String))))
 (define current-console-quit-command (make-parameter '(q "Quit")))
 
-(: current-console-render-command (Parameterof (Option (List Symbol String (-> Journal Any)))))
-(define current-console-render-command (make-parameter #f))
+(: current-console-print-commands (Parameterof (Listof (List Symbol String (-> Journal Any)))))
+(define current-console-print-commands (make-parameter '()))
 
 (: current-console-trace-display (Parameterof (U 'show 'hide)))
 (define current-console-trace-display (make-parameter 'show))
@@ -57,18 +57,19 @@
                    (cons (event-logger->journal-entry logger) j))))]
         [(choose)
          (define choose-pmt ((node-prompt n) st))
-         (let ([chosen-edge (console-choose choose-pmt ne)])
-           (cond [(eq? chosen-edge 'quit) (terminate)]
-                 [(eq? chosen-edge 'undo)
+         (let ([cmd (console-choose choose-pmt ne)])
+           (cond [(eq? cmd 'quit) (terminate)]
+                 [(eq? cmd 'undo)
                   (define undo-j (journal-undo j))
                   (define-values (undo-n undo-st _)
                     (replay gs entry initial-state (journal-undo j)))
                   (loop undo-n undo-st undo-j)]
-                 [(eq? chosen-edge 'render)
-                  (let ([cmd (current-console-render-command)])
-                    (when cmd (print ((third cmd) j)))
-                    (loop n st j))]
+                 [(pair? cmd)
+                  (case (car cmd)
+                    [(print) (print ((cdr cmd) j))])
+                  (loop n st j)]
                  [else
+                  (define chosen-edge cmd)
                   (let* ([logger (make-event-logger chosen-edge
                                                     choose-pmt
                                                     (second ne)
@@ -100,7 +101,7 @@
 (: console-choose (All (T S)
                        (-> String
                            (List 'choose (Pairof (Edge T S) (Listof (Edge T S))))
-                           (U (Edge T S) 'quit 'undo 'render))))
+                           (U (Edge T S) 'quit 'undo (Pairof 'print (-> Journal Any))))))
 (define (console-choose title ne)
   (let* ([edges : (Pairof (Edge T S) (Listof (Edge T S))) (second ne)]
          [edge-names ((inst map String (Edge T S)) edge-name edges)]
@@ -108,7 +109,7 @@
     (let* ([name (choose-edge title edge-names)])
       (cond [(eq? name 'quit) 'quit]
             [(eq? name 'undo) 'undo]
-            [(eq? name 'render) 'render]
+            [(pair? name) (case (car name) [(print) name])]
             [(findf (lambda ([edge : (Edge T S)]) (string=? name (edge-name edge))) edges) => identity]
             [else (error 'console-choose "unexpected error")]))))
 
@@ -119,7 +120,7 @@
     info))
 
 (: choose-edge (-> String (Listof String)
-                   (Values (U String 'quit 'undo 'render))))
+                   (Values (U String 'quit 'undo (Pairof 'print (-> Journal Any))))))
 (define (choose-edge title choices)
   (let ([out (open-output-string)])
     (newline)
@@ -131,18 +132,18 @@
                  => (lambda ([target : String])
                       (fprintf out "- [~a] ~a: ~a\n" i (car choice) (cadr choice)))])
           (fprintf out "  - [~a] ~a\n" i choice)))
-    (for ([cmd (list (current-console-undo-command)
-                     (current-console-render-command)
-                     (current-console-quit-command))])
+    (for ([cmd `(,@(current-console-print-commands)
+                 ,(current-console-undo-command)
+                 ,(current-console-quit-command))])
       (when cmd (fprintf out "  - [~a] ~a\n" (first cmd) (second cmd))))
     (let ([text (get-output-string out)])
       (display text)
       (let retry ()
         (display "? ")
         (let ([line (read-line)]
-              [quit-cmd (current-console-quit-command)]
-              [render-cmd (current-console-render-command)]
-              [undo-cmd (current-console-undo-command)])
+              [print-cmds (current-console-print-commands)]
+              [undo-cmd (current-console-undo-command)]
+              [quit-cmd (current-console-quit-command)])
           (cond [(eof-object? line) (retry)]
                 [(string->number line)
                  => (lambda ([n : Number])
@@ -153,5 +154,7 @@
                           (retry)))]
                 [(and quit-cmd (string=? (symbol->string (first quit-cmd)) (string-trim line))) 'quit]
                 [(and undo-cmd (string=? (symbol->string (first undo-cmd)) (string-trim line))) 'undo]
-                [(and render-cmd (string=? (symbol->string (first render-cmd)) (string-trim line))) 'render]
+                [(findf (lambda ([cmd : (Pairof Symbol Any)]) (string=? (symbol->string (car cmd)) (string-trim line))) print-cmds)
+                 => (lambda ([cmd : (List Symbol String (-> Journal Any))])
+                      (cons 'print (third cmd)))]
                 [else (retry)]))))))
