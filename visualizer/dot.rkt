@@ -213,12 +213,12 @@
 (: current-dot-visited-node-config (Parameterof (Option DotNodeConfig)))
 (define current-dot-visited-node-config
   (make-parameter (make-dot-node-config #:shape 'box #:style '(filled rounded)
-                                        #:color "darkgreen")))
+                                        #:fillcolor "gray")))
 
 (: current-dot-current-node-config (Parameterof (Option DotNodeConfig)))
 (define current-dot-current-node-config
   (make-parameter (make-dot-node-config #:shape 'box #:style '(filled rounded)
-                                        #:color "blue")))
+                                        #:fillcolor "yellow")))
 
 (: current-dot-edge-node-config (Parameterof DotNodeConfig))
 (define current-dot-edge-node-config
@@ -230,7 +230,7 @@
 
 (: current-dot-visited-auto-edge-config (Parameterof (Option DotEdgeConfig)))
 (define current-dot-visited-auto-edge-config
-  (make-parameter (make-dot-edge-config #:color "red:darkgreen")))
+  (make-parameter (make-dot-edge-config #:color "orange")))
 
 (: current-dot-choose-edge-config (Parameterof DotEdgeConfig))
 (define current-dot-choose-edge-config
@@ -238,7 +238,7 @@
 
 (: current-dot-visited-choose-edge-config (Parameterof (Option DotEdgeConfig)))
 (define current-dot-visited-choose-edge-config
-  (make-parameter (make-dot-edge-config #:color "blue:darkgreen")))
+  (make-parameter (make-dot-edge-config #:color "cyan")))
 
 (: current-dot-annotation-edge-config (Parameterof DotEdgeConfig))
 (define current-dot-annotation-edge-config
