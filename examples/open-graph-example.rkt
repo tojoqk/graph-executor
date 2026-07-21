@@ -148,7 +148,8 @@
   (define run
     (case-lambda
       [() (run '())]
-      [(j) (parameterize ([current-console-action-commands (list (list 'r "Render Graph" show))]
+      [(j) (parameterize ([current-console-action-commands (list* (list 'action 'r "Render Graph" show)
+                                                                  (current-console-action-commands))]
                           [current-eventspace (make-eventspace)])
              (let-values ([(_node _state j-result)
                            (console-run graphs node-init state-init #:journal j)])
