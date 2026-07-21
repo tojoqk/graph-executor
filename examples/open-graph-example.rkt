@@ -132,19 +132,24 @@
 (define state-init (v-state 400 0))
 
 (module+ console
-  (require typed/racket/draw)
+  (require typed/pict)
+  (require typed/racket/gui)
   (provide run)
-  (: render (case-> (-> (Instance Bitmap%)) (-> Journal (Instance Bitmap%))))
+  (: render (case-> (-> pict) (-> Journal pict)))
   (define render
     (case-lambda
       [() (render '())]
       [(j) (let-values ([(_node _state h) (replay graphs node-init state-init j)])
-             (render-dot graphs node-init #:history h))]))
+             (bitmap (render-dot graphs node-init #:history h)))]))
+  (: show (-> Journal Void))
+  (define (show j)
+    (show-pict (render j) #:frame-style '() #:frame-x 0 #:frame-y 0))
   (: run (case-> (-> Journal) (-> Journal Journal)))
   (define run
     (case-lambda
       [() (run '())]
-      [(j) (parameterize ([current-console-print-commands (list (list 'r "Render Graph" render))])
+      [(j) (parameterize ([current-console-action-commands (list (list 'r "Render Graph" show))]
+                          [current-eventspace (make-eventspace)])
              (let-values ([(_node _state j-result)
                            (console-run graphs node-init state-init #:journal j)])
                j-result))])))

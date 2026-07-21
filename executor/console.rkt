@@ -11,7 +11,7 @@
 (provide console-run console-choose
          current-console-random-prompt-display
          current-console-trace-display current-console-trace-display?
-         current-console-quit-command current-console-undo-command current-console-print-commands)
+         current-console-quit-command current-console-undo-command current-console-action-commands)
 
 (: current-console-undo-command (Parameterof (Option (List Symbol String))))
 (define current-console-undo-command (make-parameter '(u "Undo")))
@@ -19,8 +19,8 @@
 (: current-console-quit-command (Parameterof (Option (List Symbol String))))
 (define current-console-quit-command (make-parameter '(q "Quit")))
 
-(: current-console-print-commands (Parameterof (Listof (List Symbol String (-> Journal Any)))))
-(define current-console-print-commands (make-parameter '()))
+(: current-console-action-commands (Parameterof (Listof (List Symbol String (-> Journal Any)))))
+(define current-console-action-commands (make-parameter '()))
 
 (: current-console-trace-display (Parameterof (U 'show 'hide)))
 (define current-console-trace-display (make-parameter 'show))
@@ -41,7 +41,7 @@
              [j : Journal j])
     (define (quit)
       (values n st j))
-    (: command-dispatch (-> (U 'quit 'undo (Pairof 'print (-> Journal Any)))
+    (: command-dispatch (-> (U 'quit 'undo (Pairof 'action (-> Journal Any)))
                             (Values (Node T S) S Journal)))
     (define (command-dispatch cmd)
       (cond [(eq? cmd 'quit) (quit)]
@@ -52,7 +52,7 @@
              (loop undo-n undo-st undo-j)]
             [(pair? cmd)
              (case (car cmd)
-               [(print) (print ((cdr cmd) j))])
+               [(action) ((cdr cmd) j)])
              (loop n st j)]))
     (let ([ne (next-edges gs st n)])
       (case (car ne)
@@ -114,9 +114,9 @@
     info))
 
 (: console-choose (case-> (-> String (Pairof String (Listof String))
-                              (Values (U String 'quit 'undo (Pairof 'print (-> Journal Any)))))
+                              (Values (U String 'quit 'undo (Pairof 'action (-> Journal Any)))))
                           (-> String Null
-                              (Values (U 'quit 'undo (Pairof 'print (-> Journal Any)))))))
+                              (Values (U 'quit 'undo (Pairof 'action (-> Journal Any)))))))
 (define (console-choose title choices)
   (let ([out (open-output-string)])
     (newline)
@@ -129,7 +129,7 @@
                    => (lambda ([target : String])
                         (fprintf out "- [~a] ~a: ~a\n" i (car choice) (cadr choice)))])
             (fprintf out "  - [~a] ~a\n" i choice))))
-    (for ([cmd `(,@(current-console-print-commands)
+    (for ([cmd `(,@(current-console-action-commands)
                  ,(current-console-undo-command)
                  ,(current-console-quit-command))])
       (when cmd (fprintf out "  - [~a] ~a\n" (first cmd) (second cmd))))
@@ -138,7 +138,7 @@
       (let retry ()
         (display "? ")
         (let ([line (read-line)]
-              [print-cmds (current-console-print-commands)]
+              [action-cmds (current-console-action-commands)]
               [undo-cmd (current-console-undo-command)]
               [quit-cmd (current-console-quit-command)])
           (cond [(eof-object? line) (retry)]
@@ -151,7 +151,7 @@
                           (retry)))]
                 [(and quit-cmd (string=? (symbol->string (first quit-cmd)) (string-trim line))) 'quit]
                 [(and undo-cmd (string=? (symbol->string (first undo-cmd)) (string-trim line))) 'undo]
-                [(findf (lambda ([cmd : (Pairof Symbol Any)]) (string=? (symbol->string (car cmd)) (string-trim line))) print-cmds)
+                [(findf (lambda ([cmd : (Pairof Symbol Any)]) (string=? (symbol->string (car cmd)) (string-trim line))) action-cmds)
                  => (lambda ([cmd : (List Symbol String (-> Journal Any))])
-                      (cons 'print (third cmd)))]
+                      (cons 'action (third cmd)))]
                 [else (retry)]))))))
