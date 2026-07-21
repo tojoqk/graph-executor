@@ -8,7 +8,7 @@
 (require "../journal.rkt")
 (require "../event-logger.rkt")
 
-(provide console-run console-choose
+(provide console-run console-choose console-command-dispatch
          current-console-random-prompt-display
          current-console-trace-display current-console-trace-display?
          current-console-quit-command current-console-undo-command current-console-action-commands)
@@ -36,24 +36,8 @@
                               (Values (Node T S) S Journal))))
 (define (console-run gs entry initial-state #:journal [j '()])
   (define-values (n st _) (replay gs entry initial-state j))
-  (let loop ([n n]
-             [st st]
-             [j : Journal j])
-    (define (quit)
-      (values n st j))
-    (: command-dispatch (-> (U 'quit 'undo (Pairof 'action (-> Journal Any)))
-                            (Values (Node T S) S Journal)))
-    (define (command-dispatch cmd)
-      (cond [(eq? cmd 'quit) (quit)]
-            [(eq? cmd 'undo)
-             (define undo-j (journal-undo j))
-             (define-values (undo-n undo-st _)
-               (replay gs entry initial-state (journal-undo j)))
-             (loop undo-n undo-st undo-j)]
-            [(pair? cmd)
-             (case (car cmd)
-               [(action) ((cdr cmd) j)])
-             (loop n st j)]))
+  (let loop ([n n] [st st] [j : Journal j])
+    (define command-dispatch (console-command-dispatch gs entry initial-state loop))
     (let ([ne (next-edges gs st n)])
       (case (car ne)
         [(terminated)
@@ -62,8 +46,8 @@
            (displayln ">> Terminated"))
          (define choose-pmt ((node-prompt n) st))
          (if (current-console-quit-command)
-             (command-dispatch (console-choose choose-pmt '()))
-             (quit))]
+             (command-dispatch n st j (console-choose choose-pmt '()))
+             (values n st j))]
         [(auto)
          (let* ([chosen-edge (auto-choose ne)]
                 [logger (make-event-logger chosen-edge (edge-cod chosen-edge))])
@@ -87,7 +71,23 @@
                     (loop (edge-cod chosen-edge)
                           next-st
                           (cons (event-logger->journal-entry logger) j)))]
-                 [else (command-dispatch cmd)]))]))))
+                 [else (command-dispatch n st j cmd)]))]))))
+
+(: console-command-dispatch (All (T S)
+                                 (-> (Listof (Graph T S)) (Node T S) S
+                                     (-> (Node T S) S Journal
+                                         (Values (Node T S) S Journal))
+                                     (-> (Node T S) S Journal
+                                         (U 'quit 'undo (Pairof 'action (-> Journal Any)))
+                                         (Values (Node T S) S Journal)))))
+(define ((console-command-dispatch gs n-init st-init loop) n st j cmd)
+  (cond [(eq? cmd 'quit) (values n st j)]
+        [(eq? cmd 'undo) (define undo-j (journal-undo j))
+                         (define-values (undo-n undo-st _)
+                           (replay gs n-init st-init (journal-undo j)))
+                         (loop undo-n undo-st undo-j)]
+        [(pair? cmd) (case (car cmd) [(action) ((cdr cmd) j)])
+                     (loop n st j)]))
 
 (: console-step (All (T S) (-> S (Edge T S) (Event-Logger T S) S)))
 (define (console-step st e logger)
