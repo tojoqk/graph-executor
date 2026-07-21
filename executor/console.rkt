@@ -12,7 +12,7 @@
 (provide console-run console-choose console-command-dispatch
          current-console-random-prompt-display
          current-console-trace-display current-console-trace-display?
-         Console-Command)
+         Console-Command current-console-commands)
 
 (define-type Console-Command (U (List 'transform Symbol String (-> Journal Journal))
                                 (List 'action Symbol String (-> Journal Void))
