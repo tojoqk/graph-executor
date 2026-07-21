@@ -82,25 +82,24 @@
      (v-edge "Walk Away" #:dom idle #:cod terminal #:dot-minlen 2)))
    idle))
 
-
-(define-values (v-graph node-init) (vending-graph "Vending Machine Model"))
-(define graphs (list v-graph))
-(define state-init (v-state 400 0))
-
 (module+ console
-  (require typed/pict)
-  (require typed/racket/gui)
+  (require typed/racket/gui typed/pict)
   (provide make-system)
+
+  (define-values (v-graph node-init) (vending-graph "Vending Machine Model"))
+  (define graphs (list v-graph))
+  (define state-init (v-state 400 0))
+
   (: make-system (-> (Values (->* () (Journal) Journal)
-                             (->* () (Journal) pict))))
+                             (->* () (Journal) (-> Output-Port Void)))))
   (define (make-system)
-    (: render (->* () (Journal) pict))
-    (define (render [j '()])
+    (: writer (->* () (Journal) (-> Output-Port Void)))
+    (define (writer [j '()])
       (let-values ([(_node _state h) (replay graphs node-init state-init j)])
-        (bitmap (render-dot graphs node-init #:history h))))
+        (make-dot-writer graphs node-init #:history h)))
     (: show (-> Journal Void))
     (define (show j)
-      (show-pict (render j) #:frame-style '() #:frame-x 0 #:frame-y 0))
+      (show-pict (dot-writer->pict (writer j)) #:frame-style '() #:frame-x 0 #:frame-y 0))
     (: run (->* () (Journal) Journal))
     (define (run [j '()])
       (parameterize ([current-console-commands (list* (list 'action 'r "Render Graph" show)
@@ -109,7 +108,7 @@
         (let-values ([(_node _state j-result)
                       (console-run graphs node-init state-init #:journal j)])
           j-result)))
-    (values run render)))
+    (values run writer)))
 
 (module+ main
   (require racket/cmdline)
@@ -123,7 +122,7 @@
    [("--console") "Run console" (set-box! mode 'console)]
    [("--dot") "Generate dot" (set-box! mode 'dot)]
    #:args ()
+   (define-values (run writer) (make-system))
    (case (unbox mode)
-     [(dot) (write-dot graphs node-init)]
-     [(console) (define-values (run _render) (make-system))
-                (writeln (run))])))
+     [(dot) ((writer) (current-output-port))]
+     [(console) (writeln (run))])))

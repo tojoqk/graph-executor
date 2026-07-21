@@ -128,35 +128,32 @@
                 (t-any-graph (gen-t-graph)))
           (v-any-node v-entry)))
 
-(define-values (graphs node-init) (wire))
-(define state-init (v-state 400 0))
-
 (module+ console
-  (require typed/pict)
-  (require typed/racket/gui)
+  (require typed/pict typed/racket/gui)
   (provide make-system)
-  (: make-system (-> (Values (->* () (Journal) Journal) (->* () (Journal) pict))))
+
+  (define-values (graphs node-init) (wire))
+  (define state-init (v-state 400 0))
+
+  (: make-system (-> (Values (->* () (Journal) Journal)
+                             (->* () (Journal) (-> Output-Port Void)))))
   (define (make-system)
-    (: render (->* () (Journal) pict))
-    (define render
-      (case-lambda
-        [() (render '())]
-        [(j) (let-values ([(_node _state h) (replay graphs node-init state-init j)])
-               (bitmap (render-dot graphs node-init #:history h)))]))
+    (: writer (->* () (Journal) (-> Output-Port Void)))
+    (define (writer [j '()])
+      (let-values ([(_node _state h) (replay graphs node-init state-init j)])
+        (make-dot-writer graphs node-init #:history h)))
     (: show (-> Journal Void))
     (define (show j)
-      (show-pict (render j) #:frame-style '() #:frame-x 0 #:frame-y 0))
+      (show-pict (dot-writer->pict (writer j)) #:frame-style '() #:frame-x 0 #:frame-y 0))
     (: run (->* () (Journal) Journal))
-    (define run
-      (case-lambda
-        [() (run '())]
-        [(j) (parameterize ([current-console-commands (list* (list 'action 'r "Render Graph" show)
-                                                             (current-console-commands))]
-                            [current-eventspace (make-eventspace)])
-               (let-values ([(_node _state j-result)
-                             (console-run graphs node-init state-init #:journal j)])
-                 j-result))]))
-    (values run render)))
+    (define (run [j '()])
+      (parameterize ([current-console-commands (list* (list 'action 'r "Render Graph" show)
+                                                      (current-console-commands))]
+                     [current-eventspace (make-eventspace)])
+        (let-values ([(_node _state j-result)
+                      (console-run graphs node-init state-init #:journal j)])
+          j-result)))
+    (values run writer)))
 
 (module+ main
   (require racket/cmdline
@@ -170,7 +167,7 @@
    [("--console") "Run console" (set-box! mode 'console)]
    [("--dot") "Generate dot" (set-box! mode 'dot)]
    #:args ()
+   (define-values (run writer) (make-system))
    (case (unbox mode)
-     [(dot) (write-dot graphs node-init)]
-     [(console) (define-values (run _render) (make-system))
-                (writeln (run))])))
+     [(dot) ((writer) (current-output-port))]
+     [(console) (writeln (run))])))
