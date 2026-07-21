@@ -4,9 +4,9 @@
 (require "../graph/dot.rkt")
 (require "../private/visualizer.rkt")
 (require "../history.rkt")
-(require typed/racket/draw)
+(require typed/racket/draw typed/pict)
 
-(provide write-dot render-dot
+(provide write-dot make-dot-writer dot-writer->pict
          current-dot-current-node? current-dot-visited-node? current-dot-visited-edge?
          DotConfig (rename-out [%dot-config dot-config])
          DotNodeConfig make-dot-node-config
@@ -263,6 +263,16 @@
                  [current-node-id (history->current-node-id h)])
     (%write-dot gs node #:config config #:port port)))
 
+(: make-dot-writer (All (T S) (-> (Listof (Graph T S)) (Node T S)
+                                  [#:config (DotConfig T S)]
+                                  [#:history (History T S)]
+                                  (-> Output-Port Void))))
+(define (make-dot-writer gs node
+                         #:config [config ((inst %dot-config T S))]
+                         #:history [h '()])
+  (lambda ([port : Output-Port])
+    (write-dot gs node #:config config #:history h #:port port)))
+
 (: %write-dot (All (T S) (-> (Listof (Graph T S)) (Node T S)
                              #:config (DotConfig T S)
                              #:port Output-Port
@@ -459,19 +469,13 @@
   (cond [(current-node-id) => (lambda ([id : Symbol]) (eq? id (node-id n)))]
         [else #f]))
 
-(: render-dot (All (T S) (-> (Listof (Graph T S))
-                             (Node T S)
-                             [#:config (DotConfig T S)]
-                             [#:history (History T S)]
-                             (Instance Bitmap%))))
-(define (render-dot gs node
-                    #:config [config ((inst %dot-config T S))]
-                    #:history [h '()])
+(: dot-writer->pict (-> (-> Output-Port Void) pict))
+(define (dot-writer->pict writer)
   (define bmp (make-bitmap 1 1))
   (define p (process "dot -Tpng"))
-  (write-dot gs node #:config config #:history h #:port (second p))
+  (writer (second p))
   (close-output-port (second p))
   (send bmp load-file (first p))
   (if (eq? ((fifth p) 'status) 'done-ok)
-      bmp
+      (bitmap bmp)
       (error 'render-dot "fail load")))
