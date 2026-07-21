@@ -134,29 +134,33 @@
 (module+ console
   (require typed/pict)
   (require typed/racket/gui)
-  (provide run)
-  (: render (case-> (-> pict) (-> Journal pict)))
-  (define render
-    (case-lambda
-      [() (render '())]
-      [(j) (let-values ([(_node _state h) (replay graphs node-init state-init j)])
-             (bitmap (render-dot graphs node-init #:history h)))]))
-  (: show (-> Journal Void))
-  (define (show j)
-    (show-pict (render j) #:frame-style '() #:frame-x 0 #:frame-y 0))
-  (: run (case-> (-> Journal) (-> Journal Journal)))
-  (define run
-    (case-lambda
-      [() (run '())]
-      [(j) (parameterize ([current-console-commands (list* (list 'action 'r "Render Graph" show)
-                                                           (current-console-commands))]
-                          [current-eventspace (make-eventspace)])
-             (let-values ([(_node _state j-result)
-                           (console-run graphs node-init state-init #:journal j)])
-               j-result))])))
+  (provide make-system)
+  (: make-system (-> (Values (->* () (Journal) Journal) (->* () (Journal) pict))))
+  (define (make-system)
+    (: render (->* () (Journal) pict))
+    (define render
+      (case-lambda
+        [() (render '())]
+        [(j) (let-values ([(_node _state h) (replay graphs node-init state-init j)])
+               (bitmap (render-dot graphs node-init #:history h)))]))
+    (: show (-> Journal Void))
+    (define (show j)
+      (show-pict (render j) #:frame-style '() #:frame-x 0 #:frame-y 0))
+    (: run (->* () (Journal) Journal))
+    (define run
+      (case-lambda
+        [() (run '())]
+        [(j) (parameterize ([current-console-commands (list* (list 'action 'r "Render Graph" show)
+                                                             (current-console-commands))]
+                            [current-eventspace (make-eventspace)])
+               (let-values ([(_node _state j-result)
+                             (console-run graphs node-init state-init #:journal j)])
+                 j-result))]))
+    (values run render)))
 
 (module+ main
-  (require racket/cmdline)
+  (require racket/cmdline
+           (submod ".." console))
   (: mode (Boxof (U 'dot 'console)))
   (define mode (box 'dot))
   (define program-name "open-graph-example")
@@ -168,5 +172,5 @@
    #:args ()
    (case (unbox mode)
      [(dot) (write-dot graphs node-init)]
-     [(console) (define-values (_node _state journal) (console-run graphs node-init state-init))
-                (writeln journal)])))
+     [(console) (define-values (run _render) (make-system))
+                (writeln (run))])))
