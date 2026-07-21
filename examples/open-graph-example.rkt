@@ -141,7 +141,7 @@
     (: writer (->* () (Journal) (-> Output-Port Void)))
     (define (writer [j '()])
       (let-values ([(_node _state h) (replay graphs node-init state-init j)])
-        (make-dot-writer graphs node-init #:history h)))
+        (dot-writer graphs node-init #:history h)))
     (: show (-> Journal Void))
     (define (show j)
       (show-pict (dot-writer->pict (writer j)) #:frame-style '() #:frame-x 0 #:frame-y 0))

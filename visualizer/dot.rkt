@@ -6,7 +6,7 @@
 (require "../history.rkt")
 (require typed/racket/draw typed/pict)
 
-(provide write-dot make-dot-writer dot-writer->pict
+(provide write-dot dot-writer dot-writer->pict
          current-dot-current-node? current-dot-visited-node? current-dot-visited-edge?
          DotConfig (rename-out [%dot-config dot-config])
          DotNodeConfig make-dot-node-config
@@ -263,13 +263,13 @@
                  [current-node-id (history->current-node-id h)])
     (%write-dot gs node #:config config #:port port)))
 
-(: make-dot-writer (All (T S) (-> (Listof (Graph T S)) (Node T S)
-                                  [#:config (DotConfig T S)]
-                                  [#:history (History T S)]
-                                  (-> Output-Port Void))))
-(define (make-dot-writer gs node
-                         #:config [config ((inst %dot-config T S))]
-                         #:history [h '()])
+(: dot-writer (All (T S) (-> (Listof (Graph T S)) (Node T S)
+                             [#:config (DotConfig T S)]
+                             [#:history (History T S)]
+                             (-> Output-Port Void))))
+(define (dot-writer gs node
+                    #:config [config ((inst %dot-config T S))]
+                    #:history [h '()])
   (lambda ([port : Output-Port])
     (write-dot gs node #:config config #:history h #:port port)))
 
