@@ -6,21 +6,28 @@
 (require "../prompt/console.rkt")
 (require "../executor.rkt")
 (require "../journal.rkt")
+(require "../history.rkt")
 (require "../event-logger.rkt")
 
 (provide console-run console-choose console-command-dispatch
          current-console-random-prompt-display
          current-console-trace-display current-console-trace-display?
-         current-console-quit-command current-console-undo-command current-console-action-commands)
+         Console-Command)
 
-(: current-console-undo-command (Parameterof (Option (List Symbol String))))
-(define current-console-undo-command (make-parameter '(u "Undo")))
+(define-type Console-Command (U (List 'transform Symbol String (-> Journal Journal))
+                                (List 'action Symbol String (-> Journal Void))
+                                (List 'restore Symbol String (-> (Option Journal)))
+                                (List 'quit Symbol String)))
 
-(: current-console-quit-command (Parameterof (Option (List Symbol String))))
-(define current-console-quit-command (make-parameter '(q "Quit")))
+(: current-console-commands (Parameterof (Listof Console-Command)))
+(define current-console-commands (make-parameter
+                                  (list (list 'transform 'u "Undo" journal-undo)
+                                        (list 'quit 'q "Quit"))))
 
-(: current-console-action-commands (Parameterof (Listof (List Symbol String (-> Journal Any)))))
-(define current-console-action-commands (make-parameter '()))
+(: current-console-has-quit-command? (-> Boolean))
+(define (current-console-has-quit-command?)
+  (and (memf (lambda ([c : Console-Command]) (eq? 'quit (first c))) (current-console-commands))
+       #t))
 
 (: current-console-trace-display (Parameterof (U 'show 'hide)))
 (define current-console-trace-display (make-parameter 'show))
@@ -45,7 +52,7 @@
            (newline)
            (displayln ">> Terminated"))
          (define choose-pmt ((node-prompt n) st))
-         (if (current-console-quit-command)
+         (if (current-console-has-quit-command?)
              (command-dispatch n st j (console-choose choose-pmt '()))
              (values n st j))]
         [(auto)
@@ -78,16 +85,21 @@
                                      (-> (Node T S) S Journal
                                          (Values (Node T S) S Journal))
                                      (-> (Node T S) S Journal
-                                         (U 'quit 'undo (Pairof 'action (-> Journal Any)))
+                                         Console-Command
                                          (Values (Node T S) S Journal)))))
 (define ((console-command-dispatch gs n-init st-init loop) n st j cmd)
-  (cond [(eq? cmd 'quit) (values n st j)]
-        [(eq? cmd 'undo) (define undo-j (journal-undo j))
-                         (define-values (undo-n undo-st _)
-                           (replay gs n-init st-init (journal-undo j)))
-                         (loop undo-n undo-st undo-j)]
-        [(pair? cmd) (case (car cmd) [(action) ((cdr cmd) j)])
-                     (loop n st j)]))
+  (case (car cmd)
+    [(quit) (values n st j)]
+    [(action) ((fourth cmd) j)
+              (loop n st j)]
+    [(transform) (define-values (tr-n tr-st tr-h)
+                   (replay gs n-init st-init ((fourth cmd) j)))
+                 (loop tr-n tr-st (history->journal tr-h))]
+    [(restore) (define-values (rs-n rs-st rs-h)
+                 (replay gs n-init st-init
+                         (cond [((fourth cmd)) => identity]
+                               [else j])))
+               (loop rs-n rs-st (history->journal rs-h))]))
 
 (: console-step (All (T S) (-> S (Edge T S) (Event-Logger T S) S)))
 (define (console-step st e logger)
@@ -114,9 +126,9 @@
     info))
 
 (: console-choose (case-> (-> String (Pairof String (Listof String))
-                              (Values (U String 'quit 'undo (Pairof 'action (-> Journal Any)))))
+                              (Values (U String Console-Command)))
                           (-> String Null
-                              (Values (U 'quit 'undo (Pairof 'action (-> Journal Any)))))))
+                              (Values Console-Command))))
 (define (console-choose title choices)
   (let ([out (open-output-string)])
     (newline)
@@ -129,18 +141,13 @@
                    => (lambda ([target : String])
                         (fprintf out "- [~a] ~a: ~a\n" i (car choice) (cadr choice)))])
             (fprintf out "  - [~a] ~a\n" i choice))))
-    (for ([cmd `(,@(current-console-action-commands)
-                 ,(current-console-undo-command)
-                 ,(current-console-quit-command))])
-      (when cmd (fprintf out "  - [~a] ~a\n" (first cmd) (second cmd))))
+    (for ([cmd (current-console-commands)])
+      (when cmd (fprintf out "  - [~a] ~a\n" (second cmd) (third cmd))))
     (let ([text (get-output-string out)])
       (display text)
       (let retry ()
         (display "? ")
-        (let ([line (read-line)]
-              [action-cmds (current-console-action-commands)]
-              [undo-cmd (current-console-undo-command)]
-              [quit-cmd (current-console-quit-command)])
+        (let ([line (read-line)])
           (cond [(eof-object? line) (retry)]
                 [(string->number line)
                  => (lambda ([n : Number])
@@ -149,9 +156,8 @@
                                (<= n (length choices)))
                           (list-ref choices (sub1 n))
                           (retry)))]
-                [(and quit-cmd (string=? (symbol->string (first quit-cmd)) (string-trim line))) 'quit]
-                [(and undo-cmd (string=? (symbol->string (first undo-cmd)) (string-trim line))) 'undo]
-                [(findf (lambda ([cmd : (Pairof Symbol Any)]) (string=? (symbol->string (car cmd)) (string-trim line))) action-cmds)
-                 => (lambda ([cmd : (List Symbol String (-> Journal Any))])
-                      (cons 'action (third cmd)))]
+                [(findf (lambda ([cmd : Console-Command])
+                          (string=? (symbol->string (second cmd)) (string-trim line)))
+                        (current-console-commands))
+                 => identity]
                 [else (retry)]))))))
