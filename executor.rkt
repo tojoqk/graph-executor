@@ -12,7 +12,13 @@
          current-auto-conflict-policy current-single-choose-policy
          current-node-id current-node?
          current-edge-id current-edge?
-         find-edge)
+         find-edge
+         Command)
+
+(define-type Command (U (List 'transform (-> Journal Journal))
+                        (List 'action (-> Journal Void))
+                        (List 'restore (-> (Option Journal)))
+                        (List 'quit)))
 
 (: current-node-id (Parameterof (Option Symbol)))
 (define current-node-id (make-parameter #f))

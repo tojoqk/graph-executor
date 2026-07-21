@@ -85,19 +85,19 @@
                                      (-> (Node T S) S Journal
                                          (Values (Node T S) S Journal))
                                      (-> (Node T S) S Journal
-                                         Console-Command
+                                         Command
                                          (Values (Node T S) S Journal)))))
 (define ((console-command-dispatch gs n-init st-init loop) n st j cmd)
   (case (car cmd)
     [(quit) (values n st j)]
-    [(action) ((fourth cmd) j)
+    [(action) ((second cmd) j)
               (loop n st j)]
     [(transform) (define-values (tr-n tr-st tr-h)
-                   (replay gs n-init st-init ((fourth cmd) j)))
+                   (replay gs n-init st-init ((second cmd) j)))
                  (loop tr-n tr-st (history->journal tr-h))]
     [(restore) (define-values (rs-n rs-st rs-h)
                  (replay gs n-init st-init
-                         (cond [((fourth cmd)) => identity]
+                         (cond [((second cmd)) => identity]
                                [else j])))
                (loop rs-n rs-st (history->journal rs-h))]))
 
@@ -125,10 +125,18 @@
     (event-logger-prompt-log! logger type info)
     info))
 
+(: console-command->command (-> Console-Command Command))
+(define (console-command->command c)
+  (case (first c)
+    [(quit) (list (first c))]
+    [(action) (list (first c) (fourth c))]
+    [(transform) (list (first c) (fourth c))]
+    [(restore) (list (first c) (fourth c))]))
+
 (: console-choose (case-> (-> String (Pairof String (Listof String))
-                              (Values (U String Console-Command)))
+                              (Values (U String Command)))
                           (-> String Null
-                              (Values Console-Command))))
+                              (Values Command))))
 (define (console-choose title choices)
   (let ([out (open-output-string)])
     (newline)
@@ -159,5 +167,5 @@
                 [(findf (lambda ([cmd : Console-Command])
                           (string=? (symbol->string (second cmd)) (string-trim line)))
                         (current-console-commands))
-                 => identity]
+                 => console-command->command]
                 [else (retry)]))))))
