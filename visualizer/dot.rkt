@@ -468,13 +468,12 @@
   (cond [(current-node-id) => (lambda ([id : Symbol]) (eq? id (node-id n)))]
         [else #f]))
 
-(: render-dot (-> DotWriter pict))
-(define (render-dot writer)
-  (define bmp (make-bitmap 1 1))
+(: render-dot (-> DotWriter (Instance Bitmap%) Void))
+(define (render-dot writer bmp)
   (define p (process "dot -Tpng"))
   (write-dot writer (second p))
   (close-output-port (second p))
   (send bmp load-file (first p))
   (if (eq? ((fifth p) 'status) 'done-ok)
-      (bitmap bmp)
+      (void)
       (error 'render-dot "fail load")))
