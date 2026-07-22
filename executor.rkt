@@ -5,7 +5,6 @@
 (require "history.rkt")
 (require "prompt.rkt")
 (require "message.rkt")
-(require "event-logger.rkt")
 
 (provide replay
          find-graph next-edges auto-choose
@@ -55,15 +54,15 @@
                            (let* ([cod (edge-cod e)]
                                   [mode (edge-mode e)]
                                   [logger  (if (eq? mode 'auto)
-                                               (make-event-logger e cod)
+                                               (make-history-logger 'auto e cod)
                                                (let ([pmt ((node-prompt n) st)])
-                                                 (make-event-logger e pmt edges attrs cod)))]
+                                                 (make-history-logger 'choose e pmt edges attrs cod)))]
                                   [bps : (Boxof (Listof (Pairof Prompt-Value Prompt-Attributes))) (box ps-init)])
                              (: pop-bps (-> (U 'edge 'node) Prompt-Implementation))
                              (define ((pop-bps type) title op)
-                               (: push-event! (-> Prompt-Info Void))
-                               (define (push-event! x)
-                                 (event-logger-prompt-log! logger type x))
+                               (: push-event! (-> String Prompt-Op Prompt-Value Prompt-Attributes Void))
+                               (define (push-event! title op val attrs)
+                                 (history-logger-prompt-log! logger type title op val attrs))
                                (let ([ps (unbox bps)])
                                  (set-box! bps (cdr ps))
                                  (if (null? ps)
@@ -73,51 +72,41 @@
                                        (case (car op)
                                          [(choose)
                                           (assert val string?)
-                                          (let ([info (prompt-info-choose title attrs val
-                                                                          (if (procedure? (second op))
-                                                                              (third op)
-                                                                              (second op)))])
-                                            (push-event! info)
-                                            info)]
+                                          (push-event! title op val attrs)
+                                          (values val attrs)]
                                          [(string)
                                           (assert val string?)
-                                          (let ([info (prompt-info-string title attrs val)])
-                                            (push-event! info)
-                                            info)]
+                                          (push-event! title op val attrs)
+                                          (values val attrs)]
                                          [(integer)
                                           (assert (assert val exact?) integer?)
-                                          (let ([info (prompt-info-integer title attrs val)])
-                                            (push-event! info)
-                                            info)]
+                                          (push-event! title op val attrs)
+                                          (values val attrs)]
                                          [(natural)
                                           (assert (assert val exact?) natural?)
-                                          (let ([info (prompt-info-natural title attrs val)])
-                                            (push-event! info)
-                                            info)]
+                                          (push-event! title op val attrs)
+                                          (values val attrs)]
                                          [(positive-integer)
                                           (assert (assert val exact?) positive-integer?)
-                                          (let ([info (prompt-info-positive-integer title attrs val)])
-                                            (push-event! info)
-                                            info)]
+                                          (push-event! title op val attrs)
+                                          (values val attrs)]
                                          [(range)
                                           (assert val exact?)
                                           (assert val integer?)
                                           (let ([min (second op)] [max : Integer (third op)])
                                             (cond
                                               [(and (<= min val) (<= val max))
-                                               (let ([info (prompt-info-range title attrs val min max)])
-                                                 (push-event! info)
-                                                 info)]
+                                               (push-event! title op val attrs)
+                                               (values val attrs)]
                                               [else
                                                (error 'retry "range error" val)]))]
                                          [(random)
                                           (assert val natural?)
-                                          (let ([info (prompt-info-random title attrs val (second op))])
-                                            (push-event! info)
-                                            info)])))))
+                                          (push-event! title op val attrs)
+                                          (values val attrs)])))))
                              (: message-to-log (-> (U 'edge 'node) (-> Any Void)))
                              (define ((message-to-log type) msg)
-                               (event-logger-message-log! logger type msg))
+                               (history-logger-message-log! logger type msg))
                              (let ([next-st
                                     (parameterize ([current-message (message-to-log 'node)]
                                                    [current-prompt (pop-bps 'node)])
@@ -128,8 +117,8 @@
                                (loop cod
                                      next-st
                                      (cdr j)
-                                     (list* (event-logger->history-node logger)
-                                            (event-logger->history-edge logger)
+                                     (list* (history-logger->history-record-node logger)
+                                            (history-logger->history-record-edge logger)
                                             h)))))]
                      [else (error 'replay "edge not found")]))]
             [(terminated) (error 'replay "unexpected termination")])))))

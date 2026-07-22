@@ -19,7 +19,7 @@
 
 (: console-choose (-> String (U (List 'choose Procedure (Listof String))
                                 (List 'choose (Listof String)))
-                      Prompt-Info-Choose))
+                      (Values String Prompt-Attributes)))
 (define (console-choose title op)
   (let ([choices (if (procedure? (second op))
                      (third op)
@@ -41,16 +41,13 @@
                       (if (and (exact? n)
                                (positive-integer? n)
                                (<= n (length choices)))
-                          (prompt-info-choose title
-                                              '()
-                                              (list-ref choices (sub1 n))
-                                              choices)
+                          (values (list-ref choices n) '())
                           (retry)))]
                 [else (retry)]))))))
 
-(: console-input-number (case-> (-> String (List 'integer) Prompt-Info-Integer)
-                                (-> String (List 'natural) Prompt-Info-Natural)
-                                (-> String (List 'positive-integer) Prompt-Info-Positive-Integer)))
+(: console-input-number (case-> (-> String (List 'integer) (Values Integer Prompt-Attributes))
+                                (-> String (List 'natural) (Values Natural Prompt-Attributes))
+                                (-> String (List 'positive-integer) (Values Positive-Integer Prompt-Attributes))))
 (define (console-input-number title op)
   (newline)
   (printf "* ~a\n" title)
@@ -63,19 +60,19 @@
                   (case (car op)
                     [(integer)
                      (if (and (exact? value) (integer? value))
-                         (prompt-info-integer title '() value)
+                         (values value '())
                          (retry))]
                     [(natural)
                      (if (and (exact? value) (natural? value))
-                         (prompt-info-natural title '() value)
+                         (values value '())
                          (retry))]
                     [(positive-integer)
                      (if (and (exact? value) (positive-integer? value))
-                         (prompt-info-positive-integer title '() value)
+                         (values value '())
                          (retry))]))]
             [else (retry)]))))
 
-(: console-string (case-> (-> String (List 'string) Prompt-Info-String)))
+(: console-string (case-> (-> String (List 'string) (Values String Prompt-Attributes))))
 (define (console-string title op)
   (newline)
   (printf "* ~a\n" title)
@@ -85,9 +82,11 @@
       (if (or (eof-object? value)
               (regexp-match #rx"^\\s*$" value))
           (retry)
-          (prompt-info-string title '() value)))))
+          (values value '())))))
 
-(: console-range (-> String (List 'range Integer Integer) Prompt-Info-Range))
+(: console-range (case-> (-> String (List 'range Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
+                         (-> String (List 'range Natural Natural) (Values Natural Prompt-Attributes))
+                         (-> String (List 'range Integer Integer) (Values Integer Prompt-Attributes))))
 (define (console-range title op)
   (newline)
   (printf "* ~a\n" title)
@@ -101,20 +100,17 @@
                => (lambda ([value : Number])
                     (if (and (exact? value) (integer? value)
                              (<= from value) (<= value to))
-                        (prompt-info-range title '() value from to)
+                        (values value '())
                         (retry)))]
               [else (retry)])))))
 
-(: console-random (-> String (List 'random Positive-Integer) Prompt-Info-Random))
+(: console-random (-> String (List 'random Positive-Integer) (Values Natural Prompt-Attributes)))
 (define (console-random title op)
   (let ([r (random (second op))])
-    (prompt-info-random title
-                        '()
-                        (case (current-console-random-prompt-display)
-                          [(show)
-                           (newline)
-                           (printf "* ~a\n" title)
-                           (printf "(random) > ~a\n" r)
-                           r]
-                          [(hide) r])
-                        (second op))))
+    (values (case (current-console-random-prompt-display)
+              [(show) (newline)
+                      (printf "* ~a\n" title)
+                      (printf "(random) > ~a\n" r)
+                      r]
+              [(hide) r])
+            '())))

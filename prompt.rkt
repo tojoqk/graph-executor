@@ -1,17 +1,15 @@
 #lang typed/racket
 
-(provide Prompt Prompt-Type Prompt-Value Prompt-Attributes current-prompt prompt
+(provide Prompt Prompt-Type Prompt-Value Prompt-Op Prompt-Attributes current-prompt prompt
          Prompt-Info Prompt-Implementation
-         prompt-info-value
-         (rename-out [prompt-info?? prompt-info?])
-         (except-out (struct-out prompt-info) prompt-info? make-prompt-info)
-         Prompt-Info-Choose (struct-out prompt-info-choose)
-         Prompt-Info-String (struct-out prompt-info-string)
-         Prompt-Info-Integer (struct-out prompt-info-integer)
-         Prompt-Info-Natural (struct-out prompt-info-natural)
-         Prompt-Info-Positive-Integer (struct-out prompt-info-positive-integer)
-         Prompt-Info-Range (struct-out prompt-info-range)
-         Prompt-Info-Random (struct-out prompt-info-random))
+         prompt-info-value prompt-info-attributes prompt-info-title
+         Prompt-Info-Choose
+         Prompt-Info-String
+         Prompt-Info-Integer
+         Prompt-Info-Natural
+         Prompt-Info-Positive-Integer
+         Prompt-Info-Range
+         Prompt-Info-Random)
 
 (define-type (Prompt A)
   (case-> (-> String (List 'choose (-> Any Boolean : #:+ A) (Listof (∩ A String))) (∩ String A))
@@ -28,6 +26,16 @@
 (define-type Prompt-Attributes (Listof (Pairof Symbol (U String Symbol Integer))))
 
 (define-type Prompt-Type (U 'choose 'string 'integer 'natural 'positive-integer 'range 'random))
+(define-type Prompt-Op (U (List 'choose Procedure (Listof String))
+                          (List 'choose (Listof String))
+                          (List 'string)
+                          (List 'integer)
+                          (List 'natural)
+                          (List 'positive-integer)
+                          (List 'range Positive-Integer Positive-Integer)
+                          (List 'range Natural Natural)
+                          (List 'range Integer Integer)
+                          (List 'random Positive-Integer)))
 (define-type Prompt-Value (U String Integer))
 
 (: current-prompt (Parameterof (Option Prompt-Implementation)))
@@ -36,30 +44,31 @@
 (: prompt (All (A) (Prompt A)))
 (define (prompt title op)
   (cond [(current-prompt) => (lambda ([p : Prompt-Implementation])
-                               (let ([info (p title op)])
-                                 (case (car op)
-                                   [(choose) (if (procedure? (cadr op))
-                                                 (assert (prompt-info-choose-value info) (cadr op))
-                                                 (prompt-info-choose-value info))]
-                                   [(range)
-                                    (let ([val (prompt-info-range-value info)])
-                                      (let ([from (second op)] [to (third op)])
-                                        (if (and (<= from val) (<= val to))
-                                            val
-                                            (error 'prompt "range implementation error"))))]
-                                   [else (prompt-info-value info)])))]
+                               (define-values (value _attrs) (p title op))
+                               (case (car op)
+                                 [(choose) (if (procedure? (cadr op))
+                                               (assert value (cadr op))
+                                               value)]
+                                 [(range)
+                                  (let ([from (second op)] [to (third op)])
+                                    (if (and (<= from value) (<= value to))
+                                        value
+                                        (error 'prompt "range implementation error")))]
+                                 [else value]))]
         [else (error 'prompt "called outside of trans")]))
 
 (define-type Prompt-Implementation
   (case-> (-> String (U (List 'choose Procedure (Listof String))
                         (List 'choose (Listof String)))
-              Prompt-Info-Choose)
-          (-> String (List 'string) Prompt-Info-String)
-          (-> String (List 'integer) Prompt-Info-Integer)
-          (-> String (List 'natural) Prompt-Info-Natural)
-          (-> String (List 'positive-integer) Prompt-Info-Positive-Integer)
-          (-> String (List 'range Integer Integer) Prompt-Info-Range)
-          (-> String (List 'random Positive-Integer) Prompt-Info-Random)))
+              (Values String Prompt-Attributes))
+          (-> String (List 'string) (Values String Prompt-Attributes))
+          (-> String (List 'integer) (Values Integer Prompt-Attributes))
+          (-> String (List 'natural) (Values Natural Prompt-Attributes))
+          (-> String (List 'positive-integer) (Values Positive-Integer Prompt-Attributes))
+          (-> String (List 'range Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
+          (-> String (List 'range Natural Natural) (Values Natural Prompt-Attributes))
+          (-> String (List 'range Integer Integer) (Values Integer Prompt-Attributes))
+          (-> String (List 'random Positive-Integer) (Values Natural Prompt-Attributes))))
 
 (: prompt-info-value (case-> (-> Prompt-Info-Choose String)
                              (-> Prompt-Info-String String)
@@ -69,52 +78,25 @@
                              (-> Prompt-Info-Range Integer)
                              (-> Prompt-Info-Random Natural)
                              (-> Prompt-Info Prompt-Value)))
-(define (prompt-info-value pi)
-  (cond [(prompt-info-choose? pi) (prompt-info-choose-value pi)]
-        [(prompt-info-string? pi) (prompt-info-string-value pi)]
-        [(prompt-info-integer? pi) (prompt-info-integer-value pi)]
-        [(prompt-info-natural? pi) (prompt-info-natural-value pi)]
-        [(prompt-info-positive-integer? pi) (prompt-info-positive-integer-value pi)]
-        [(prompt-info-range? pi) (prompt-info-range-value pi)]
-        [(prompt-info-random? pi) (prompt-info-random-value pi)]))
+(define (prompt-info-value pi) (car (fourth pi)))
 
-(define-type Prompt-Info (U Prompt-Info-Choose
-                            Prompt-Info-String
-                            Prompt-Info-Integer
-                            Prompt-Info-Natural
-                            Prompt-Info-Positive-Integer
-                            Prompt-Info-Range
-                            Prompt-Info-Random))
+(: prompt-info-attributes (-> Prompt-Info Prompt-Attributes))
+(define (prompt-info-attributes pi) (cdr (fourth pi)))
 
-(define-predicate prompt-info?? Prompt-Info)
+(: prompt-info-title (-> Prompt-Info String))
+(define (prompt-info-title pi) (third pi))
 
-(struct prompt-info ([title : String]
-                     [attributes : Prompt-Attributes])
-  #:constructor-name make-prompt-info
-  #:transparent)
-(struct prompt-info-choose prompt-info ([value : String]
-                                        [items : (Listof (U (List String String) String))])
-  #:type-name Prompt-Info-Choose
-  #:transparent)
-(struct prompt-info-string prompt-info ([value : String])
-  #:type-name Prompt-Info-String
-  #:transparent)
-(struct prompt-info-integer prompt-info ([value : Integer])
-  #:type-name Prompt-Info-Integer
-  #:transparent)
-(struct prompt-info-natural prompt-info ([value : Natural])
-  #:type-name Prompt-Info-Natural
-  #:transparent)
-(struct prompt-info-positive-integer prompt-info ([value : Positive-Integer])
-  #:type-name Prompt-Info-Positive-Integer
-  #:transparent)
-(struct prompt-info-range prompt-info ([value : Integer]
-                                       [maximum : Integer]
-                                       [minimum : Integer])
-  #:type-name Prompt-Info-Range
-  #:transparent)
+(define-type Prompt-Info (List 'prompt Prompt-Op String (Pairof Prompt-Value Prompt-Attributes)))
 
-(struct prompt-info-random prompt-info ([value : Natural]
-                                        [bound : Positive-Integer])
-  #:type-name Prompt-Info-Random
-  #:transparent)
+(define-type Prompt-Info-Choose (List 'prompt (U (List 'choose Procedure (Listof String))
+                                                 (List 'choose (Listof String)))
+                                      String
+                                      (Pairof String Prompt-Attributes)))
+(define-type Prompt-Info-String (List 'prompt (List 'string) String (Pairof String Prompt-Attributes)))
+(define-type Prompt-Info-Integer (List 'prompt (List 'integer) String (Pairof Integer Prompt-Attributes)))
+(define-type Prompt-Info-Natural (List 'prompt (List 'natural) String (Pairof Natural Prompt-Attributes)))
+(define-type Prompt-Info-Positive-Integer (List 'prompt (List 'positive-integer) String (Pairof Positive-Integer Prompt-Attributes)))
+(define-type Prompt-Info-Range  (U (List 'prompt (List 'range Natural Natural) String (Pairof Natural Prompt-Attributes))
+                                   (List 'prompt (List 'range Positive-Integer Positive-Integer) String (Pairof Positive-Integer Prompt-Attributes))
+                                   (List 'prompt (List 'range Integer Integer) String (Pairof Integer Prompt-Attributes))))
+(define-type Prompt-Info-Random (List 'prompt (List 'random Positive-Integer) String (Pairof Natural Prompt-Attributes)))

@@ -7,7 +7,6 @@
 (require "../executor.rkt")
 (require "../journal.rkt")
 (require "../history.rkt")
-(require "../event-logger.rkt")
 
 (provide console-run console-choose console-command-dispatch
          current-console-random-prompt-display
@@ -57,27 +56,23 @@
              (values n st j))]
         [(auto)
          (let* ([chosen-edge (auto-choose ne)]
-                [logger (make-event-logger chosen-edge (edge-cod chosen-edge))])
+                [logger (make-journal-logger 'auto (edge-name chosen-edge))])
            (when (current-console-trace-display?)
              (displayln (format ">> [Auto] ~a" (edge-name chosen-edge))))
            (let ([next-st (console-step st chosen-edge logger)])
              (loop (edge-cod chosen-edge)
                    next-st
-                   (cons (event-logger->journal-entry logger) j))))]
+                   (cons (journal-logger->journal-entry logger) j))))]
         [(choose)
          (define choose-pmt ((node-prompt n) st))
          (let ([cmd (console-choose choose-pmt (map (inst edge-name T S) (second ne)))])
            (cond [(string? cmd)
                   (define chosen-edge (find-edge (second ne) cmd))
-                  (let* ([logger (make-event-logger chosen-edge
-                                                    choose-pmt
-                                                    (second ne)
-                                                    '()
-                                                    (edge-cod chosen-edge))]
+                  (let* ([logger (make-journal-logger 'choose (edge-name chosen-edge) '())]
                          [next-st (console-step st chosen-edge logger)])
                     (loop (edge-cod chosen-edge)
                           next-st
-                          (cons (event-logger->journal-entry logger) j)))]
+                          (cons (journal-logger->journal-entry logger) j)))]
                  [else (command-dispatch n st j cmd)]))]))))
 
 (: console-command-dispatch (All (T S)
@@ -101,29 +96,27 @@
                                [else j])))
                (loop rs-n rs-st (history->journal rs-h))]))
 
-(: console-step (All (T S) (-> S (Edge T S) (Event-Logger T S) S)))
+(: console-step (All (T S) (-> S (Edge T S) Journal-Logger S)))
 (define (console-step st e logger)
-  (: message-with-log (-> (U 'node 'edge) (-> Any Void)))
-  (define ((message-with-log type) val)
-    (event-logger-message-log! logger type (message-info val))
+  (define (console-message val)
     (newline)
     (displayln val))
-  (parameterize ([current-prompt (console-prompt/log logger 'node)]
-                 [current-message (message-with-log 'node)])
+  (parameterize ([current-prompt (console-prompt/log logger)]
+                 [current-message console-message])
     ((node-trans (edge-cod e))
-     (parameterize ([current-prompt (console-prompt/log logger 'edge)]
-                    [current-message (message-with-log 'edge)])
+     (parameterize ([current-prompt (console-prompt/log logger)]
+                    [current-message console-message])
        (begin0 ((edge-trans e) st)
          (when (current-console-trace-display?)
            (let ([n (edge-cod e)])
              (printf "--- Current Node: ~a (Graph: ~a) ---\n" (node-name n) (node-graph-name n))
              (cond [(node-desc n) => displayln]))))))))
 
-(: console-prompt/log (All (T S) (-> (Event-Logger T S) (U 'edge 'node) Prompt-Implementation)))
-(define ((console-prompt/log logger type) title op)
-  (let ([info (console-prompt title op)])
-    (event-logger-prompt-log! logger type info)
-    info))
+(: console-prompt/log (All (T S) (-> Journal-Logger Prompt-Implementation)))
+(define ((console-prompt/log logger) title op)
+  (define-values (val attrs) (console-prompt title op))
+  (journal-logger-prompt-log! logger val attrs)
+  (values val attrs))
 
 (: console-command->command (-> Console-Command Command))
 (define (console-command->command c)
@@ -134,9 +127,9 @@
     [(restore) (list (first c) (fourth c))]))
 
 (: console-choose (case-> (-> String (Pairof String (Listof String))
-                              (Values (U String Command)))
+                              (U String Command))
                           (-> String Null
-                              (Values Command))))
+                              Command)))
 (define (console-choose title choices)
   (let ([out (open-output-string)])
     (newline)

@@ -440,15 +440,15 @@
 (define (history->visited-ids h)
   (list->set (map (lambda ([r : (History-Record T S)])
                     (case (car r)
-                      [(node) (node-id (history-node-node (cdr r)))]
-                      [(auto choose) (edge-id (history-edge-edge (cdr r)))]))
+                      [(node) (node-id (history-record-node r))]
+                      [(auto choose) (edge-id (history-record-edge r))]))
                   h)))
 
 (: history->current-node-id (All (T S) (-> (History T S) (Option Symbol))))
 (define (history->current-node-id h)
   (and (pair? h)
        (eq? (caar h) 'node)
-       (node-id (history-node-node (cdar h)))))
+       (node-id (history-record-node (car h)))))
 
 (: current-visited-ids (Parameterof (Setof Symbol)))
 (define current-visited-ids (make-parameter ((inst set Symbol))))
