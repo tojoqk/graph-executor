@@ -6,7 +6,7 @@
 (require "../history.rkt")
 (require typed/racket/draw typed/pict)
 
-(provide write-dot dot-writer dot-writer->pict
+(provide DotWriter dot-writer write-dot render-dot
          current-dot-current-node? current-dot-visited-node? current-dot-visited-edge?
          DotConfig (rename-out [%dot-config dot-config])
          DotNodeConfig make-dot-node-config
@@ -250,113 +250,112 @@
     (print x out 1)
     (get-output-string out)))
 
-(: write-dot (All (T S) (-> (Listof (Graph T S)) (Node T S)
-                            [#:config (DotConfig T S)]
-                            [#:port Output-Port]
-                            [#:history (History T S)]
-                            Void)))
-(define (write-dot gs node
-                   #:config [config ((inst %dot-config T S))]
-                   #:port [port (current-output-port)]
-                   #:history [h '()])
-  (parameterize ([current-visited-ids (history->visited-ids h)]
-                 [current-node-id (history->current-node-id h)])
-    (%write-dot gs node #:config config #:port port)))
+(struct %dot-writer ([proc : (-> Output-Port Void)])
+  #:type-name DotWriter)
+
+(: write-dot (->* (DotWriter) (Output-Port) Void))
+(define (write-dot x [port (current-output-port)])
+  ((%dot-writer-proc x) port))
 
 (: dot-writer (All (T S) (-> (Listof (Graph T S)) (Node T S)
                              [#:config (DotConfig T S)]
                              [#:history (History T S)]
-                             (-> Output-Port Void))))
+                             DotWriter)))
 (define (dot-writer gs node
                     #:config [config ((inst %dot-config T S))]
                     #:history [h '()])
-  (lambda ([port : Output-Port])
-    (write-dot gs node #:config config #:history h #:port port)))
+  (%dot-writer
+   (lambda ([port : Output-Port])
+     (%write-dot gs node #:config config #:history h #:port port))))
 
 (: %write-dot (All (T S) (-> (Listof (Graph T S)) (Node T S)
                              #:config (DotConfig T S)
                              #:port Output-Port
+                             #:history (History T S)
                              Void)))
 (define (%write-dot gs node
                     #:config config
-                    #:port port)
-  (let ([visnodes (reachable-visnodes gs node)])
-    (displayln (format "digraph G {") port)
-    (displayln  "  graph [rankdir=TB]" port)
-    (: display-visnodes (-> (Nested-Graphs T S) Void))
-    (define (display-visnodes g)
-      (fprintf port "subgraph ~a {\n" (dot-string (string-append
-                                                   "cluster_"
-                                                   (symbol->string (graph-id (car g))))))
-      (fprintf port "  label = ~a\n" (dot-string (graph-name (car g))))
+                    #:port port
+                    #:history h)
+  (parameterize ([current-visited-ids (history->visited-ids h)]
+                 [current-node-id (history->current-node-id h)])
+    (let ([visnodes (reachable-visnodes gs node)])
+      (displayln (format "digraph G {") port)
+      (displayln  "  graph [rankdir=TB]" port)
+      (: display-visnodes (-> (Nested-Graphs T S) Void))
+      (define (display-visnodes g)
+        (fprintf port "subgraph ~a {\n" (dot-string (string-append
+                                                     "cluster_"
+                                                     (symbol->string (graph-id (car g))))))
+        (fprintf port "  label = ~a\n" (dot-string (graph-name (car g))))
 
-      (for-each (lambda ([v : (VisNode T S)])
-                  (when (symbol=? (graph-id (car g)) (graph-id (cadr v)))
-                    (define get-id (inst visnode-id T S))
-                    (cond
-                      [(eq? 'node (car v))
-                       (fprintf port "  ~a ~a\n"
-                                (dot-string (symbol->string (get-id v)))
-                                (format-node-attributes
-                                 (string-join `(,(mark-node-title (node-name (caddr v)))
-                                                ,@(cond [(node-desc (caddr v)) => list]
-                                                        [else '()])
-                                                ,@(cond [(node-prompt-sexp (caddr v))
-                                                         => (lambda (x)
-                                                              (list (format "prompt: ~a" (show-sexp x))))]
-                                                        [else '()])
-                                                ,@(cond [(node-trans-sexp (caddr v))
-                                                         => (lambda (x)
-                                                              (list (format "trans: ~a" (show-sexp x))))]
-                                                        [else '()]))
-                                              "\n")
-                                 ((graph-config-node config) (caddr v)
-                                                             (make-dot-node-config))))]
-                      [(eq? 'edge (car v))
-                       (fprintf port "  ~a ~a\n"
-                                (dot-string (symbol->string (get-id v)))
-                                (format-node-attributes
-                                 (string-join `(,(mark-edge-title (edge-name (caddr v)))
-                                                ,@(cond [(edge-desc (caddr v)) => list]
-                                                        [else '()])
-                                                ,@(cond [(edge-when-sexp (caddr v))
-                                                         => (lambda (x)
-                                                              (list (format "when: ~a" (show-sexp x))))]
-                                                        [else '()])
-                                                ,@(cond [(edge-trans-sexp (caddr v))
-                                                         => (lambda (x)
-                                                              (list (format "trans: ~a" (show-sexp x))))]
-                                                        [else '()]))
-                                              "\n")
-                                 ((graph-config-edge-node config) (caddr v)
-                                                                  (make-dot-node-config))))])))
-                visnodes)
-      (for-each display-visnodes (cdr g))
-      (displayln "}" port))
-    (for-each display-visnodes (graphs->nested (visnodes->graphs visnodes)))
-    (newline port)
-    (for-each (lambda ([v : (VisNode-Edge T S)])
-                (fprintf port "  ~a -> ~a ~a\n"
-                         (dot-string (symbol->string (node-id (edge-dom (caddr v)))))
-                         (dot-string (symbol->string (edge-id (caddr v))))
-                         (format-edge-attributes
-                          (show-priority (edge-priority (caddr v)))
-                          (if (edge-half? (caddr v))
-                              ((graph-config-edge config) (caddr v) (make-dot-edge-config))
+        (for-each (lambda ([v : (VisNode T S)])
+                    (when (symbol=? (graph-id (car g)) (graph-id (cadr v)))
+                      (define get-id (inst visnode-id T S))
+                      (cond
+                        [(eq? 'node (car v))
+                         (fprintf port "  ~a ~a\n"
+                                  (dot-string (symbol->string (get-id v)))
+                                  (format-node-attributes
+                                   (string-join `(,(mark-node-title (node-name (caddr v)))
+                                                  ,@(cond [(node-desc (caddr v)) => list]
+                                                          [else '()])
+                                                  ,@(cond [(node-prompt-sexp (caddr v))
+                                                           => (lambda (x)
+                                                                (list (format "prompt: ~a" (show-sexp x))))]
+                                                          [else '()])
+                                                  ,@(cond [(node-trans-sexp (caddr v))
+                                                           => (lambda (x)
+                                                                (list (format "trans: ~a" (show-sexp x))))]
+                                                          [else '()]))
+                                                "\n")
+                                   ((graph-config-node config) (caddr v)
+                                                               (make-dot-node-config))))]
+                        [(eq? 'edge (car v))
+                         (fprintf port "  ~a ~a\n"
+                                  (dot-string (symbol->string (get-id v)))
+                                  (format-node-attributes
+                                   (string-join `(,(mark-edge-title (edge-name (caddr v)))
+                                                  ,@(cond [(edge-desc (caddr v)) => list]
+                                                          [else '()])
+                                                  ,@(cond [(edge-when-sexp (caddr v))
+                                                           => (lambda (x)
+                                                                (list (format "when: ~a" (show-sexp x))))]
+                                                          [else '()])
+                                                  ,@(cond [(edge-trans-sexp (caddr v))
+                                                           => (lambda (x)
+                                                                (list (format "trans: ~a" (show-sexp x))))]
+                                                          [else '()]))
+                                                "\n")
+                                   ((graph-config-edge-node config) (caddr v)
+                                                                    (make-dot-node-config))))])))
+                  visnodes)
+        (for-each display-visnodes (cdr g))
+        (displayln "}" port))
+      (for-each display-visnodes (graphs->nested (visnodes->graphs visnodes)))
+      (newline port)
+      (for-each (lambda ([v : (VisNode-Edge T S)])
+                  (fprintf port "  ~a -> ~a ~a\n"
+                           (dot-string (symbol->string (node-id (edge-dom (caddr v)))))
+                           (dot-string (symbol->string (edge-id (caddr v))))
+                           (format-edge-attributes
+                            (show-priority (edge-priority (caddr v)))
+                            (if (edge-half? (caddr v))
+                                ((graph-config-edge config) (caddr v) (make-dot-edge-config))
+                                (struct-copy edge-config ((graph-config-edge config) (caddr v)
+                                                                                     (make-dot-edge-config))
+                                             [arrowhead 'none]))))
+                  (unless (edge-half? (caddr v))
+                    (fprintf port "  ~a -> ~a ~a\n"
+                             (dot-string (symbol->string (edge-id (caddr v))))
+                             (dot-string (symbol->string (node-id (edge-cod (caddr v)))))
+                             (format-edge-attributes
+                              ""
                               (struct-copy edge-config ((graph-config-edge config) (caddr v)
                                                                                    (make-dot-edge-config))
-                                           [arrowhead 'none]))))
-                (unless (edge-half? (caddr v))
-                  (fprintf port "  ~a -> ~a ~a\n"
-                           (dot-string (symbol->string (edge-id (caddr v))))
-                           (dot-string (symbol->string (node-id (edge-cod (caddr v)))))
-                           (format-edge-attributes
-                            ""
-                            (struct-copy edge-config ((graph-config-edge config) (caddr v)
-                                                                                 (make-dot-edge-config))
-                                         [arrowtail 'none])))))
-              (visnodes-edges visnodes))
-    (displayln "}" port)))
+                                           [arrowtail 'none])))))
+                (visnodes-edges visnodes))
+      (displayln "}" port))))
 
 (: mark-node-title (-> String String))
 (define (mark-node-title str)
@@ -469,11 +468,11 @@
   (cond [(current-node-id) => (lambda ([id : Symbol]) (eq? id (node-id n)))]
         [else #f]))
 
-(: dot-writer->pict (-> (-> Output-Port Void) pict))
-(define (dot-writer->pict writer)
+(: render-dot (-> DotWriter pict))
+(define (render-dot writer)
   (define bmp (make-bitmap 1 1))
   (define p (process "dot -Tpng"))
-  (writer (second p))
+  (write-dot writer (second p))
   (close-output-port (second p))
   (send bmp load-file (first p))
   (if (eq? ((fifth p) 'status) 'done-ok)

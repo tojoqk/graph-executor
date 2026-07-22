@@ -136,15 +136,15 @@
   (define state-init (v-state 400 0))
 
   (: make-system (-> (Values (->* () (Journal) Journal)
-                             (->* () (Journal) (-> Output-Port Void)))))
+                             (->* () (Journal) DotWriter))))
   (define (make-system)
-    (: writer (->* () (Journal) (-> Output-Port Void)))
+    (: writer (->* () (Journal) DotWriter))
     (define (writer [j '()])
       (let-values ([(_node _state h) (replay graphs node-init state-init j)])
         (dot-writer graphs node-init #:history h)))
     (: show (-> Journal Void))
     (define (show j)
-      (show-pict (dot-writer->pict (writer j)) #:frame-style '() #:frame-x 0 #:frame-y 0))
+      (show-pict (render-dot (writer j)) #:frame-style '() #:frame-x 0 #:frame-y 0))
     (: run (->* () (Journal) Journal))
     (define (run [j '()])
       (parameterize ([current-console-commands (list* (list 'action 'r "Render Graph" show)
@@ -169,5 +169,5 @@
    #:args ()
    (define-values (run writer) (make-system))
    (case (unbox mode)
-     [(dot) ((writer) (current-output-port))]
+     [(dot) (write-dot (writer))]
      [(console) (writeln (run))])))
