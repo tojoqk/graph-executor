@@ -1,6 +1,6 @@
 #lang typed/racket
 
-(provide Code (rename-out [code* code]) make-code
+(provide Code code make-code
          current-seen-ids current-node-prompt
          Node AnyNode make-node (rename-out [node* node])
          node-graph-id node-graph-name node-id node-name node-type node-desc node-trans node-trans-sexp node-prompt node-prompt-sexp node-attributes
@@ -12,13 +12,13 @@
          graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges
          any-graph)
 
-(struct (A) code ([sexp : Sexp]
-                  [value : A])
+(struct (A) %code ([sexp : Sexp]
+                   [value : A])
   #:transparent
   #:constructor-name make-code
   #:type-name Code)
 
-(define-syntax code*
+(define-syntax code
   (syntax-rules ()
     [(_ expr) (make-code 'expr expr)]))
 
@@ -60,19 +60,19 @@
 
 (: node-trans (All (T S) (-> (Node T S) (-> S S))))
 (define (node-trans n)
-  (code-value (node-trans-code n)))
+  (%code-value (node-trans-code n)))
 
 (: node-trans-sexp (All (T S) (-> (Node T S) Sexp)))
 (define (node-trans-sexp n)
-  (code-sexp (node-trans-code n)))
+  (%code-sexp (node-trans-code n)))
 
 (: node-prompt (All (T S) (-> (Node T S) (-> S String))))
 (define (node-prompt n)
-  (code-value (node-prompt-code n)))
+  (%code-value (node-prompt-code n)))
 
 (: node-prompt-sexp (All (T S) (-> (Node T S) Sexp)))
 (define (node-prompt-sexp n)
-  (code-sexp (node-prompt-code n)))
+  (%code-sexp (node-prompt-code n)))
 
 (define-type AnyNode (Node Any Any))
 
@@ -139,19 +139,19 @@
 
 (: edge-trans (All (T S) (-> (Edge T S) (-> S S))))
 (define (edge-trans e)
-  (code-value (edge-trans-code e)))
+  (%code-value (edge-trans-code e)))
 
 (: edge-trans-sexp (All (T S) (-> (Edge T S) Sexp)))
 (define (edge-trans-sexp e)
-  (code-sexp (edge-trans-code e)))
+  (%code-sexp (edge-trans-code e)))
 
 (: edge-when (All (T S) (-> (Edge T S) (-> S Any))))
 (define (edge-when e)
-  (code-value (edge-when-code e)))
+  (%code-value (edge-when-code e)))
 
 (: edge-when-sexp (All (T S) (-> (Edge T S) Sexp)))
 (define (edge-when-sexp e)
-  (code-sexp (edge-when-code e)))
+  (%code-sexp (edge-when-code e)))
 
 
 (struct (T S) bridge ([id : Symbol]
@@ -171,19 +171,19 @@
 
 (: bridge-trans (All (T S) (-> (Bridge T S) (-> S Any))))
 (define (bridge-trans e)
-  (code-value (bridge-trans-code e)))
+  (%code-value (bridge-trans-code e)))
 
 (: bridge-trans-sexp (All (T S) (-> (Bridge T S) Sexp)))
 (define (bridge-trans-sexp e)
-  (code-sexp (bridge-trans-code e)))
+  (%code-sexp (bridge-trans-code e)))
 
 (: bridge-when (All (T S) (-> (Bridge T S) (-> S Any))))
 (define (bridge-when e)
-  (code-value (bridge-when-code e)))
+  (%code-value (bridge-when-code e)))
 
 (: bridge-when-sexp (All (T S) (-> (Bridge T S) Sexp)))
 (define (bridge-when-sexp e)
-  (code-sexp (bridge-when-code e)))
+  (%code-sexp (bridge-when-code e)))
 
 
 (define-type AnyEdge (Edge Any Any))
