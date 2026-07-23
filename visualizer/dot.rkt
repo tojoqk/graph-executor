@@ -9,11 +9,13 @@
 (provide DotWriter dot-writer write-dot render-dot
          current-dot-current-node? current-dot-visited-node? current-dot-visited-edge?
          DotConfig (rename-out [%dot-config dot-config])
+         DotGlobalConfig make-dot-global-config
          DotNodeConfig make-dot-node-config
          DotEdgeConfig make-dot-edge-config
          DotColor DotRGBColor dot-rgb-color
          DotNodeShape DotNodeStyle
          DotArrowShape DotEdgeStyle
+         current-dot-fontname current-dot-fontsize current-dot-dpi current-dot-rankdir
          current-dot-node-config
          current-dot-current-node-config
          current-dot-visited-node-config
@@ -23,17 +25,20 @@
          current-dot-visited-choose-edge-config
          current-dot-annotation-edge-config)
 
-(struct (T S) graph-config ([node : (-> (Node T S) DotNodeConfig DotNodeConfig)]
+(struct (T S) graph-config ([global : DotGlobalConfig]
+                            [node : (-> (Node T S) DotNodeConfig DotNodeConfig)]
                             [edge-node : (-> (Edge T S) DotNodeConfig DotNodeConfig)]
                             [edge : (-> (Edge T S) DotEdgeConfig DotEdgeConfig)])
   #:type-name DotConfig)
 
 (: %dot-config (All (T S)
-                    (-> [#:node (Option (-> (Node T S) DotNodeConfig DotNodeConfig))]
+                    (-> [#:global (Option DotGlobalConfig)]
+                        [#:node (Option (-> (Node T S) DotNodeConfig DotNodeConfig))]
                         [#:edge-node (Option (-> (Edge T S) DotNodeConfig DotNodeConfig))]
                         [#:edge (Option (-> (Edge T S) DotEdgeConfig DotEdgeConfig))]
                         (DotConfig T S))))
-(define (%dot-config #:node [node #f]
+(define (%dot-config #:global [global #f]
+                     #:node [node #f]
                      #:edge-node [edge-node #f]
                      #:edge [edge #f])
   (: node-default (-> (Node T S) DotNodeConfig))
@@ -61,7 +66,8 @@
                     => identity]
                    [else (current-dot-choose-edge-config)])]
             [(eq? mode 'annotation) (current-dot-annotation-edge-config)])))
-  ((inst graph-config T S) (lambda ([n : (Node T S)] [_ : DotNodeConfig])
+  ((inst graph-config T S) (or global (make-dot-global-config))
+                           (lambda ([n : (Node T S)] [_ : DotNodeConfig])
                              (if node
                                  (node n (node-default n))
                                  (node-default n)))
@@ -76,6 +82,40 @@
                                (if (edge-dot-minlen e)
                                    (struct-copy edge-config c [minlen (edge-dot-minlen e)])
                                    c)))))
+
+(define-type Rankdir (U 'TB 'LR 'BT 'RL))
+
+(struct global-config ([fontname : String]
+                       [fontsize : Positive-Integer]
+                       [rankdir : Rankdir]
+                       [dpi : Positive-Integer])
+  #:type-name DotGlobalConfig)
+
+(: make-dot-global-config (-> [#:fontname (Option String)]
+                              [#:fontsize (Option Positive-Integer)]
+                              [#:rankdir (Option Rankdir)]
+                              [#:dpi (Option Positive-Integer)]
+                              DotGlobalConfig))
+(define (make-dot-global-config #:fontname [fontname #f]
+                                #:fontsize [fontsize #f]
+                                #:rankdir [rankdir #f]
+                                #:dpi [dpi #f])
+  (global-config (or fontname (current-dot-fontname))
+                 (or fontsize (current-dot-fontsize))
+                 (or rankdir (current-dot-rankdir))
+                 (or dpi (current-dot-dpi))))
+
+(: current-dot-fontname (Parameterof String))
+(define current-dot-fontname (make-parameter "Times-Roman"))
+
+(: current-dot-fontsize (Parameterof Positive-Integer))
+(define current-dot-fontsize (make-parameter 14))
+
+(: current-dot-rankdir (Parameterof Rankdir))
+(define current-dot-rankdir (make-parameter 'TB))
+
+(: current-dot-dpi (Parameterof Positive-Integer))
+(define current-dot-dpi (make-parameter 96))
 
 (struct node-config ([shape : DotNodeShape]
                      [style : (Listof DotNodeStyle)]
@@ -281,7 +321,18 @@
                  [current-node-id (history->current-node-id h)])
     (let ([visnodes (reachable-visnodes gs node)])
       (displayln (format "digraph G {") port)
-      (displayln  "  graph [rankdir=TB]" port)
+      (fprintf port "  graph [rankdir=~a,dpi=~a]\n"
+               (dot-string (symbol->string
+                            (global-config-rankdir
+                             (graph-config-global config))))
+               (dot-string (number->string
+                            (global-config-dpi (graph-config-global config)))))
+      (fprintf port "  fontname=~a\n"
+               (dot-string (global-config-fontname (graph-config-global config))))
+      (fprintf port "  fontsize=~a\n"
+               (dot-string (number->string
+                            (global-config-fontsize (graph-config-global config)))))
+
       (: display-visnodes (-> (Nested-Graphs T S) Void))
       (define (display-visnodes g)
         (fprintf port "subgraph ~a {\n" (dot-string (string-append
