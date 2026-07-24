@@ -8,30 +8,30 @@
 
 (provide DotWriter dot-writer write-dot render-dot
          dot-current-node? dot-visited-node? dot-visited-edge?
-         DotConfig make-dot-config
-         DotGlobalConfig make-dot-global-config
-         DotNodeConfig make-dot-node-config
-         DotEdgeConfig make-dot-edge-config
+         DotConfig dot-config
+         DotGlobalConfig dot-global-config
+         DotNodeConfig dot-node-config
+         DotEdgeConfig dot-edge-config
          current-dot-fontname current-dot-fontsize current-dot-dpi current-dot-rankdir
          current-dot-node-config current-dot-current-node-config current-dot-visited-node-config
          current-dot-auto-edge-config current-dot-visited-auto-edge-config current-dot-choose-edge-config current-dot-visited-choose-edge-config current-dot-annotation-edge-config)
 
-(struct (T S) graph-config ([global : DotGlobalConfig]
-                            [node : (-> (Node T S) DotNodeConfig DotNodeConfig)]
-                            [edge-node : (-> (Edge T S) DotNodeConfig DotNodeConfig)]
-                            [edge : (-> (Edge T S) DotEdgeConfig DotEdgeConfig)])
+(struct (T S) %dot-config ([global : DotGlobalConfig]
+                           [node : (-> (Node T S) DotNodeConfig DotNodeConfig)]
+                           [edge-node : (-> (Edge T S) DotNodeConfig DotNodeConfig)]
+                           [edge : (-> (Edge T S) DotEdgeConfig DotEdgeConfig)])
   #:type-name DotConfig)
 
-(: make-dot-config (All (T S)
-                    (-> [#:global (Option DotGlobalConfig)]
-                        [#:node (Option (-> (Node T S) DotNodeConfig DotNodeConfig))]
-                        [#:edge-node (Option (-> (Edge T S) DotNodeConfig DotNodeConfig))]
-                        [#:edge (Option (-> (Edge T S) DotEdgeConfig DotEdgeConfig))]
-                        (DotConfig T S))))
-(define (make-dot-config #:global [global #f]
-                     #:node [node #f]
-                     #:edge-node [edge-node #f]
-                     #:edge [edge #f])
+(: dot-config (All (T S)
+                   (-> [#:global (Option DotGlobalConfig)]
+                       [#:node (Option (-> (Node T S) DotNodeConfig DotNodeConfig))]
+                       [#:edge-node (Option (-> (Edge T S) DotNodeConfig DotNodeConfig))]
+                       [#:edge (Option (-> (Edge T S) DotEdgeConfig DotEdgeConfig))]
+                       (DotConfig T S))))
+(define (dot-config #:global [global #f]
+                    #:node [node #f]
+                    #:edge-node [edge-node #f]
+                    #:edge [edge #f])
   (: node-default (-> (Node T S) DotNodeConfig))
   (define (node-default n)
     (cond [(and (dot-current-node? n)
@@ -57,22 +57,22 @@
                     => identity]
                    [else (current-dot-choose-edge-config)])]
             [(eq? mode 'annotation) (current-dot-annotation-edge-config)])))
-  ((inst graph-config T S) (or global (make-dot-global-config))
-                           (lambda ([n : (Node T S)] [_ : DotNodeConfig])
-                             (if node
-                                 (node n (node-default n))
-                                 (node-default n)))
-                           (lambda ([e : (Edge T S)] [_ : DotNodeConfig])
-                             (if edge-node
-                                 (edge-node e (current-dot-edge-node-config))
-                                 (current-dot-edge-node-config)))
-                           (lambda ([e : (Edge T S)] [_ : DotEdgeConfig])
-                             (let ([c (if edge
-                                          (edge e (edge-default e))
-                                          (edge-default e))])
-                               (if (edge-dot-minlen e)
-                                   (struct-copy edge-config c [minlen (edge-dot-minlen e)])
-                                   c)))))
+  ((inst %dot-config T S) (or global (dot-global-config))
+                          (lambda ([n : (Node T S)] [_ : DotNodeConfig])
+                            (if node
+                                (node n (node-default n))
+                                (node-default n)))
+                          (lambda ([e : (Edge T S)] [_ : DotNodeConfig])
+                            (if edge-node
+                                (edge-node e (current-dot-edge-node-config))
+                                (current-dot-edge-node-config)))
+                          (lambda ([e : (Edge T S)] [_ : DotEdgeConfig])
+                            (let ([c (if edge
+                                         (edge e (edge-default e))
+                                         (edge-default e))])
+                              (if (edge-dot-minlen e)
+                                  (struct-copy edge-config c [minlen (edge-dot-minlen e)])
+                                  c)))))
 
 (define-type Rankdir (U 'TB 'LR 'BT 'RL))
 
@@ -82,15 +82,15 @@
                        [dpi : Positive-Integer])
   #:type-name DotGlobalConfig)
 
-(: make-dot-global-config (-> [#:fontname (Option String)]
-                              [#:fontsize (Option Positive-Integer)]
-                              [#:rankdir (Option Rankdir)]
-                              [#:dpi (Option Positive-Integer)]
-                              DotGlobalConfig))
-(define (make-dot-global-config #:fontname [fontname #f]
-                                #:fontsize [fontsize #f]
-                                #:rankdir [rankdir #f]
-                                #:dpi [dpi #f])
+(: dot-global-config (-> [#:fontname (Option String)]
+                         [#:fontsize (Option Positive-Integer)]
+                         [#:rankdir (Option Rankdir)]
+                         [#:dpi (Option Positive-Integer)]
+                         DotGlobalConfig))
+(define (dot-global-config #:fontname [fontname #f]
+                           #:fontsize [fontsize #f]
+                           #:rankdir [rankdir #f]
+                           #:dpi [dpi #f])
   (global-config (or fontname (current-dot-fontname))
                  (or fontsize (current-dot-fontsize))
                  (or rankdir (current-dot-rankdir))
@@ -114,15 +114,15 @@
                      [fillcolor : String])
   #:type-name DotNodeConfig)
 
-(: make-dot-node-config (-> [#:shape (Option String)]
-                            [#:style (Option (Listof String))]
-                            [#:color (Option String)]
-                            [#:fillcolor (Option String)]
-                            DotNodeConfig))
-(define (make-dot-node-config #:shape [shape #f]
-                              #:style [style #f]
-                              #:color [color #f]
-                              #:fillcolor [fillcolor #f])
+(: dot-node-config (-> [#:shape (Option String)]
+                       [#:style (Option (Listof String))]
+                       [#:color (Option String)]
+                       [#:fillcolor (Option String)]
+                       DotNodeConfig))
+(define (dot-node-config #:shape [shape #f]
+                         #:style [style #f]
+                         #:color [color #f]
+                         #:fillcolor [fillcolor #f])
   (node-config (or shape "ellipse")
                (or style '())
                (or color "black")
@@ -135,17 +135,17 @@
                      [minlen : Natural])
   #:type-name DotEdgeConfig)
 
-(: make-dot-edge-config (-> [#:arrowhead (Option String)]
-                            [#:arrowtail (Option String)]
-                            [#:style (Option (Listof String))]
-                            [#:color (Option String)]
-                            [#:minlen (Option Natural)]
-                            DotEdgeConfig))
-(define (make-dot-edge-config #:arrowhead [arrowhead #f]
-                              #:arrowtail [arrowtail #f]
-                              #:style [style #f]
-                              #:color [color #f]
-                              #:minlen [minlen #f])
+(: dot-edge-config (-> [#:arrowhead (Option String)]
+                       [#:arrowtail (Option String)]
+                       [#:style (Option (Listof String))]
+                       [#:color (Option String)]
+                       [#:minlen (Option Natural)]
+                       DotEdgeConfig))
+(define (dot-edge-config #:arrowhead [arrowhead #f]
+                         #:arrowtail [arrowtail #f]
+                         #:style [style #f]
+                         #:color [color #f]
+                         #:minlen [minlen #f])
   (edge-config (or arrowhead "normal")
                (or arrowtail "normal")
                (or style '())
@@ -154,41 +154,41 @@
 
 (: current-dot-node-config (Parameterof DotNodeConfig))
 (define current-dot-node-config
-  (make-parameter (make-dot-node-config #:shape "box" #:style '("filled" "rounded"))))
+  (make-parameter (dot-node-config #:shape "box" #:style '("filled" "rounded"))))
 
 (: current-dot-visited-node-config (Parameterof (Option DotNodeConfig)))
 (define current-dot-visited-node-config
-  (make-parameter (make-dot-node-config #:shape "box" #:style '("filled" "rounded")
-                                        #:fillcolor "gray")))
+  (make-parameter (dot-node-config #:shape "box" #:style '("filled" "rounded")
+                                   #:fillcolor "gray")))
 
 (: current-dot-current-node-config (Parameterof (Option DotNodeConfig)))
 (define current-dot-current-node-config
-  (make-parameter (make-dot-node-config #:shape "box" #:style '("filled" "rounded")
-                                        #:fillcolor "yellow")))
+  (make-parameter (dot-node-config #:shape "box" #:style '("filled" "rounded")
+                                   #:fillcolor "yellow")))
 
 (: current-dot-edge-node-config (Parameterof DotNodeConfig))
 (define current-dot-edge-node-config
-  (make-parameter (make-dot-node-config #:shape "plaintext")))
+  (make-parameter (dot-node-config #:shape "plaintext")))
 
 (: current-dot-auto-edge-config (Parameterof DotEdgeConfig))
 (define current-dot-auto-edge-config
-  (make-parameter (make-dot-edge-config #:color "red")))
+  (make-parameter (dot-edge-config #:color "red")))
 
 (: current-dot-visited-auto-edge-config (Parameterof (Option DotEdgeConfig)))
 (define current-dot-visited-auto-edge-config
-  (make-parameter (make-dot-edge-config #:color "orange")))
+  (make-parameter (dot-edge-config #:color "orange")))
 
 (: current-dot-choose-edge-config (Parameterof DotEdgeConfig))
 (define current-dot-choose-edge-config
-  (make-parameter (make-dot-edge-config #:color "blue")))
+  (make-parameter (dot-edge-config #:color "blue")))
 
 (: current-dot-visited-choose-edge-config (Parameterof (Option DotEdgeConfig)))
 (define current-dot-visited-choose-edge-config
-  (make-parameter (make-dot-edge-config #:color "cyan")))
+  (make-parameter (dot-edge-config #:color "cyan")))
 
 (: current-dot-annotation-edge-config (Parameterof DotEdgeConfig))
 (define current-dot-annotation-edge-config
-  (make-parameter (make-dot-edge-config #:style '("dashed") #:color "black")))
+  (make-parameter (dot-edge-config #:style '("dashed") #:color "black")))
 
 (: show-sexp (-> Sexp String))
 (define (show-sexp x)
@@ -208,7 +208,7 @@
                              [#:history (History T S)]
                              DotWriter)))
 (define (dot-writer gs node
-                    #:config [config ((inst make-dot-config T S))]
+                    #:config [config ((inst dot-config T S))]
                     #:history [h '()])
   (%dot-writer
    (lambda ([port : Output-Port])
@@ -230,14 +230,14 @@
       (fprintf port "  graph [rankdir=~a,dpi=~a]\n"
                (dot-string (symbol->string
                             (global-config-rankdir
-                             (graph-config-global config))))
+                             (%dot-config-global config))))
                (dot-string (number->string
-                            (global-config-dpi (graph-config-global config)))))
+                            (global-config-dpi (%dot-config-global config)))))
       (fprintf port "  fontname=~a\n"
-               (dot-string (global-config-fontname (graph-config-global config))))
+               (dot-string (global-config-fontname (%dot-config-global config))))
       (fprintf port "  fontsize=~a\n"
                (dot-string (number->string
-                            (global-config-fontsize (graph-config-global config)))))
+                            (global-config-fontsize (%dot-config-global config)))))
 
       (: display-visnodes (-> (Nested-Graphs T S) Void))
       (define (display-visnodes g)
@@ -266,8 +266,8 @@
                                                                 (list (format "trans: ~a" (show-sexp x))))]
                                                           [else '()]))
                                                 "\n")
-                                   ((graph-config-node config) (caddr v)
-                                                               (make-dot-node-config))))]
+                                   ((%dot-config-node config) (caddr v)
+                                                              (dot-node-config))))]
                         [(eq? 'edge (car v))
                          (fprintf port "  ~a ~a\n"
                                   (dot-string (symbol->string (get-id v)))
@@ -284,8 +284,8 @@
                                                                 (list (format "trans: ~a" (show-sexp x))))]
                                                           [else '()]))
                                                 "\n")
-                                   ((graph-config-edge-node config) (caddr v)
-                                                                    (make-dot-node-config))))])))
+                                   ((%dot-config-edge-node config) (caddr v)
+                                                                   (dot-node-config))))])))
                   visnodes)
         (for-each display-visnodes (cdr g))
         (displayln "}" port))
@@ -298,9 +298,9 @@
                            (format-edge-attributes
                             (show-priority (edge-priority (caddr v)))
                             (if (edge-half? (caddr v))
-                                ((graph-config-edge config) (caddr v) (make-dot-edge-config))
-                                (struct-copy edge-config ((graph-config-edge config) (caddr v)
-                                                                                     (make-dot-edge-config))
+                                ((%dot-config-edge config) (caddr v) (dot-edge-config))
+                                (struct-copy edge-config ((%dot-config-edge config) (caddr v)
+                                                                                    (dot-edge-config))
                                              [arrowhead "none"]))))
                   (unless (edge-half? (caddr v))
                     (fprintf port "  ~a -> ~a ~a\n"
@@ -308,8 +308,8 @@
                              (dot-string (symbol->string (node-id (edge-cod (caddr v)))))
                              (format-edge-attributes
                               ""
-                              (struct-copy edge-config ((graph-config-edge config) (caddr v)
-                                                                                   (make-dot-edge-config))
+                              (struct-copy edge-config ((%dot-config-edge config) (caddr v)
+                                                                                  (dot-edge-config))
                                            [arrowtail "none"])))))
                 (visnodes-edges visnodes))
       (displayln "}" port))))
