@@ -12,8 +12,6 @@
          DotGlobalConfig make-dot-global-config
          DotNodeConfig make-dot-node-config
          DotEdgeConfig make-dot-edge-config
-         DotNodeShape DotNodeStyle
-         DotArrowShape DotEdgeStyle
          current-dot-fontname current-dot-fontsize current-dot-dpi current-dot-rankdir
          current-dot-node-config
          current-dot-current-node-config
@@ -116,14 +114,14 @@
 (: current-dot-dpi (Parameterof Positive-Integer))
 (define current-dot-dpi (make-parameter 96))
 
-(struct node-config ([shape : DotNodeShape]
-                     [style : (Listof DotNodeStyle)]
+(struct node-config ([shape : String]
+                     [style : (Listof String)]
                      [color : String]
                      [fillcolor : String])
   #:type-name DotNodeConfig)
 
-(: make-dot-node-config (-> [#:shape (Option DotNodeShape)]
-                            [#:style (Option (Listof DotNodeStyle))]
+(: make-dot-node-config (-> [#:shape (Option String)]
+                            [#:style (Option (Listof String))]
                             [#:color (Option String)]
                             [#:fillcolor (Option String)]
                             DotNodeConfig))
@@ -131,21 +129,21 @@
                               #:style [style #f]
                               #:color [color #f]
                               #:fillcolor [fillcolor #f])
-  (node-config (or shape 'ellipse)
+  (node-config (or shape "ellipse")
                (or style '())
                (or color "black")
                (or fillcolor "white")))
 
-(struct edge-config ([arrowhead : (U DotArrowShape String)]
-                     [arrowtail : (U DotArrowShape String)]
-                     [style : (Listof DotEdgeStyle)]
+(struct edge-config ([arrowhead : (U String)]
+                     [arrowtail : (U String)]
+                     [style : (Listof String)]
                      [color : String]
                      [minlen : Natural])
   #:type-name DotEdgeConfig)
 
-(: make-dot-edge-config (-> [#:arrowhead (Option DotArrowShape)]
-                            [#:arrowtail (Option DotArrowShape)]
-                            [#:style (Option (Listof DotEdgeStyle))]
+(: make-dot-edge-config (-> [#:arrowhead (Option String)]
+                            [#:arrowtail (Option String)]
+                            [#:style (Option (Listof String))]
                             [#:color (Option String)]
                             [#:minlen (Option Natural)]
                             DotEdgeConfig))
@@ -154,107 +152,29 @@
                               #:style [style #f]
                               #:color [color #f]
                               #:minlen [minlen #f])
-  (edge-config (or arrowhead 'normal)
-               (or arrowtail 'normal)
+  (edge-config (or arrowhead "normal")
+               (or arrowtail "normal")
                (or style '())
                (or color "black")
                (or minlen 1)))
 
-(define-type DotNodeShape
-  (U 'box
-     'polygon
-     'ellipse
-     'oval
-     'circle
-     'point
-     'egg
-     'triangle
-     'plaintext
-     'plain
-     'diamond
-     'trapezium
-     'parallelogram
-     'house
-     'pentagon
-     'hexagon
-     'septagon
-     'octagon
-     'doublecircle
-     'doubleoctagon
-     'tripleoctagon
-     'invtriangle
-     'invtrapezium
-     'invhouse
-     'Mdiamond
-     'Msquare
-     'Mcircle
-     'rect
-     'rectangle
-     'square
-     'star
-     'none
-     'underline
-     'cylinder
-     'note
-     'tab
-     'folder
-     'box3d
-     'component))
-
-(define-type DotNodeStyle
-  (U 'dashed
-     'dotted
-     'solid
-     'invis
-     'bold
-     'filled
-     'striped
-     'wedged
-     'diagonals
-     'rounded))
-
-(define-type DotEdgeStyle
-  (U 'dashed
-     'dotted
-     'solid
-     'invis
-     'bold
-     'tapered))
-
-(define-type ClusterStyle
-  (U 'filled
-     'striped
-     'rounded))
-
-(define-type DotArrowShape
-  (U 'box 'lbox 'rbox 'obox 'olbox 'orbox
-     'crow 'lcrow 'rcrow
-     'diamond 'ldiamond 'rdiamond 'odiamond 'oldiamond 'ordiamond
-     'dot 'odot
-     'inv 'linv 'rinv 'oinv 'olinv 'orinv
-     'none
-     'normal 'lnormal 'rnormal 'onormal 'olnormal 'ornormal
-     'tee 'ltee 'rtee
-     'vee 'lvee 'rvee
-     'curve 'lcurve 'rcurve 'icurve 'licurve 'ricurve))
-
 (: current-dot-node-config (Parameterof DotNodeConfig))
 (define current-dot-node-config
-  (make-parameter (make-dot-node-config #:shape 'box #:style '(filled rounded))))
+  (make-parameter (make-dot-node-config #:shape "box" #:style '("filled" "rounded"))))
 
 (: current-dot-visited-node-config (Parameterof (Option DotNodeConfig)))
 (define current-dot-visited-node-config
-  (make-parameter (make-dot-node-config #:shape 'box #:style '(filled rounded)
+  (make-parameter (make-dot-node-config #:shape "box" #:style '("filled" "rounded")
                                         #:fillcolor "gray")))
 
 (: current-dot-current-node-config (Parameterof (Option DotNodeConfig)))
 (define current-dot-current-node-config
-  (make-parameter (make-dot-node-config #:shape 'box #:style '(filled rounded)
+  (make-parameter (make-dot-node-config #:shape "box" #:style '("filled" "rounded")
                                         #:fillcolor "yellow")))
 
 (: current-dot-edge-node-config (Parameterof DotNodeConfig))
 (define current-dot-edge-node-config
-  (make-parameter (make-dot-node-config #:shape 'plaintext)))
+  (make-parameter (make-dot-node-config #:shape "plaintext")))
 
 (: current-dot-auto-edge-config (Parameterof DotEdgeConfig))
 (define current-dot-auto-edge-config
@@ -274,7 +194,7 @@
 
 (: current-dot-annotation-edge-config (Parameterof DotEdgeConfig))
 (define current-dot-annotation-edge-config
-  (make-parameter (make-dot-edge-config #:style '(dashed) #:color "black")))
+  (make-parameter (make-dot-edge-config #:style '("dashed") #:color "black")))
 
 (: show-sexp (-> Sexp String))
 (define (show-sexp x)
@@ -387,7 +307,7 @@
                                 ((graph-config-edge config) (caddr v) (make-dot-edge-config))
                                 (struct-copy edge-config ((graph-config-edge config) (caddr v)
                                                                                      (make-dot-edge-config))
-                                             [arrowhead 'none]))))
+                                             [arrowhead "none"]))))
                   (unless (edge-half? (caddr v))
                     (fprintf port "  ~a -> ~a ~a\n"
                              (dot-string (symbol->string (edge-id (caddr v))))
@@ -396,7 +316,7 @@
                               ""
                               (struct-copy edge-config ((graph-config-edge config) (caddr v)
                                                                                    (make-dot-edge-config))
-                                           [arrowtail 'none])))))
+                                           [arrowtail "none"])))))
                 (visnodes-edges visnodes))
       (displayln "}" port))))
 
@@ -414,27 +334,16 @@
       (format "0~x" b)
       (format "~x" b)))
 
-(: node-styles->string (-> (Listof DotNodeStyle) String))
-(define (node-styles->string styles)
-  (string-join (map symbol->string styles) ","))
-
-(: edge-styles->string (-> (Listof DotEdgeStyle) String))
-(define (edge-styles->string styles)
-  (string-join (map symbol->string styles) ","))
-
-(: node-shape->string (-> DotNodeShape String))
-(define node-shape->string symbol->string)
-
 (: format-node-attributes (-> String DotNodeConfig String))
 (define (format-node-attributes label nc)
   (format "[label=~a,shape=~a,style=~a,color=~a,fillcolor=~a]"
           (dot-string label)
-          (dot-string (node-shape->string (node-config-shape nc)))
-          (dot-string (node-styles->string (node-config-style nc)))
+          (dot-string (node-config-shape nc))
+          (dot-string (string-join (node-config-style nc) ","))
           (dot-string (node-config-color nc))
           (dot-string (node-config-fillcolor nc))))
 
-(: arrow-shape->string (-> (U DotArrowShape String) String))
+(: arrow-shape->string (-> String String))
 (define (arrow-shape->string s)
   (if (symbol? s)
       (symbol->string s)
@@ -444,9 +353,9 @@
 (define (format-edge-attributes label ec)
   (format "[label=~a,arrowhead=~a,arrowtail=~a,style=~a,color=~a,minlen=~a]"
           (dot-string label)
-          (dot-string (arrow-shape->string (edge-config-arrowhead ec)))
-          (dot-string (arrow-shape->string (edge-config-arrowtail ec)))
-          (dot-string (edge-styles->string (edge-config-style ec)))
+          (dot-string (edge-config-arrowhead ec))
+          (dot-string (edge-config-arrowtail ec))
+          (dot-string (string-join (edge-config-style ec) ","))
           (dot-string (edge-config-color ec))
           (edge-config-minlen ec)))
 
