@@ -7,8 +7,8 @@
 (require typed/racket/draw typed/pict)
 
 (provide DotWriter dot-writer write-dot render-dot
-         current-dot-current-node? current-dot-visited-node? current-dot-visited-edge?
-         DotConfig (rename-out [%dot-config dot-config])
+         dot-current-node? dot-visited-node? dot-visited-edge?
+         DotConfig make-dot-config
          DotGlobalConfig make-dot-global-config
          DotNodeConfig make-dot-node-config
          DotEdgeConfig make-dot-edge-config
@@ -31,22 +31,22 @@
                             [edge : (-> (Edge T S) DotEdgeConfig DotEdgeConfig)])
   #:type-name DotConfig)
 
-(: %dot-config (All (T S)
+(: make-dot-config (All (T S)
                     (-> [#:global (Option DotGlobalConfig)]
                         [#:node (Option (-> (Node T S) DotNodeConfig DotNodeConfig))]
                         [#:edge-node (Option (-> (Edge T S) DotNodeConfig DotNodeConfig))]
                         [#:edge (Option (-> (Edge T S) DotEdgeConfig DotEdgeConfig))]
                         (DotConfig T S))))
-(define (%dot-config #:global [global #f]
+(define (make-dot-config #:global [global #f]
                      #:node [node #f]
                      #:edge-node [edge-node #f]
                      #:edge [edge #f])
   (: node-default (-> (Node T S) DotNodeConfig))
   (define (node-default n)
-    (cond [(and (current-dot-current-node? n)
+    (cond [(and (dot-current-node? n)
                 (current-dot-current-node-config))
            => identity]
-          [(and (current-dot-visited-node? n)
+          [(and (dot-visited-node? n)
                 (current-dot-visited-node-config))
            => identity]
           [else
@@ -56,12 +56,12 @@
     (let ([mode (edge-mode e)])
       (cond [(eq? mode 'auto)
              (cond
-               [(and (current-dot-visited-edge? e)
+               [(and (dot-visited-edge? e)
                      (current-dot-visited-auto-edge-config))
                 => identity]
                [else (current-dot-auto-edge-config)])]
             [(eq? mode 'choose)
-             (cond [(and (current-dot-visited-edge? e)
+             (cond [(and (dot-visited-edge? e)
                          (current-dot-visited-choose-edge-config))
                     => identity]
                    [else (current-dot-choose-edge-config)])]
@@ -302,7 +302,7 @@
                              [#:history (History T S)]
                              DotWriter)))
 (define (dot-writer gs node
-                    #:config [config ((inst %dot-config T S))]
+                    #:config [config ((inst make-dot-config T S))]
                     #:history [h '()])
   (%dot-writer
    (lambda ([port : Output-Port])
@@ -506,16 +506,16 @@
 (: current-node-id (Parameterof (Option Symbol)))
 (define current-node-id (make-parameter #f))
 
-(: current-dot-visited-node? (All (T S) (-> (Node T S) Boolean)))
-(define (current-dot-visited-node? n)
+(: dot-visited-node? (All (T S) (-> (Node T S) Boolean)))
+(define (dot-visited-node? n)
   (set-member? (current-visited-ids) (node-id n)))
 
-(: current-dot-visited-edge? (All (T S) (-> (Edge T S) Boolean)))
-(define (current-dot-visited-edge? e)
+(: dot-visited-edge? (All (T S) (-> (Edge T S) Boolean)))
+(define (dot-visited-edge? e)
   (set-member? (current-visited-ids) (edge-id e)))
 
-(: current-dot-current-node? (All (T S) (-> (Node T S) Boolean)))
-(define (current-dot-current-node? n)
+(: dot-current-node? (All (T S) (-> (Node T S) Boolean)))
+(define (dot-current-node? n)
   (cond [(current-node-id) => (lambda ([id : Symbol]) (eq? id (node-id n)))]
         [else #f]))
 
