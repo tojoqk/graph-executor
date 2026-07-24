@@ -12,7 +12,6 @@
          DotGlobalConfig make-dot-global-config
          DotNodeConfig make-dot-node-config
          DotEdgeConfig make-dot-edge-config
-         DotColor DotRGBColor dot-rgb-color
          DotNodeShape DotNodeStyle
          DotArrowShape DotEdgeStyle
          current-dot-fontname current-dot-fontsize current-dot-dpi current-dot-rankdir
@@ -119,14 +118,14 @@
 
 (struct node-config ([shape : DotNodeShape]
                      [style : (Listof DotNodeStyle)]
-                     [color : DotColor]
-                     [fillcolor : DotColor])
+                     [color : String]
+                     [fillcolor : String])
   #:type-name DotNodeConfig)
 
 (: make-dot-node-config (-> [#:shape (Option DotNodeShape)]
                             [#:style (Option (Listof DotNodeStyle))]
-                            [#:color (Option DotColor)]
-                            [#:fillcolor (Option DotColor)]
+                            [#:color (Option String)]
+                            [#:fillcolor (Option String)]
                             DotNodeConfig))
 (define (make-dot-node-config #:shape [shape #f]
                               #:style [style #f]
@@ -140,14 +139,14 @@
 (struct edge-config ([arrowhead : (U DotArrowShape String)]
                      [arrowtail : (U DotArrowShape String)]
                      [style : (Listof DotEdgeStyle)]
-                     [color : DotColor]
+                     [color : String]
                      [minlen : Natural])
   #:type-name DotEdgeConfig)
 
 (: make-dot-edge-config (-> [#:arrowhead (Option DotArrowShape)]
                             [#:arrowtail (Option DotArrowShape)]
                             [#:style (Option (Listof DotEdgeStyle))]
-                            [#:color (Option DotColor)]
+                            [#:color (Option String)]
                             [#:minlen (Option Natural)]
                             DotEdgeConfig))
 (define (make-dot-edge-config #:arrowhead [arrowhead #f]
@@ -226,13 +225,6 @@
   (U 'filled
      'striped
      'rounded))
-
-(define-type DotColor (U DotRGBColor String))
-
-(struct dot-rgb-color ([red : Byte]
-                       [green : Byte]
-                       [blue : Byte])
-  #:type-name DotRGBColor)
 
 (define-type DotArrowShape
   (U 'box 'lbox 'rbox 'obox 'olbox 'orbox
@@ -422,15 +414,6 @@
       (format "0~x" b)
       (format "~x" b)))
 
-(: color->string (-> DotColor String))
-(define (color->string c)
-  (if (dot-rgb-color? c)
-      (format "#~a~a~a"
-              (byte->hex-string (dot-rgb-color-red c))
-              (byte->hex-string (dot-rgb-color-green c))
-              (byte->hex-string (dot-rgb-color-blue c)))
-      c))
-
 (: node-styles->string (-> (Listof DotNodeStyle) String))
 (define (node-styles->string styles)
   (string-join (map symbol->string styles) ","))
@@ -448,8 +431,8 @@
           (dot-string label)
           (dot-string (node-shape->string (node-config-shape nc)))
           (dot-string (node-styles->string (node-config-style nc)))
-          (dot-string (color->string (node-config-color nc)))
-          (dot-string (color->string (node-config-fillcolor nc)))))
+          (dot-string (node-config-color nc))
+          (dot-string (node-config-fillcolor nc))))
 
 (: arrow-shape->string (-> (U DotArrowShape String) String))
 (define (arrow-shape->string s)
@@ -464,7 +447,7 @@
           (dot-string (arrow-shape->string (edge-config-arrowhead ec)))
           (dot-string (arrow-shape->string (edge-config-arrowtail ec)))
           (dot-string (edge-styles->string (edge-config-style ec)))
-          (dot-string (color->string (edge-config-color ec)))
+          (dot-string (edge-config-color ec))
           (edge-config-minlen ec)))
 
 (: dot-string (-> String String))
