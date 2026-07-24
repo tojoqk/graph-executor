@@ -4,7 +4,7 @@
 (require "../graph/dot.rkt")
 (require "../private/visualizer.rkt")
 (require "../history.rkt")
-(require typed/racket/draw typed/pict)
+(require typed/racket/draw)
 
 (provide DotWriter dot-writer write-dot render-dot
          dot-current-node? dot-visited-node? dot-visited-edge?
