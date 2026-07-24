@@ -26,4 +26,11 @@
          message
          console-run current-console-random-prompt-display current-console-trace-display
          DotWriter dot-writer write-dot render-dot
-         current-dot-fontname current-dot-fontsize current-dot-dpi current-dot-rankdir)
+         dot-current-node? dot-visited-node? dot-visited-edge?
+         DotConfig dot-config
+         DotGlobalConfig dot-global-config
+         DotNodeConfig dot-node-config
+         DotEdgeConfig dot-edge-config
+         current-dot-fontname current-dot-fontsize current-dot-dpi current-dot-rankdir
+         current-dot-node-config current-dot-current-node-config current-dot-visited-node-config
+         current-dot-auto-edge-config current-dot-visited-auto-edge-config current-dot-choose-edge-config current-dot-visited-choose-edge-config current-dot-annotation-edge-config)
