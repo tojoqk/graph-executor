@@ -25,4 +25,5 @@
          prompt
          message
          console-run current-console-random-prompt-display current-console-trace-display
-         DotWriter dot-writer write-dot render-dot)
+         DotWriter dot-writer write-dot render-dot
+         current-dot-fontname current-dot-fontsize current-dot-dpi current-dot-rankdir)
