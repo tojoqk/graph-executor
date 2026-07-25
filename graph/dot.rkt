@@ -9,8 +9,8 @@
                    (-> String
                        [#:mode (Option EdgeMode)]
                        [#:half? Boolean]
-                       #:dom (Node T S)
-                       #:cod (Node Any Any)
+                       #:from (Node T S)
+                       #:to (Node Any Any)
                        [#:desc (Option String)]
                        [#:when (Option (Code (-> S Any)))]
                        #:trans (Code (-> S Any))
@@ -22,8 +22,8 @@
 (define (dot-bridge name
                     #:mode [mode #f]
                     #:half? [half? #f]
-                    #:dom dom
-                    #:cod cod
+                    #:from from
+                    #:to to
                     #:desc [desc #f]
                     #:when [when #f]
                     #:trans tr
@@ -34,8 +34,8 @@
   ((inst make-bridge T S) #:name name
                           #:mode mode
                           #:half? half?
-                          #:dom dom
-                          #:cod cod
+                          #:from from
+                          #:to to
                           #:desc desc
                           #:when when
                           #:trans (or tr (inst identity S))
@@ -48,8 +48,8 @@
                  (-> String
                      [#:mode (Option EdgeMode)]
                      [#:half? Boolean]
-                     #:dom (Node T S)
-                     #:cod (Node T S)
+                     #:from (Node T S)
+                     #:to (Node T S)
                      [#:desc (Option String)]
                      [#:when (Option (Code (-> S Any)))]
                      [#:trans (Option (Code (-> S S)))]
@@ -61,8 +61,8 @@
 (define (dot-edge name
                   #:mode [mode #f]
                   #:half? [half? #f]
-                  #:dom dom
-                  #:cod cod
+                  #:from from
+                  #:to to
                   #:desc [desc #f]
                   #:when [when #f]
                   #:trans [tr #f]
@@ -73,8 +73,8 @@
   ((inst make-edge T S) #:name name
                         #:mode mode
                         #:half? half?
-                        #:dom dom
-                        #:cod cod
+                        #:from from
+                        #:to to
                         #:desc desc
                         #:when when
                         #:trans (or tr (make-code #f (inst identity S)))

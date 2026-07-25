@@ -10,10 +10,10 @@
   (cond [(memf (lambda ([g : (Graph T S)]) (equal? (graph-id g) g-id)) gs) => car]
         [else #f]))
 
-(: filter-dom (All (T S) (-> (Node T S) (Listof (Edge T S)) (Listof (Edge T S)))))
-(define (filter-dom n es)
+(: filter-from (All (T S) (-> (Node T S) (Listof (Edge T S)) (Listof (Edge T S)))))
+(define (filter-from n es)
   (filter (lambda ([e : (Edge T S)])
-            (eq? (node-id n) (node-id (edge-dom e))))
+            (eq? (node-id n) (node-id (edge-from e))))
           es))
 
 (define-type (VisNode-Node T S) (List 'node (Graph T S) (Node T S)))
@@ -60,7 +60,7 @@
     (cond [(set-member? seen (node-id n)) (values '() seen)]
           [(find-graph gs (node-graph-id n))
            => (lambda ([g : (Graph T S)])
-                (let ([edges (filter-dom n (graph-edges g))])
+                (let ([edges (filter-from n (graph-edges g))])
                   (let* ([visnodes (append (list ((node->visnode g) n))
                                            ((inst map (VisNode T S) (Edge T S)) (edge->visnode g) edges))]
                          [seen (set-union seen (list->set ((inst map Symbol (VisNode T S)) visnode-id visnodes)))])
@@ -71,7 +71,7 @@
                       (: new-visnodes (Listof (VisNode T S)))
                       (: new-seen (Setof Symbol))
                       (define-values (new-visnodes new-seen)
-                        (loop (edge-cod edge) seen))
+                        (loop (edge-to edge) seen))
                       (values (append visnodes new-visnodes) new-seen)))))]
           [else (values '() (set-add seen (node-id n)))]))
   (define-values (visnodes _)

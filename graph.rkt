@@ -6,7 +6,7 @@
          node-graph-id node-graph-name node-id node-name node-type node-desc node-trans node-trans-sexp node-prompt node-prompt-sexp node-attributes
          any-node
          Edge AnyEdge Bridge EdgeMode make-edge make-bridge (rename-out [edge* edge] [bridge* bridge])
-         edge-id edge-name edge-mode edge-half? edge-dom edge-cod edge-desc edge-when edge-when-sexp edge-trans edge-trans-sexp edge-priority edge-weight edge-attributes
+         edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-sexp edge-trans edge-trans-sexp edge-priority edge-weight edge-attributes
          any-bridge any-edge
          Graph AnyGraph OpenGraph (rename-out [graph* graph]) (rename-out [open-graph* open-graph])
          graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges
@@ -39,10 +39,10 @@
                           (string-length node-name) node-name)))
 
 (: make-edge-id (All (T S) (-> String (Node T S) Symbol)))
-(define (make-edge-id edge-name dom)
-  (let ([dom-id (symbol->string (node-id dom))])
+(define (make-edge-id edge-name from)
+  (let ([from-id (symbol->string (node-id from))])
     (string->symbol (format "~a[~a]~a"
-                            dom-id
+                            from-id
                             (string-length edge-name)
                             edge-name))))
 
@@ -126,8 +126,8 @@
                     [name : String]
                     [mode : EdgeMode]
                     [half? : Boolean]
-                    [dom : (Node T S)]
-                    [cod : (Node T S)]
+                    [from : (Node T S)]
+                    [to : (Node T S)]
                     [desc : (Option String)]
                     [when-code : (Code (-> S Any))]
                     [trans-code : (Code (-> S S))]
@@ -158,8 +158,8 @@
                       [name : String]
                       [mode : EdgeMode]
                       [half? : Boolean]
-                      [dom : (Node T S)]
-                      [cod : (Node Any Any)]
+                      [from : (Node T S)]
+                      [to : (Node Any Any)]
                       [desc : (Option String)]
                       [when-code : (Code (-> S Any))]
                       [trans-code : (Code (-> S Any))]
@@ -193,8 +193,8 @@
                                        #:name String
                                        #:mode (Option EdgeMode)
                                        #:half? Boolean
-                                       #:dom (Node T S)
-                                       #:cod (Node T S)
+                                       #:from (Node T S)
+                                       #:to (Node T S)
                                        #:desc (Option String)
                                        #:when (Option (Code (-> S Any)))
                                        #:trans (Code (-> S S))
@@ -206,8 +206,8 @@
                                        #:name String
                                        #:mode (Option EdgeMode)
                                        #:half? Boolean
-                                       #:dom (Node T S)
-                                       #:cod (Node Any Any)
+                                       #:from (Node T S)
+                                       #:to (Node Any Any)
                                        #:desc (Option String)
                                        #:when (Option (Code (-> S Any)))
                                        #:trans (Code (-> S Any))
@@ -219,15 +219,15 @@
                             #:name name
                             #:mode mode
                             #:half? half?
-                            #:dom dom
-                            #:cod cod
+                            #:from from
+                            #:to to
                             #:desc desc
                             #:when when
                             #:trans tr
                             #:priority priority
                             #:weight weight
                             #:attributes attrs)
-  (let ([edge-id (make-edge-id name dom)])
+  (let ([edge-id (make-edge-id name from)])
     (cond [(set-member? (current-seen-ids) edge-id)
            (error "edge, bridge: duplicate ID" edge-id)]
           [else (current-seen-ids (set-add (current-seen-ids) edge-id))])
@@ -235,7 +235,7 @@
      edge-id
      name (or mode 'choose)
      half?
-     dom cod
+     from to
      desc
      (or when (make-code #f (const #t)))
      tr
@@ -247,8 +247,8 @@
                     (-> #:name String
                         #:mode (Option EdgeMode)
                         #:half?  Boolean
-                        #:dom (Node T S)
-                        #:cod (Node Any Any)
+                        #:from (Node T S)
+                        #:to (Node Any Any)
                         #:desc (Option String)
                         #:when (Option (Code (-> S Any)))
                         #:trans (Code (-> S Any))
@@ -259,8 +259,8 @@
 (define (make-bridge #:name name
                      #:mode mode
                      #:half? half?
-                     #:dom dom
-                     #:cod cod
+                     #:from from
+                     #:to to
                      #:desc desc
                      #:when when
                      #:trans tr
@@ -271,8 +271,8 @@
                                  #:name name
                                  #:mode mode
                                  #:half? half?
-                                 #:dom dom
-                                 #:cod cod
+                                 #:from from
+                                 #:to to
                                  #:desc desc
                                  #:when when
                                  #:trans tr
@@ -284,8 +284,8 @@
                 (-> String
                     [#:mode (Option EdgeMode)]
                     [#:half Boolean]
-                    #:dom (Node T S)
-                    #:cod (Node Any Any)
+                    #:from (Node T S)
+                    #:to (Node Any Any)
                     [#:desc (Option String)]
                     [#:when (Option (Code (-> S Any)))]
                     #:trans (Code (-> S Any))
@@ -295,8 +295,8 @@
 (define (bridge* name
                  #:mode [mode #f]
                  #:half [half? #f]
-                 #:dom dom
-                 #:cod cod
+                 #:from from
+                 #:to to
                  #:desc [desc #f]
                  #:when [when #f]
                  #:trans tr
@@ -305,8 +305,8 @@
   ((inst make-bridge T S) #:name name
                           #:mode mode
                           #:half? half?
-                          #:dom dom
-                          #:cod cod
+                          #:from from
+                          #:to to
                           #:desc desc
                           #:when when
                           #:trans (or tr (inst identity S))
@@ -318,8 +318,8 @@
                   (-> #:name String
                       #:mode (Option EdgeMode)
                       #:half? Boolean
-                      #:dom (Node T S)
-                      #:cod (Node T S)
+                      #:from (Node T S)
+                      #:to (Node T S)
                       #:desc (Option String)
                       #:when (Option (Code (-> S Any)))
                       #:trans (Option (Code (-> S S)))
@@ -330,8 +330,8 @@
 (define (make-edge #:name name
                    #:mode mode
                    #:half? half?
-                   #:dom dom
-                   #:cod cod
+                   #:from from
+                   #:to to
                    #:desc desc
                    #:when when
                    #:trans tr
@@ -342,8 +342,8 @@
                                  #:name name
                                  #:mode mode
                                  #:half? half?
-                                 #:dom dom
-                                 #:cod cod
+                                 #:from from
+                                 #:to to
                                  #:desc desc
                                  #:when when
                                  #:trans (or tr (make-code #f (inst identity S)))
@@ -355,8 +355,8 @@
               (-> String
                   [#:mode (Option EdgeMode)]
                   [#:half? Boolean]
-                  #:dom (Node T S)
-                  #:cod (Node T S)
+                  #:from (Node T S)
+                  #:to (Node T S)
                   [#:desc (Option String)]
                   [#:when (Option (Code (-> S Any)))]
                   [#:trans (Option (Code (-> S S)))]
@@ -366,8 +366,8 @@
 (define (edge* name
                #:mode [mode #f]
                #:half? [half? #f]
-               #:dom dom
-               #:cod cod
+               #:from from
+               #:to to
                #:desc [desc #f]
                #:when [when #f]
                #:trans [tr #f]
@@ -376,8 +376,8 @@
   ((inst make-edge T S) #:name name
                         #:mode mode
                         #:half? half?
-                        #:dom dom
-                        #:cod cod
+                        #:from from
+                        #:to to
                         #:desc desc
                         #:when when
                         #:trans (or tr (make-code #f (inst identity S)))
@@ -392,8 +392,8 @@
         (bridge-name b)
         (bridge-mode b)
         (bridge-half? b)
-        ((any-node p?) (bridge-dom b))
-        ((inst bridge-cod T S) b)
+        ((any-node p?) (bridge-from b))
+        ((inst bridge-to T S) b)
         (bridge-desc b)
         (make-code (bridge-when-sexp b) (lambda (x) ((bridge-when b) (assert x p?))))
         (make-code (bridge-trans-sexp b) (lambda (x) ((bridge-trans b) (assert x p?))))
@@ -406,8 +406,8 @@
                                AnyEdge))))
 (define ((any-edge p?) e)
   (struct-copy edge e
-               [dom ((any-node p?) (edge-dom e))]
-               [cod ((any-node p?) (edge-cod e))]
+               [from ((any-node p?) (edge-from e))]
+               [to ((any-node p?) (edge-to e))]
                [trans-code (make-code (edge-trans-sexp e)
                                       (lambda (x) ((edge-trans e) (assert x p?))))]
                [when-code (make-code (edge-when-sexp e)

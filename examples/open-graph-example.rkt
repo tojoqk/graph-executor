@@ -60,26 +60,26 @@
       g
       #:edges
       (list
-       (v-edge "Insert Money" #:dom idle #:cod has-coins
+       (v-edge "Insert Money" #:from idle #:to has-coins
                #:when (code (can-insert? 100))
                #:trans (code insert-money))
-       (v-edge "Insert More" #:dom has-coins #:cod has-coins
+       (v-edge "Insert More" #:from has-coins #:to has-coins
                #:when (code (can-insert? 100))
                #:trans (code insert-money))
-       (v-edge "Purchase Drink (150 Yen)" #:dom has-coins #:cod dispensing
+       (v-edge "Purchase Drink (150 Yen)" #:from has-coins #:to dispensing
                #:when (code (price-met? 150))
                #:trans (code (purchase 150)))
-       (v-edge "Dispense Done (Remaining Inserted)" #:mode 'auto #:dom dispensing #:cod has-coins
+       (v-edge "Dispense Done (Remaining Inserted)" #:mode 'auto #:from dispensing #:to has-coins
                #:when (code inserted?))
-       (v-edge "Dispense Done (Just Zero)" #:mode 'auto #:dom dispensing #:cod idle
+       (v-edge "Dispense Done (Just Zero)" #:mode 'auto #:from dispensing #:to idle
                #:when (code (negate inserted?)))
-       (v-edge "Press Return Lever" #:dom has-coins #:cod ret-change
+       (v-edge "Press Return Lever" #:from has-coins #:to ret-change
                #:when (code inserted?)
                #:trans (code reset-money))
-       (v-edge "Change Dispatched" #:mode 'auto #:dom ret-change #:cod idle))
+       (v-edge "Change Dispatched" #:mode 'auto #:from ret-change #:to idle))
       #:bridges
       (list
-       (v-bridge "Walk Away" #:dom idle #:cod output
+       (v-bridge "Walk Away" #:from idle #:to output
                  #:trans output-edge
                  #:dot-minlen 3))))
    idle))
@@ -105,7 +105,7 @@
      (t-graph g
               #:edges
               (list
-               (t-edge "Terminate" #:mode 'auto #:dom entry #:cod terminal))))
+               (t-edge "Terminate" #:mode 'auto #:from entry #:to terminal))))
    entry))
 
 (: vending-graph->terminal-graph (-> Vending-State Terminal))

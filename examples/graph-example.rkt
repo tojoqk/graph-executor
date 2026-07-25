@@ -62,24 +62,24 @@
     graph-name
     #:edges
     (list
-     (v-edge "Insert 100 Yen" #:dom idle #:cod has-coins
+     (v-edge "Insert 100 Yen" #:from idle #:to has-coins
              #:when (code (can-insert? 100))
              #:trans (code (insert-money 100)))
-     (v-edge "Insert More" #:dom has-coins #:cod has-coins
+     (v-edge "Insert More" #:from has-coins #:to has-coins
              #:when (code (can-insert? 100))
              #:trans (code (insert-money 100)))
-     (v-edge "Purchase Drink (150 Yen)" #:dom has-coins #:cod dispensing
+     (v-edge "Purchase Drink (150 Yen)" #:from has-coins #:to dispensing
              #:when (code (price-met? 150))
              #:trans (code (purchase 150)))
-     (v-edge "Dispense Done (Remaining Inserted)" #:mode 'auto #:dom dispensing #:cod has-coins
+     (v-edge "Dispense Done (Remaining Inserted)" #:mode 'auto #:from dispensing #:to has-coins
              #:when (code inserted?))
-     (v-edge "Dispense Done (Just Zero)" #:mode 'auto #:dom dispensing #:cod idle
+     (v-edge "Dispense Done (Just Zero)" #:mode 'auto #:from dispensing #:to idle
              #:when (code (negate inserted?)))
-     (v-edge "Press Return Lever" #:dom has-coins #:cod ret-change
+     (v-edge "Press Return Lever" #:from has-coins #:to ret-change
              #:when (code inserted?)
              #:trans (code reset-money))
-     (v-edge "Change Dispatched" #:mode 'auto #:dom ret-change #:cod idle)
-     (v-edge "Walk Away" #:dom idle #:cod terminal #:dot-minlen 2)))
+     (v-edge "Change Dispatched" #:mode 'auto #:from ret-change #:to idle)
+     (v-edge "Walk Away" #:from idle #:to terminal #:dot-minlen 2)))
    idle))
 
 (module+ console

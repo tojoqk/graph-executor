@@ -60,7 +60,7 @@
            (when (current-console-trace-display?)
              (displayln (format ">> [Auto] ~a" (edge-name chosen-edge))))
            (let ([next-st (console-step st chosen-edge logger)])
-             (loop (edge-cod chosen-edge)
+             (loop (edge-to chosen-edge)
                    next-st
                    (cons (journal-logger->journal-entry logger) j))))]
         [(choose)
@@ -70,7 +70,7 @@
                   (define chosen-edge (find-edge (second ne) cmd))
                   (let* ([logger (make-journal-logger 'choose (edge-name chosen-edge) '())]
                          [next-st (console-step st chosen-edge logger)])
-                    (loop (edge-cod chosen-edge)
+                    (loop (edge-to chosen-edge)
                           next-st
                           (cons (journal-logger->journal-entry logger) j)))]
                  [else (command-dispatch n st j cmd)]))]))))
@@ -103,12 +103,12 @@
     (displayln val))
   (parameterize ([current-prompt (console-prompt/log logger)]
                  [current-message console-message])
-    ((node-trans (edge-cod e))
+    ((node-trans (edge-to e))
      (parameterize ([current-prompt (console-prompt/log logger)]
                     [current-message console-message])
        (begin0 ((edge-trans e) st)
          (when (current-console-trace-display?)
-           (let ([n (edge-cod e)])
+           (let ([n (edge-to e)])
              (printf "--- Current Node: ~a (Graph: ~a) ---\n" (node-name n) (node-graph-name n))
              (cond [(node-desc n) => displayln]))))))))
 

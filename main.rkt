@@ -13,7 +13,7 @@
 (provide Code code
          current-node-prompt
          Node AnyNode node node-graph-name node-name any-node
-         Edge AnyEdge Bridge edge bridge any-bridge any-edge edge-dom edge-cod
+         Edge AnyEdge Bridge edge bridge any-bridge any-edge edge-from edge-to
          Graph OpenGraph AnyGraph graph open-graph any-graph graph-name
          dot-bridge dot-edge
          replay

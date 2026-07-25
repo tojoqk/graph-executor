@@ -51,12 +51,12 @@
                     [ps-init (reverse (cddr j-rec))])
                (cond [(findf (lambda ([e : (Edge T S)]) (string=? name (edge-name e))) edges)
                       => (lambda ([e : (Edge T S)])
-                           (let* ([cod (edge-cod e)]
+                           (let* ([to (edge-to e)]
                                   [mode (edge-mode e)]
                                   [logger  (if (eq? mode 'auto)
-                                               (make-history-logger 'auto e cod)
+                                               (make-history-logger 'auto e to)
                                                (let ([pmt ((node-prompt n) st)])
-                                                 (make-history-logger 'choose e pmt edges attrs cod)))]
+                                                 (make-history-logger 'choose e pmt edges attrs to)))]
                                   [bps : (Boxof (Listof (Pairof Prompt-Value Prompt-Attributes))) (box ps-init)])
                              (: pop-bps (-> (U 'edge 'node) Prompt-Implementation))
                              (define ((pop-bps type) title op)
@@ -110,11 +110,11 @@
                              (let ([next-st
                                     (parameterize ([current-message (message-to-log 'node)]
                                                    [current-prompt (pop-bps 'node)])
-                                      ((node-trans cod)
+                                      ((node-trans to)
                                        (parameterize ([current-message (message-to-log 'edge)]
                                                       [current-prompt (pop-bps 'edge)])
                                          ((edge-trans e) st))))])
-                               (loop cod
+                               (loop to
                                      next-st
                                      (cdr j)
                                      (list* (history-logger->history-record-node logger)
@@ -220,7 +220,7 @@
 (: filter-node (All (T S) (-> (Node T S) (Listof (Edge T S)) (Listof (Edge T S)))))
 (define (filter-node n es)
   (filter (lambda ([e : (Edge T S)])
-            (eq? (node-id n) (node-id (edge-dom e))))
+            (eq? (node-id n) (node-id (edge-from e))))
           es))
 
 (: find-edge (All (T S) (-> (Pairof (Edge T S) (Listof (Edge T S))) String (Edge T S))))

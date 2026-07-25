@@ -293,7 +293,7 @@
       (newline port)
       (for-each (lambda ([v : (VisNode-Edge T S)])
                   (fprintf port "  ~a -> ~a ~a\n"
-                           (dot-string (symbol->string (node-id (edge-dom (caddr v)))))
+                           (dot-string (symbol->string (node-id (edge-from (caddr v)))))
                            (dot-string (symbol->string (edge-id (caddr v))))
                            (format-edge-attributes
                             (show-priority (edge-priority (caddr v)))
@@ -305,7 +305,7 @@
                   (unless (edge-half? (caddr v))
                     (fprintf port "  ~a -> ~a ~a\n"
                              (dot-string (symbol->string (edge-id (caddr v))))
-                             (dot-string (symbol->string (node-id (edge-cod (caddr v)))))
+                             (dot-string (symbol->string (node-id (edge-to (caddr v)))))
                              (format-edge-attributes
                               ""
                               (struct-copy edge-config ((%dot-config-edge config) (caddr v)
