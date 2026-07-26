@@ -25,7 +25,7 @@
          prompt
          message
          console-run current-console-random-prompt-display current-console-trace-display
-         DotWriter dot-writer write-dot render-dot
+         DotWriter dot-writer write-dot
          dot-current-node? dot-visited-node? dot-visited-edge?
          DotConfig dot-config
          DotGlobalConfig dot-global-config

@@ -4,9 +4,8 @@
 (require "../graph/dot.rkt")
 (require "../private/visualizer.rkt")
 (require "../history.rkt")
-(require typed/racket/draw)
 
-(provide DotWriter dot-writer write-dot render-dot
+(provide DotWriter dot-writer write-dot
          dot-current-node? dot-visited-node? dot-visited-edge?
          DotConfig dot-config
          DotGlobalConfig dot-global-config
@@ -404,13 +403,3 @@
 (define (dot-current-node? n)
   (cond [(current-node-id) => (lambda ([id : Symbol]) (eq? id (node-id n)))]
         [else #f]))
-
-(: render-dot (-> DotWriter (Instance Bitmap%) Void))
-(define (render-dot writer bmp)
-  (define p (process "dot -Tpng"))
-  (write-dot writer (second p))
-  (close-output-port (second p))
-  (send bmp load-file (first p))
-  (if (eq? ((fifth p) 'status) 'done-ok)
-      (void)
-      (error 'render-dot "fail load")))

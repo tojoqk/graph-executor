@@ -83,7 +83,6 @@
    idle))
 
 (module+ console
-  (require typed/racket/gui typed/pict)
   (provide make-system)
 
   (define-values (v-graph node-init) (vending-graph "Vending Machine Model"))
@@ -97,19 +96,11 @@
     (define (writer [j '()])
       (let-values ([(_node _state h) (replay graphs node-init state-init j)])
         (dot-writer graphs node-init #:history h)))
-    (: show (-> Journal Void))
-    (define (show j)
-      (let ([bmp (make-bitmap 1 1)])
-        (render-dot (writer j) bmp)
-        (show-pict (bitmap bmp) #:frame-style '() #:frame-x 0 #:frame-y 0)))
     (: run (->* () (Journal) Journal))
     (define (run [j '()])
-      (parameterize ([current-console-commands (list* (list 'action 'r "Render Graph" show)
-                                                      (current-console-commands))]
-                     [current-eventspace (make-eventspace)])
-        (let-values ([(_node _state j-result)
-                      (console-run graphs node-init state-init #:journal j)])
-          j-result)))
+      (let-values ([(_node _state j-result)
+                    (console-run graphs node-init state-init #:journal j)])
+        j-result))
     (values run writer)))
 
 (module+ main
