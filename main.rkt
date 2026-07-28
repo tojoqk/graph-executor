@@ -32,5 +32,4 @@
          DotNodeConfig dot-node-config
          DotEdgeConfig dot-edge-config
          current-dot-fontname current-dot-fontsize current-dot-dpi current-dot-rankdir
-         current-dot-node-config current-dot-current-node-config current-dot-visited-node-config
-         current-dot-auto-edge-config current-dot-visited-auto-edge-config current-dot-choose-edge-config current-dot-visited-choose-edge-config current-dot-annotation-edge-config)
+         current-dot-node-config current-dot-edge-node-config current-dot-edge-config)

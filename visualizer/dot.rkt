@@ -12,66 +12,36 @@
          DotNodeConfig dot-node-config
          DotEdgeConfig dot-edge-config
          current-dot-fontname current-dot-fontsize current-dot-dpi current-dot-rankdir
-         current-dot-node-config current-dot-current-node-config current-dot-visited-node-config
-         current-dot-auto-edge-config current-dot-visited-auto-edge-config current-dot-choose-edge-config current-dot-visited-choose-edge-config current-dot-annotation-edge-config)
+         current-dot-node-config current-dot-edge-node-config current-dot-edge-config)
 
-(struct (S) %dot-config ([global : DotGlobalConfig]
-                           [node : (-> (Node S) DotNodeConfig DotNodeConfig)]
-                           [edge-node : (-> (Edge S) DotNodeConfig DotNodeConfig)]
-                           [edge : (-> (Edge S) DotEdgeConfig DotEdgeConfig)])
+(define-type DotNodeStatus (U 'default 'visited 'current))
+(: dot-node-status (All (S) (-> (Node S) DotNodeStatus)) )
+(define (dot-node-status n)
+  (cond [else 'default]))
+(define-type DotEdgeStatus (U 'default 'visited))
+(: dot-edge-status (All (S) (-> (Edge S) DotEdgeStatus)) )
+(define (dot-edge-status n)
+  (cond [else 'default]))
+
+(struct %dot-config ([global : DotGlobalConfig]
+                     [node : (-> Symbol DotNodeStatus DotNodeConfig)]
+                     [edge-node : (-> EdgeMode Symbol Symbol DotEdgeStatus DotNodeConfig)]
+                     [edge : (-> EdgeMode Symbol Symbol DotEdgeStatus DotEdgeConfig)])
   #:type-name DotConfig)
 
-(: dot-config (All (S)
-                   (-> [#:global (Option DotGlobalConfig)]
-                       [#:node (Option (-> (Node S) DotNodeConfig DotNodeConfig))]
-                       [#:edge-node (Option (-> (Edge S) DotNodeConfig DotNodeConfig))]
-                       [#:edge (Option (-> (Edge S) DotEdgeConfig DotEdgeConfig))]
-                       (DotConfig S))))
+(: dot-config (-> [#:global (Option DotGlobalConfig)]
+                  [#:node (Option (-> Symbol DotNodeStatus DotNodeConfig))]
+                  [#:edge-node (Option (-> EdgeMode Symbol Symbol DotEdgeStatus DotNodeConfig))]
+                  [#:edge (Option (-> EdgeMode Symbol Symbol DotEdgeStatus DotEdgeConfig))]
+                  DotConfig))
 (define (dot-config #:global [global #f]
                     #:node [node #f]
                     #:edge-node [edge-node #f]
                     #:edge [edge #f])
-  (: node-default (-> (Node S) DotNodeConfig))
-  (define (node-default n)
-    (cond [(and (dot-current-node? n)
-                (current-dot-current-node-config))
-           => identity]
-          [(and (dot-visited-node? n)
-                (current-dot-visited-node-config))
-           => identity]
-          [else
-           (current-dot-node-config)]))
-  (: edge-default (-> (Edge S) DotEdgeConfig))
-  (define (edge-default e)
-    (let ([mode (edge-mode e)])
-      (cond [(eq? mode 'auto)
-             (cond
-               [(and (dot-visited-edge? e)
-                     (current-dot-visited-auto-edge-config))
-                => identity]
-               [else (current-dot-auto-edge-config)])]
-            [(eq? mode 'choose)
-             (cond [(and (dot-visited-edge? e)
-                         (current-dot-visited-choose-edge-config))
-                    => identity]
-                   [else (current-dot-choose-edge-config)])]
-            [(eq? mode 'annotation) (current-dot-annotation-edge-config)])))
-  ((inst %dot-config S) (or global (dot-global-config))
-                          (lambda ([n : (Node S)] [_ : DotNodeConfig])
-                            (if node
-                                (node n (node-default n))
-                                (node-default n)))
-                          (lambda ([e : (Edge S)] [_ : DotNodeConfig])
-                            (if edge-node
-                                (edge-node e (current-dot-edge-node-config))
-                                (current-dot-edge-node-config)))
-                          (lambda ([e : (Edge S)] [_ : DotEdgeConfig])
-                            (let ([c (if edge
-                                         (edge e (edge-default e))
-                                         (edge-default e))])
-                              (if (edge-dot-minlen e)
-                                  (struct-copy edge-config c [minlen (edge-dot-minlen e)])
-                                  c)))))
+  (%dot-config (or global (dot-global-config))
+               (or node (current-dot-node-config))
+               (or edge-node (current-dot-edge-node-config))
+               (or edge (current-dot-edge-config))))
 
 (define-type Rankdir (U 'TB 'LR 'BT 'RL))
 
@@ -151,43 +121,33 @@
                (or color "black")
                (or minlen 1)))
 
-(: current-dot-node-config (Parameterof DotNodeConfig))
+(: current-dot-node-config (Parameterof (-> Symbol DotNodeStatus DotNodeConfig)))
 (define current-dot-node-config
-  (make-parameter (dot-node-config #:shape "box" #:style '("filled" "rounded"))))
+  (make-parameter
+   (lambda (_t [s : DotNodeStatus])
+     (case s
+       [(default) (dot-node-config #:shape "box" #:style '("filled" "rounded"))]
+       [(visited) (dot-node-config #:shape "box" #:style '("filled" "rounded")
+                                   #:fillcolor "gray")]
+       [(current) (dot-node-config #:shape "box" #:style '("filled" "rounded")
+                                   #:fillcolor "yellow")]))))
 
-(: current-dot-visited-node-config (Parameterof (Option DotNodeConfig)))
-(define current-dot-visited-node-config
-  (make-parameter (dot-node-config #:shape "box" #:style '("filled" "rounded")
-                                   #:fillcolor "gray")))
-
-(: current-dot-current-node-config (Parameterof (Option DotNodeConfig)))
-(define current-dot-current-node-config
-  (make-parameter (dot-node-config #:shape "box" #:style '("filled" "rounded")
-                                   #:fillcolor "yellow")))
-
-(: current-dot-edge-node-config (Parameterof DotNodeConfig))
+(: current-dot-edge-node-config (Parameterof (-> EdgeMode Symbol Symbol DotEdgeStatus DotNodeConfig)))
 (define current-dot-edge-node-config
-  (make-parameter (dot-node-config #:shape "plaintext")))
+  (make-parameter (lambda (_mode _from-type _to-type _s)
+                    (dot-node-config #:shape "plaintext"))))
 
-(: current-dot-auto-edge-config (Parameterof DotEdgeConfig))
-(define current-dot-auto-edge-config
-  (make-parameter (dot-edge-config #:color "red")))
-
-(: current-dot-visited-auto-edge-config (Parameterof (Option DotEdgeConfig)))
-(define current-dot-visited-auto-edge-config
-  (make-parameter (dot-edge-config #:color "orange")))
-
-(: current-dot-choose-edge-config (Parameterof DotEdgeConfig))
-(define current-dot-choose-edge-config
-  (make-parameter (dot-edge-config #:color "blue")))
-
-(: current-dot-visited-choose-edge-config (Parameterof (Option DotEdgeConfig)))
-(define current-dot-visited-choose-edge-config
-  (make-parameter (dot-edge-config #:color "cyan")))
-
-(: current-dot-annotation-edge-config (Parameterof DotEdgeConfig))
-(define current-dot-annotation-edge-config
-  (make-parameter (dot-edge-config #:style '("dashed") #:color "black")))
+(: current-dot-edge-config (Parameterof (-> EdgeMode Symbol Symbol DotEdgeStatus DotEdgeConfig)))
+(define current-dot-edge-config
+  (make-parameter (lambda ([mode : EdgeMode] _ft _tt [s : DotEdgeStatus])
+                    (case mode
+                      [(auto) (case s
+                                [(default) (dot-edge-config #:color "red")]
+                                [(visited) (dot-edge-config #:color "orange")])]
+                      [(choose) (case s
+                                  [(default) (dot-edge-config #:color "blue")]
+                                  [(visited) (dot-edge-config #:color "cyan")])]
+                      [(annotation) (dot-edge-config #:style '("dashed") #:color "black")]))))
 
 (: show-sexp (-> Sexp String))
 (define (show-sexp x)
@@ -203,18 +163,18 @@
   ((%dot-writer-proc x) port))
 
 (: dot-writer (All (S) (-> (Listof (Graph S)) (Node S)
-                             [#:config (DotConfig S)]
+                             [#:config DotConfig]
                              [#:history (History S)]
                              DotWriter)))
 (define (dot-writer gs node
-                    #:config [config ((inst dot-config S))]
+                    #:config [config (dot-config)]
                     #:history [h '()])
   (%dot-writer
    (lambda ([port : Output-Port])
      (%write-dot gs node #:config config #:history h #:port port))))
 
 (: %write-dot (All (S) (-> (Listof (Graph S)) (Node S)
-                             #:config (DotConfig S)
+                             #:config DotConfig
                              #:port Output-Port
                              #:history (History S)
                              Void)))
@@ -265,8 +225,8 @@
                                                                 (list (format "trans: ~a" (show-sexp x))))]
                                                           [else '()]))
                                                 "\n")
-                                   ((%dot-config-node config) (caddr v)
-                                                              (dot-node-config))))]
+                                   ((%dot-config-node config) (node-type (caddr v))
+                                                              (dot-node-status (caddr v)))))]
                         [(eq? 'edge (car v))
                          (fprintf port "  ~a ~a\n"
                                   (dot-string (symbol->string (get-id v)))
@@ -283,32 +243,51 @@
                                                                 (list (format "trans: ~a" (show-sexp x))))]
                                                           [else '()]))
                                                 "\n")
-                                   ((%dot-config-edge-node config) (caddr v)
-                                                                   (dot-node-config))))])))
+                                   ((%dot-config-edge-node config) (edge-mode (caddr v))
+                                                                   (node-type (edge-from (caddr v)))
+                                                                   (node-type (edge-to (caddr v)))
+                                                                   (dot-edge-status (caddr v))
+)))])))
                   visnodes)
         (for-each display-visnodes (cdr g))
         (displayln "}" port))
       (for-each display-visnodes (graphs->nested (visnodes->graphs visnodes)))
       (newline port)
       (for-each (lambda ([v : (VisNode-Edge S)])
+                  (: apply-half (-> DotEdgeConfig DotEdgeConfig))
+                  (define (apply-half c)
+                    (if (edge-half? (caddr v))
+                        c
+                        (struct-copy edge-config c
+                                     [arrowhead "none"])))
+                  (: apply-minlen (-> DotEdgeConfig DotEdgeConfig))
+                  (define (apply-minlen c)
+                    (if (edge-dot-minlen (caddr v))
+                        (struct-copy edge-config c [minlen (edge-dot-minlen (caddr v))])
+                        c))
                   (fprintf port "  ~a -> ~a ~a\n"
                            (dot-string (symbol->string (node-id (edge-from (caddr v)))))
                            (dot-string (symbol->string (edge-id (caddr v))))
                            (format-edge-attributes
                             (show-priority (edge-priority (caddr v)))
-                            (if (edge-half? (caddr v))
-                                ((%dot-config-edge config) (caddr v) (dot-edge-config))
-                                (struct-copy edge-config ((%dot-config-edge config) (caddr v)
-                                                                                    (dot-edge-config))
-                                             [arrowhead "none"]))))
+                            (apply-half
+                             (apply-minlen
+                              ((%dot-config-edge config) (edge-mode (caddr v))
+                                                         (node-type (edge-from (caddr v)))
+                                                         (node-type (edge-to (caddr v)))
+                                                         (dot-edge-status (caddr v)))))))
                   (unless (edge-half? (caddr v))
                     (fprintf port "  ~a -> ~a ~a\n"
                              (dot-string (symbol->string (edge-id (caddr v))))
                              (dot-string (symbol->string (node-id (edge-to (caddr v)))))
                              (format-edge-attributes
                               ""
-                              (struct-copy edge-config ((%dot-config-edge config) (caddr v)
-                                                                                  (dot-edge-config))
+                              (struct-copy edge-config
+                                           (apply-minlen
+                                            ((%dot-config-edge config) (edge-mode (caddr v))
+                                                                       (node-type (edge-from (caddr v)))
+                                                                       (node-type (edge-to (caddr v)))
+                                                                       (dot-edge-status (caddr v))))
                                            [arrowtail "none"])))))
                 (visnodes-edges visnodes))
       (displayln "}" port))))
