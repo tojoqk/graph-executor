@@ -38,7 +38,7 @@
                           (string-length graph-name) graph-name
                           (string-length node-name) node-name)))
 
-(: make-edge-id (All (T S) (-> String (Node T S) Symbol)))
+(: make-edge-id (All (S) (-> String (Node S) Symbol)))
 (define (make-edge-id edge-name from)
   (let ([from-id (symbol->string (node-id from))])
     (string->symbol (format "~a[~a]~a"
@@ -46,45 +46,45 @@
                             (string-length edge-name)
                             edge-name))))
 
-(struct (T S) node ([graph-id : Symbol]
-                    [graph-name : String]
-                    [id : Symbol]
-                    [name : String]
-                    [type : T]
-                    [desc : (Option String)]
-                    [trans-code : (Code (-> S S))]
-                    [prompt-code : (Code (-> S String))]
-                    [attributes : (Immutable-HashTable Symbol Any)])
+(struct (S) node ([graph-id : Symbol]
+                  [graph-name : String]
+                  [id : Symbol]
+                  [name : String]
+                  [type : Symbol]
+                  [desc : (Option String)]
+                  [trans-code : (Code (-> S S))]
+                  [prompt-code : (Code (-> S String))]
+                  [attributes : (Immutable-HashTable Symbol Any)])
   #:transparent
   #:type-name Node)
 
-(: node-trans (All (T S) (-> (Node T S) (-> S S))))
+(: node-trans (All (S) (-> (Node S) (-> S S))))
 (define (node-trans n)
   (%code-value (node-trans-code n)))
 
-(: node-trans-sexp (All (T S) (-> (Node T S) Sexp)))
+(: node-trans-sexp (All (S) (-> (Node S) Sexp)))
 (define (node-trans-sexp n)
   (%code-sexp (node-trans-code n)))
 
-(: node-prompt (All (T S) (-> (Node T S) (-> S String))))
+(: node-prompt (All (S) (-> (Node S) (-> S String))))
 (define (node-prompt n)
   (%code-value (node-prompt-code n)))
 
-(: node-prompt-sexp (All (T S) (-> (Node T S) Sexp)))
+(: node-prompt-sexp (All (S) (-> (Node S) Sexp)))
 (define (node-prompt-sexp n)
   (%code-sexp (node-prompt-code n)))
 
-(define-type AnyNode (Node Any Any))
+(define-type AnyNode (Node Any))
 
-(: make-node (All (T S)
+(: make-node (All (S)
                   (-> #:graph-name String
                       #:name String
-                      #:type T
+                      #:type Symbol
                       #:desc (Option String)
                       #:trans (Option (Code (-> S S)))
                       #:prompt (Option (U String (Code (-> S String))))
                       #:attributes (Immutable-HashTable Symbol Any)
-                      (Node T S))))
+                      (Node S))))
 (define (make-node #:graph-name graph-name #:name name #:type type #:desc desc #:trans tr #:prompt pmt #:attributes attrs)
   (let ([graph-id (make-graph-id graph-name)]
         [node-id (make-node-id graph-name name)])
@@ -98,21 +98,21 @@
                 [else pmt])
           attrs)))
 
-(: node* (All (T S)
+(: node* (All (S T)
               (-> String
                   (-> String
-                      #:type T
+                      #:type (∩ T Symbol)
                       [#:desc (Option String)]
                       [#:trans (Option (Code (-> S S)))]
                       [#:prompt (Option (U String (Code (-> S String))))]
-                      (Node T S)))))
+                      (Node S)))))
 (define ((node* graph-name) name #:type type #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f])
-  ((inst make-node T S) #:graph-name graph-name #:name name #:type type #:desc desc
-                        #:trans tr
-                        #:prompt pmt
-                        #:attributes ((inst hash Symbol Any))))
+  ((inst make-node S) #:graph-name graph-name #:name name #:type type #:desc desc
+                      #:trans tr
+                      #:prompt pmt
+                      #:attributes ((inst hash Symbol Any))))
 
-(: any-node (All (T S) (-> (-> Any Any : #:+ S) (-> (Node T S) AnyNode))))
+(: any-node (All (S) (-> (-> Any Any : #:+ S) (-> (Node S) AnyNode))))
 (define ((any-node p?) n)
   (struct-copy node n
                [trans-code (make-code (node-trans-sexp n)
@@ -122,99 +122,98 @@
 
 (define-type EdgeMode (U 'auto 'choose 'annotation))
 
-(struct (T S) edge ([id : Symbol]
-                    [name : String]
-                    [mode : EdgeMode]
-                    [half? : Boolean]
-                    [from : (Node T S)]
-                    [to : (Node T S)]
-                    [desc : (Option String)]
-                    [when-code : (Code (-> S Any))]
-                    [trans-code : (Code (-> S S))]
-                    [priority : Integer]
-                    [weight : Exact-Positive-Integer]
-                    [attributes : (Immutable-HashTable Symbol Any)])
+(struct (S) edge ([id : Symbol]
+                  [name : String]
+                  [mode : EdgeMode]
+                  [half? : Boolean]
+                  [from : (Node S)]
+                  [to : (Node S)]
+                  [desc : (Option String)]
+                  [when-code : (Code (-> S Any))]
+                  [trans-code : (Code (-> S S))]
+                  [priority : Integer]
+                  [weight : Exact-Positive-Integer]
+                  [attributes : (Immutable-HashTable Symbol Any)])
   #:transparent
   #:type-name Edge)
 
-(: edge-trans (All (T S) (-> (Edge T S) (-> S S))))
+(: edge-trans (All (S) (-> (Edge S) (-> S S))))
 (define (edge-trans e)
   (%code-value (edge-trans-code e)))
 
-(: edge-trans-sexp (All (T S) (-> (Edge T S) Sexp)))
+(: edge-trans-sexp (All (S) (-> (Edge S) Sexp)))
 (define (edge-trans-sexp e)
   (%code-sexp (edge-trans-code e)))
 
-(: edge-when (All (T S) (-> (Edge T S) (-> S Any))))
+(: edge-when (All (S) (-> (Edge S) (-> S Any))))
 (define (edge-when e)
   (%code-value (edge-when-code e)))
 
-(: edge-when-sexp (All (T S) (-> (Edge T S) Sexp)))
+(: edge-when-sexp (All (S) (-> (Edge S) Sexp)))
 (define (edge-when-sexp e)
   (%code-sexp (edge-when-code e)))
 
 
-(struct (T S) bridge ([id : Symbol]
-                      [name : String]
-                      [mode : EdgeMode]
-                      [half? : Boolean]
-                      [from : (Node T S)]
-                      [to : (Node Any Any)]
-                      [desc : (Option String)]
-                      [when-code : (Code (-> S Any))]
-                      [trans-code : (Code (-> S Any))]
-                      [priority : Integer]
-                      [weight : Exact-Positive-Integer]
-                      [attributes : (Immutable-HashTable Symbol Any)])
+(struct (S) bridge ([id : Symbol]
+                    [name : String]
+                    [mode : EdgeMode]
+                    [half? : Boolean]
+                    [from : (Node S)]
+                    [to : (Node Any)]
+                    [desc : (Option String)]
+                    [when-code : (Code (-> S Any))]
+                    [trans-code : (Code (-> S Any))]
+                    [priority : Integer]
+                    [weight : Exact-Positive-Integer]
+                    [attributes : (Immutable-HashTable Symbol Any)])
   #:transparent
   #:type-name Bridge)
 
-(: bridge-trans (All (T S) (-> (Bridge T S) (-> S Any))))
+(: bridge-trans (All (S) (-> (Bridge S) (-> S Any))))
 (define (bridge-trans e)
   (%code-value (bridge-trans-code e)))
 
-(: bridge-trans-sexp (All (T S) (-> (Bridge T S) Sexp)))
+(: bridge-trans-sexp (All (S) (-> (Bridge S) Sexp)))
 (define (bridge-trans-sexp e)
   (%code-sexp (bridge-trans-code e)))
 
-(: bridge-when (All (T S) (-> (Bridge T S) (-> S Any))))
+(: bridge-when (All (S) (-> (Bridge S) (-> S Any))))
 (define (bridge-when e)
   (%code-value (bridge-when-code e)))
 
-(: bridge-when-sexp (All (T S) (-> (Bridge T S) Sexp)))
+(: bridge-when-sexp (All (S) (-> (Bridge S) Sexp)))
 (define (bridge-when-sexp e)
   (%code-sexp (bridge-when-code e)))
 
+(define-type AnyEdge (Edge Any))
 
-(define-type AnyEdge (Edge Any Any))
-
-(: make-generic-edge* (All (T S)
+(: make-generic-edge* (All (S)
                            (case-> (-> 'edge
                                        #:name String
                                        #:mode (Option EdgeMode)
                                        #:half? Boolean
-                                       #:from (Node T S)
-                                       #:to (Node T S)
+                                       #:from (Node S)
+                                       #:to (Node S)
                                        #:desc (Option String)
                                        #:when (Option (Code (-> S Any)))
                                        #:trans (Code (-> S S))
                                        #:priority (Option Integer)
                                        #:weight (Option Exact-Positive-Integer)
                                        #:attributes (Immutable-HashTable Symbol Any)
-                                       (Edge T S))
+                                       (Edge S))
                                    (-> 'bridge
                                        #:name String
                                        #:mode (Option EdgeMode)
                                        #:half? Boolean
-                                       #:from (Node T S)
-                                       #:to (Node Any Any)
+                                       #:from (Node S)
+                                       #:to (Node Any)
                                        #:desc (Option String)
                                        #:when (Option (Code (-> S Any)))
                                        #:trans (Code (-> S Any))
                                        #:priority (Option Integer)
                                        #:weight (Option Exact-Positive-Integer)
                                        #:attributes (Immutable-HashTable Symbol Any)
-                                       (Bridge T S)))))
+                                       (Bridge S)))))
 (define (make-generic-edge* type
                             #:name name
                             #:mode mode
@@ -243,19 +242,19 @@
      (or weight 1)
      attrs)))
 
-(: make-bridge (All (T S)
+(: make-bridge (All (S)
                     (-> #:name String
                         #:mode (Option EdgeMode)
                         #:half?  Boolean
-                        #:from (Node T S)
-                        #:to (Node Any Any)
+                        #:from (Node S)
+                        #:to (Node Any)
                         #:desc (Option String)
                         #:when (Option (Code (-> S Any)))
                         #:trans (Code (-> S Any))
                         #:priority (Option Integer)
                         #:weight (Option Exact-Positive-Integer)
                         #:attributes (Immutable-HashTable Symbol Any)
-                        (Bridge T S))))
+                        (Bridge S))))
 (define (make-bridge #:name name
                      #:mode mode
                      #:half? half?
@@ -267,31 +266,31 @@
                      #:priority priority
                      #:weight weight
                      #:attributes attrs)
-  ((inst make-generic-edge* T S) 'bridge
-                                 #:name name
-                                 #:mode mode
-                                 #:half? half?
-                                 #:from from
-                                 #:to to
-                                 #:desc desc
-                                 #:when when
-                                 #:trans tr
-                                 #:priority priority
-                                 #:weight weight
-                                 #:attributes attrs))
+  ((inst make-generic-edge* S) 'bridge
+                               #:name name
+                               #:mode mode
+                               #:half? half?
+                               #:from from
+                               #:to to
+                               #:desc desc
+                               #:when when
+                               #:trans tr
+                               #:priority priority
+                               #:weight weight
+                               #:attributes attrs))
 
-(: bridge* (All (T S)
+(: bridge* (All (S)
                 (-> String
                     [#:mode (Option EdgeMode)]
                     [#:half Boolean]
-                    #:from (Node T S)
-                    #:to (Node Any Any)
+                    #:from (Node S)
+                    #:to (Node Any)
                     [#:desc (Option String)]
                     [#:when (Option (Code (-> S Any)))]
                     #:trans (Code (-> S Any))
                     [#:priority (Option Integer)]
                     [#:weight (Option Exact-Positive-Integer)]
-                    (Bridge T S))))
+                    (Bridge S))))
 (define (bridge* name
                  #:mode [mode #f]
                  #:half [half? #f]
@@ -302,31 +301,31 @@
                  #:trans tr
                  #:priority [priority #f]
                  #:weight [weight #f])
-  ((inst make-bridge T S) #:name name
-                          #:mode mode
-                          #:half? half?
-                          #:from from
-                          #:to to
-                          #:desc desc
-                          #:when when
-                          #:trans (or tr (inst identity S))
-                          #:priority priority
-                          #:weight weight
-                          #:attributes ((inst hash Symbol Any))))
+  ((inst make-bridge S) #:name name
+                        #:mode mode
+                        #:half? half?
+                        #:from from
+                        #:to to
+                        #:desc desc
+                        #:when when
+                        #:trans (or tr (inst identity S))
+                        #:priority priority
+                        #:weight weight
+                        #:attributes ((inst hash Symbol Any))))
 
-(: make-edge (All (T S)
+(: make-edge (All (S)
                   (-> #:name String
                       #:mode (Option EdgeMode)
                       #:half? Boolean
-                      #:from (Node T S)
-                      #:to (Node T S)
+                      #:from (Node S)
+                      #:to (Node S)
                       #:desc (Option String)
                       #:when (Option (Code (-> S Any)))
                       #:trans (Option (Code (-> S S)))
                       #:priority (Option Integer)
                       #:weight (Option Exact-Positive-Integer)
                       #:attributes (Immutable-HashTable Symbol Any)
-                      (Edge T S))))
+                      (Edge S))))
 (define (make-edge #:name name
                    #:mode mode
                    #:half? half?
@@ -338,31 +337,31 @@
                    #:priority priority
                    #:weight weight
                    #:attributes attrs)
-  ((inst make-generic-edge* T S) 'edge
-                                 #:name name
-                                 #:mode mode
-                                 #:half? half?
-                                 #:from from
-                                 #:to to
-                                 #:desc desc
-                                 #:when when
-                                 #:trans (or tr (make-code #f (inst identity S)))
-                                 #:priority priority
-                                 #:weight weight
-                                 #:attributes attrs))
+  ((inst make-generic-edge* S) 'edge
+                               #:name name
+                               #:mode mode
+                               #:half? half?
+                               #:from from
+                               #:to to
+                               #:desc desc
+                               #:when when
+                               #:trans (or tr (make-code #f (inst identity S)))
+                               #:priority priority
+                               #:weight weight
+                               #:attributes attrs))
 
-(: edge* (All (T S)
+(: edge* (All (S)
               (-> String
                   [#:mode (Option EdgeMode)]
                   [#:half? Boolean]
-                  #:from (Node T S)
-                  #:to (Node T S)
+                  #:from (Node S)
+                  #:to (Node S)
                   [#:desc (Option String)]
                   [#:when (Option (Code (-> S Any)))]
                   [#:trans (Option (Code (-> S S)))]
                   [#:priority (Option Integer)]
                   [#:weight (Option Exact-Positive-Integer)]
-                  (Edge T S))))
+                  (Edge S))))
 (define (edge* name
                #:mode [mode #f]
                #:half? [half? #f]
@@ -373,27 +372,27 @@
                #:trans [tr #f]
                #:priority [priority #f]
                #:weight [weight #f])
-  ((inst make-edge T S) #:name name
-                        #:mode mode
-                        #:half? half?
-                        #:from from
-                        #:to to
-                        #:desc desc
-                        #:when when
-                        #:trans (or tr (make-code #f (inst identity S)))
-                        #:priority priority
-                        #:weight weight
-                        #:attributes ((inst hash Symbol Any))))
+  ((inst make-edge S) #:name name
+                      #:mode mode
+                      #:half? half?
+                      #:from from
+                      #:to to
+                      #:desc desc
+                      #:when when
+                      #:trans (or tr (make-code #f (inst identity S)))
+                      #:priority priority
+                      #:weight weight
+                      #:attributes ((inst hash Symbol Any))))
 
-(: any-bridge (All (T S) (-> (-> Any Any : #:+ S)
-                             (-> (Bridge T S) (Edge Any Any)))))
+(: any-bridge (All (S) (-> (-> Any Any : #:+ S)
+                           (-> (Bridge S) (Edge Any)))))
 (define ((any-bridge p?) b)
   (edge (bridge-id b)
         (bridge-name b)
         (bridge-mode b)
         (bridge-half? b)
         ((any-node p?) (bridge-from b))
-        ((inst bridge-to T S) b)
+        ((inst bridge-to S) b)
         (bridge-desc b)
         (make-code (bridge-when-sexp b) (lambda (x) ((bridge-when b) (assert x p?))))
         (make-code (bridge-trans-sexp b) (lambda (x) ((bridge-trans b) (assert x p?))))
@@ -401,9 +400,9 @@
         (bridge-weight b)
         (bridge-attributes b)))
 
-(: any-edge (All (T S) (-> (-> Any Any : #:+ S)
-                           (-> (Edge T S)
-                               AnyEdge))))
+(: any-edge (All (S) (-> (-> Any Any : #:+ S)
+                         (-> (Edge S)
+                             AnyEdge))))
 (define ((any-edge p?) e)
   (struct-copy edge e
                [from ((any-node p?) (edge-from e))]
@@ -413,22 +412,22 @@
                [when-code (make-code (edge-when-sexp e)
                                      (lambda (x) ((edge-when e) (assert x p?))))]))
 
-(struct (T S) graph ([id : Symbol]
-                     [name : String]
-                     [parent-id : (Option Symbol)]
-                     [parent-name : (Option String)]
-                     [desc : (Option String)]
-                     [edges : (Listof (Edge T S))])
+(struct (S) graph ([id : Symbol]
+                   [name : String]
+                   [parent-id : (Option Symbol)]
+                   [parent-name : (Option String)]
+                   [desc : (Option String)]
+                   [edges : (Listof (Edge S))])
   #:transparent
   #:type-name Graph)
 
-(define-type AnyGraph (Graph Any Any))
+(define-type AnyGraph (Graph Any))
 
-(: graph* (All (T S) (-> String
-                         [#:parent-name (Option String)]
-                         [#:desc (Option String)]
-                         [#:edges (Option (Listof (Edge T S)))]
-                         (Graph T S))))
+(: graph* (All (S) (-> String
+                       [#:parent-name (Option String)]
+                       [#:desc (Option String)]
+                       [#:edges (Option (Listof (Edge S)))]
+                       (Graph S))))
 (define (graph* name
                 #:parent-name [parent-name #f]
                 #:desc [desc #f]
@@ -442,31 +441,31 @@
            desc
            (or edges '()))))
 
-(struct (T S) open-graph ([graph : (Graph T S)]
-                          [bridges : (Listof (Bridge T S))])
+(struct (S) open-graph ([graph : (Graph S)]
+                        [bridges : (Listof (Bridge S))])
   #:transparent
   #:type-name OpenGraph)
 
-(: open-graph* (All (T S)
+(: open-graph* (All (S)
                     (-> String
                         [#:parent-name (Option String)]
                         [#:desc (Option String)]
-                        [#:edges (Option (Listof (Edge T S)))]
-                        [#:bridges (Option (Listof (Bridge T S)))]
-                        (OpenGraph T S))))
+                        [#:edges (Option (Listof (Edge S)))]
+                        [#:bridges (Option (Listof (Bridge S)))]
+                        (OpenGraph S))))
 (define (open-graph* name
                      #:parent-name [parent-name #f]
                      #:desc [desc #f]
                      #:edges [edges #f]
                      #:bridges [bridges #f])
-  (open-graph ((inst graph* T S) name
-                                 #:parent-name parent-name
-                                 #:desc desc
-                                 #:edges edges)
+  (open-graph ((inst graph* S) name
+                               #:parent-name parent-name
+                               #:desc desc
+                               #:edges edges)
               (or bridges '())))
 
-(: any-graph (All (T S) (-> (-> Any Any : #:+ S)
-                            (-> (U (Graph T S) (OpenGraph T S)) AnyGraph))))
+(: any-graph (All (S) (-> (-> Any Any : #:+ S)
+                          (-> (U (Graph S) (OpenGraph S)) AnyGraph))))
 (define ((any-graph p?) g)
   (if (open-graph? g)
       (struct-copy graph (open-graph-graph g)

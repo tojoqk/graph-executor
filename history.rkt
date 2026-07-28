@@ -15,36 +15,36 @@
          history-logger->history-record-edge history-logger->history-record-node)
 
 (define-type History-Record-Event (U Message-Info Prompt-Info))
-(define-type (History-Record-Node T S) (List 'node (Listof History-Record-Event) (Node T S)))
-(define-type (History-Record-Edge T S) (U (History-Record-Auto T S) (History-Record-Choose T S)))
-(define-type (History-Record-Auto T S) (List 'auto (Listof History-Record-Event) (Edge T S)))
-(define-type (History-Record-Choose T S) (List 'choose (Listof History-Record-Event) (Edge T S) String (Pairof (Edge T S) (Listof (Edge T S))) Prompt-Attributes))
+(define-type (History-Record-Node S) (List 'node (Listof History-Record-Event) (Node S)))
+(define-type (History-Record-Edge S) (U (History-Record-Auto S) (History-Record-Choose S)))
+(define-type (History-Record-Auto S) (List 'auto (Listof History-Record-Event) (Edge S)))
+(define-type (History-Record-Choose S) (List 'choose (Listof History-Record-Event) (Edge S) String (Pairof (Edge S) (Listof (Edge S))) Prompt-Attributes))
 
-(: history-record-events (All (T S) (-> (U (History-Record-Node T S) (History-Record-Auto T S) (History-Record-Choose T S)) (Listof History-Record-Event))))
+(: history-record-events (All (S) (-> (U (History-Record-Node S) (History-Record-Auto S) (History-Record-Choose S)) (Listof History-Record-Event))))
 (define (history-record-events r) (second r))
 
-(: history-record-node (All (T S) (-> (History-Record-Node T S) (Node T S))))
+(: history-record-node (All (S) (-> (History-Record-Node S) (Node S))))
 (define (history-record-node r) (third r))
 
-(: history-record-edge (All (T S) (-> (U (History-Record-Auto T S) (History-Record-Choose T S)) (Edge T S))))
+(: history-record-edge (All (S) (-> (U (History-Record-Auto S) (History-Record-Choose S)) (Edge S))))
 (define (history-record-edge r) (third r))
 
-(: history-record-title (All (T S) (-> (History-Record-Choose T S) String)))
+(: history-record-title (All (S) (-> (History-Record-Choose S) String)))
 (define (history-record-title r) (fourth r))
 
-(: history-record-choices (All (T S) (-> (History-Record-Choose T S) (Pairof (Edge T S) (Listof (Edge T S))))))
+(: history-record-choices (All (S) (-> (History-Record-Choose S) (Pairof (Edge S) (Listof (Edge S))))))
 (define (history-record-choices r) (fifth r))
 
-(: history-record-attributes (All (T S) (-> (History-Record-Choose T S) Prompt-Attributes)))
+(: history-record-attributes (All (S) (-> (History-Record-Choose S) Prompt-Attributes)))
 (define (history-record-attributes r) (sixth r))
 
-(define-type (History-Record T S) (U (History-Record-Node T S)
-                                     (History-Record-Auto T S)
-                                     (History-Record-Choose T S)))
+(define-type (History-Record S) (U (History-Record-Node S)
+                                     (History-Record-Auto S)
+                                     (History-Record-Choose S)))
 
-(define-type (History T S) (Listof (History-Record T S)))
+(define-type (History S) (Listof (History-Record S)))
 
-(: history->journal (All (T S) (-> (History T S) Journal)))
+(: history->journal (All (S) (-> (History S) Journal)))
 (define (history->journal h)
   (: prompt-values (-> (Listof (U Prompt-Info Message-Info))
                        (Listof (Pairof Prompt-Value Prompt-Attributes))))
@@ -72,33 +72,33 @@
                     (history->journal (cddr h))))
             (error 'history->journal "invalid history")))))
 
-(define-type (History-Logger T S)
-  (List (U (List 'auto (Edge T S))
-           (List 'choose (Edge T S)
+(define-type (History-Logger S)
+  (List (U (List 'auto (Edge S))
+           (List 'choose (Edge S)
                  String
-                 (Pairof (Edge T S) (Listof (Edge T S)))
+                 (Pairof (Edge S) (Listof (Edge S)))
                  Prompt-Attributes))
         (Boxof (Listof (U Message-Info Prompt-Info)))
-        (Node T S)
+        (Node S)
         (Boxof (Listof (U Message-Info Prompt-Info)))))
 
-(: make-history-logger (All (T S)
+(: make-history-logger (All (S)
                             (case->
-                             (-> 'auto (Edge T S) (Node T S) (History-Logger T S))
+                             (-> 'auto (Edge S) (Node S) (History-Logger S))
                              (-> 'choose
-                                 (Edge T S)
+                                 (Edge S)
                                  String
-                                 (Pairof (Edge T S) (Listof (Edge T S)))
+                                 (Pairof (Edge S) (Listof (Edge S)))
                                  Prompt-Attributes
-                                 (Node T S)
-                                 (History-Logger T S)))))
+                                 (Node S)
+                                 (History-Logger S)))))
 (define make-history-logger
   (case-lambda
     [(_ e n) (list (list 'auto e) (box '()) n (box '()))]
     [(_ e pmt edges attrs n) (list (list 'choose e pmt edges attrs) (box '()) n (box '()))]))
 
-(: history-logger-prompt-log! (All (T S)
-                                      (-> (History-Logger T S)
+(: history-logger-prompt-log! (All (S)
+                                      (-> (History-Logger S)
                                           (U 'node 'edge)
                                           String
                                           Prompt-Op
@@ -111,8 +111,8 @@
               [(node) (fourth logger)])])
     (set-box! bx (cons `(prompt ,op ,title (,val ,@attrs)) (unbox bx)))))
 
-(: history-logger-message-log! (All (T S)
-                                    (-> (History-Logger T S)
+(: history-logger-message-log! (All (S)
+                                    (-> (History-Logger S)
                                         (U 'node 'edge)
                                         Any
                                         Void)))
@@ -122,8 +122,8 @@
               [(node) (fourth logger)])])
     (set-box! bx (cons (list 'message val) (unbox bx)))))
 
-(: history-logger->history-record-edge (All (T S) (-> (History-Logger T S)
-                                                      (History-Record-Edge T S))))
+(: history-logger->history-record-edge (All (S) (-> (History-Logger S)
+                                                      (History-Record-Edge S))))
 (define (history-logger->history-record-edge logger)
   (case (caar logger)
     [(auto)
@@ -138,7 +138,7 @@
            [bx (second logger)])
        (list 'choose (unbox bx) e pmt items attrs))]))
 
-(: history-logger->history-record-node (All (T S) (-> (History-Logger T S) (History-Record-Node T S))))
+(: history-logger->history-record-node (All (S) (-> (History-Logger S) (History-Record-Node S))))
 (define (history-logger->history-record-node logger)
   (let ([n (third logger)]
         [bx (fourth logger)])

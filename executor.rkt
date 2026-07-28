@@ -22,7 +22,7 @@
 (: current-node-id (Parameterof (Option Symbol)))
 (define current-node-id (make-parameter #f))
 
-(: current-node? (All (T S) (-> (Node T S) Boolean)))
+(: current-node? (All (S) (-> (Node S) Boolean)))
 (define (current-node? n)
   (cond [(current-node-id) => (curry symbol=? (node-id n))]
         [else #f]))
@@ -30,15 +30,15 @@
 (: current-edge-id (Parameterof (Option Symbol)))
 (define current-edge-id (make-parameter #f))
 
-(: current-edge? (All (T S) (-> (Edge T S) Boolean)))
+(: current-edge? (All (S) (-> (Edge S) Boolean)))
 (define (current-edge? e)
   (cond [(current-edge-id) => (curry symbol=? (edge-id e))]
         [else #f]))
 
-(: replay (All (T S) (-> (Listof (Graph T S)) (Node T S) S Journal
-                         (Values (Node T S) S (History T S)))))
+(: replay (All (S) (-> (Listof (Graph S)) (Node S) S Journal
+                         (Values (Node S) S (History S)))))
 (define (replay gs n st j)
-  (let loop ([n n] [st st] [j (reverse j)] [h : (History T S) '()])
+  (let loop ([n n] [st st] [j (reverse j)] [h : (History S) '()])
     (let ([ne (next-edges gs st n)])
       (if (null? j)
           (values n st h)
@@ -49,8 +49,8 @@
                     [name (caadr j-rec)]
                     [attrs (cdadr j-rec)]
                     [ps-init (reverse (cddr j-rec))])
-               (cond [(findf (lambda ([e : (Edge T S)]) (string=? name (edge-name e))) edges)
-                      => (lambda ([e : (Edge T S)])
+               (cond [(findf (lambda ([e : (Edge S)]) (string=? name (edge-name e))) edges)
+                      => (lambda ([e : (Edge S)])
                            (let* ([to (edge-to e)]
                                   [mode (edge-mode e)]
                                   [logger  (if (eq? mode 'auto)
@@ -129,17 +129,17 @@
 (: current-single-choose-policy (Parameterof (U 'skip 'choose)))
 (define current-single-choose-policy (make-parameter 'choose))
 
-(: find-graph (All (T S) (-> (Listof (Graph T S)) Symbol (Graph T S))))
+(: find-graph (All (S) (-> (Listof (Graph S)) Symbol (Graph S))))
 (define (find-graph gs g-id)
-  (cond [(memf (lambda ([g : (Graph T S)]) (equal? (graph-id g) g-id)) gs) => car]
+  (cond [(memf (lambda ([g : (Graph S)]) (equal? (graph-id g) g-id)) gs) => car]
         [else (error 'find-graph "not found" g-id)]))
 
-(: next-edges (All (T S)
-                   (-> (Listof (Graph T S))
+(: next-edges (All (S)
+                   (-> (Listof (Graph S))
                        S
-                       (Node T S)
-                       (U (List 'auto (Pairof (Edge T S) (Listof (Edge T S))))
-                          (List 'choose (Pairof (Edge T S) (Listof (Edge T S))))
+                       (Node S)
+                       (U (List 'auto (Pairof (Edge S) (Listof (Edge S))))
+                          (List 'choose (Pairof (Edge S) (Listof (Edge S))))
                           (List 'terminated)))))
 (define (next-edges gs st n)
   (let* ([g (find-graph gs (node-graph-id n))]
@@ -159,8 +159,8 @@
               (cond [(eq? policy 'random) (list 'auto aes)]
                     [(eq? policy 'choose) (list 'choose aes)]))))))
 
-(: auto-choose (All (T S)
-                    (-> (List 'auto (Pairof (Edge T S) (Listof (Edge T S)))) (Edge T S))))
+(: auto-choose (All (S)
+                    (-> (List 'auto (Pairof (Edge S) (Listof (Edge S)))) (Edge S))))
 (define (auto-choose ne)
   (let* ([edges (cadr ne)]
          [s (sum-weight edges)]
@@ -174,33 +174,33 @@
               [else (loop rst (- r (edge-weight fst)))])))))
 
 ;; --- private ---
-(: edge-sort (All (T S) (-> (Listof (Edge T S)) (Listof (Edge T S)))))
+(: edge-sort (All (S) (-> (Listof (Edge S)) (Listof (Edge S)))))
 (define (edge-sort es)
-  ((inst sort (Edge T S) Integer) es > #:key edge-priority))
+  ((inst sort (Edge S) Integer) es > #:key edge-priority))
 
-(: group-by-priority (All (T S) (-> (Listof (Edge T S)) (Listof (Listof (Edge T S))))))
+(: group-by-priority (All (S) (-> (Listof (Edge S)) (Listof (Listof (Edge S))))))
 (define (group-by-priority es)
-  ((inst group-by (Edge T S) Integer) edge-priority es))
+  ((inst group-by (Edge S) Integer) edge-priority es))
 
-(: filter-state (All (T S) (-> S (Listof (Edge T S)) (Listof (Edge T S)))))
+(: filter-state (All (S) (-> S (Listof (Edge S)) (Listof (Edge S)))))
 (define (filter-state st es)
-  (filter (lambda ([e : (Edge T S)])
+  (filter (lambda ([e : (Edge S)])
             ((edge-when e) st))
           es))
 
-(: remove-annotation (All (T S) (-> (Listof (Edge T S)) (Listof (Edge T S)))))
+(: remove-annotation (All (S) (-> (Listof (Edge S)) (Listof (Edge S)))))
 (define (remove-annotation es)
-  (filter (lambda ([e : (Edge T S)]) (not (eq? (edge-mode e) 'annotation)))
+  (filter (lambda ([e : (Edge S)]) (not (eq? (edge-mode e) 'annotation)))
           es))
 
-(: filter-auto (All (T S) (-> (Listof (Edge T S)) (Listof (Edge T S)))))
+(: filter-auto (All (S) (-> (Listof (Edge S)) (Listof (Edge S)))))
 (define (filter-auto es)
-  (filter (lambda ([e : (Edge T S)]) (eq? (edge-mode e) 'auto))
+  (filter (lambda ([e : (Edge S)]) (eq? (edge-mode e) 'auto))
           es))
 
-(: auto-edges (All (T S) (-> (Listof (Edge T S)) (Listof (Edge T S)))))
+(: auto-edges (All (S) (-> (Listof (Edge S)) (Listof (Edge S)))))
 (define (auto-edges es)
-  (let loop ([ess : (Listof (Listof (Edge T S))) (group-by-priority es)])
+  (let loop ([ess : (Listof (Listof (Edge S))) (group-by-priority es)])
     (if (null? ess)
         '()
         (let ([auto-es (filter-auto (car ess))])
@@ -208,23 +208,23 @@
               (loop (cdr ess))
               auto-es)))))
 
-(: sum-weight (All (T S) (-> (Pairof (Edge T S) (Listof (Edge T S))) Positive-Integer)))
+(: sum-weight (All (S) (-> (Pairof (Edge S) (Listof (Edge S))) Positive-Integer)))
 (define (sum-weight es)
-  (define any-edge-foldl (inst foldl (Edge T S) Exact-Positive-Integer))
-  (any-edge-foldl (lambda ([e1 : (Edge T S)] [acc : Exact-Positive-Integer])
+  (define any-edge-foldl (inst foldl (Edge S) Exact-Positive-Integer))
+  (any-edge-foldl (lambda ([e1 : (Edge S)] [acc : Exact-Positive-Integer])
                     (+ (edge-weight e1)
                        acc))
                   (edge-weight (car es))
                   (cdr es)))
 
-(: filter-node (All (T S) (-> (Node T S) (Listof (Edge T S)) (Listof (Edge T S)))))
+(: filter-node (All (S) (-> (Node S) (Listof (Edge S)) (Listof (Edge S)))))
 (define (filter-node n es)
-  (filter (lambda ([e : (Edge T S)])
+  (filter (lambda ([e : (Edge S)])
             (eq? (node-id n) (node-id (edge-from e))))
           es))
 
-(: find-edge (All (T S) (-> (Pairof (Edge T S) (Listof (Edge T S))) String (Edge T S))))
+(: find-edge (All (S) (-> (Pairof (Edge S) (Listof (Edge S))) String (Edge S))))
 (define (find-edge es name)
   (cond
-    [(findf (lambda ([e : (Edge T S)]) (string=? name (edge-name e))) es) => identity]
+    [(findf (lambda ([e : (Edge S)]) (string=? name (edge-name e))) es) => identity]
     [else (error 'find-edge "not found")]))

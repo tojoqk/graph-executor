@@ -5,12 +5,12 @@
 
 (provide dot-bridge dot-edge edge-dot-minlen)
 
-(: dot-bridge (All (T S)
+(: dot-bridge (All (S)
                    (-> String
                        [#:mode (Option EdgeMode)]
                        [#:half? Boolean]
-                       #:from (Node T S)
-                       #:to (Node Any Any)
+                       #:from (Node S)
+                       #:to (Node Any)
                        [#:desc (Option String)]
                        [#:when (Option (Code (-> S Any)))]
                        #:trans (Code (-> S Any))
@@ -18,7 +18,7 @@
                        [#:weight (Option Exact-Positive-Integer)]
                        [#:dot-minlen (Option Natural)]
                        [#:attributes (Immutable-HashTable Symbol Any)]
-                       (Bridge T S))))
+                       (Bridge S))))
 (define (dot-bridge name
                     #:mode [mode #f]
                     #:half? [half? #f]
@@ -31,25 +31,25 @@
                     #:weight [weight #f]
                     #:dot-minlen [dot-minlen #f]
                     #:attributes [attrs ((inst hash Symbol Any))])
-  ((inst make-bridge T S) #:name name
-                          #:mode mode
-                          #:half? half?
-                          #:from from
-                          #:to to
-                          #:desc desc
-                          #:when when
-                          #:trans (or tr (inst identity S))
-                          #:priority priority
-                          #:weight weight
-                          #:attributes (hash-union attrs
-                                                   (hash 'dot-minlen dot-minlen))))
+  ((inst make-bridge S) #:name name
+                        #:mode mode
+                        #:half? half?
+                        #:from from
+                        #:to to
+                        #:desc desc
+                        #:when when
+                        #:trans (or tr (inst identity S))
+                        #:priority priority
+                        #:weight weight
+                        #:attributes (hash-union attrs
+                                                 (hash 'dot-minlen dot-minlen))))
 
-(: dot-edge (All (T S)
+(: dot-edge (All (S)
                  (-> String
                      [#:mode (Option EdgeMode)]
                      [#:half? Boolean]
-                     #:from (Node T S)
-                     #:to (Node T S)
+                     #:from (Node S)
+                     #:to (Node S)
                      [#:desc (Option String)]
                      [#:when (Option (Code (-> S Any)))]
                      [#:trans (Option (Code (-> S S)))]
@@ -57,7 +57,7 @@
                      [#:weight (Option Exact-Positive-Integer)]
                      [#:dot-minlen (Option Natural)]
                      [#:attributes (Immutable-HashTable Symbol Any)]
-                     (Edge T S))))
+                     (Edge S))))
 (define (dot-edge name
                   #:mode [mode #f]
                   #:half? [half? #f]
@@ -70,20 +70,20 @@
                   #:weight [weight #f]
                   #:dot-minlen [dot-minlen #f]
                   #:attributes [attrs ((inst hash Symbol Any))])
-  ((inst make-edge T S) #:name name
-                        #:mode mode
-                        #:half? half?
-                        #:from from
-                        #:to to
-                        #:desc desc
-                        #:when when
-                        #:trans (or tr (make-code #f (inst identity S)))
-                        #:priority priority
-                        #:weight weight
-                        #:attributes (hash-union attrs
-                                                 (hash 'dot-minlen dot-minlen))))
+  ((inst make-edge S) #:name name
+                      #:mode mode
+                      #:half? half?
+                      #:from from
+                      #:to to
+                      #:desc desc
+                      #:when when
+                      #:trans (or tr (make-code #f (inst identity S)))
+                      #:priority priority
+                      #:weight weight
+                      #:attributes (hash-union attrs
+                                               (hash 'dot-minlen dot-minlen))))
 
-(: edge-dot-minlen (All (T S) (-> (Edge T S) Natural)))
+(: edge-dot-minlen (All (S) (-> (Edge S) Natural)))
 (define (edge-dot-minlen e)
   (cond [(hash-ref (edge-attributes e) 'dot-minlen #f)
          => (lambda (x)

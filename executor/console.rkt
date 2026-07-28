@@ -37,9 +37,9 @@
     [(show) #t]
     [(hide) #f]))
 
-(: console-run (All (T S) (-> (Listof (Graph T S)) (Node T S) S
+(: console-run (All (S) (-> (Listof (Graph S)) (Node S) S
                               [#:journal Journal]
-                              (Values (Node T S) S Journal))))
+                              (Values (Node S) S Journal))))
 (define (console-run gs entry initial-state #:journal [j '()])
   (define-values (n st _) (replay gs entry initial-state j))
   (let loop ([n n] [st st] [j : Journal j])
@@ -65,7 +65,7 @@
                    (cons (journal-logger->journal-entry logger) j))))]
         [(choose)
          (define choose-pmt ((node-prompt n) st))
-         (let ([cmd (console-choose choose-pmt (map (inst edge-name T S) (second ne)))])
+         (let ([cmd (console-choose choose-pmt (map (inst edge-name S) (second ne)))])
            (cond [(string? cmd)
                   (define chosen-edge (find-edge (second ne) cmd))
                   (let* ([logger (make-journal-logger 'choose (edge-name chosen-edge) '())]
@@ -75,13 +75,13 @@
                           (cons (journal-logger->journal-entry logger) j)))]
                  [else (command-dispatch n st j cmd)]))]))))
 
-(: console-command-dispatch (All (T S)
-                                 (-> (Listof (Graph T S)) (Node T S) S
-                                     (-> (Node T S) S Journal
-                                         (Values (Node T S) S Journal))
-                                     (-> (Node T S) S Journal
+(: console-command-dispatch (All (S)
+                                 (-> (Listof (Graph S)) (Node S) S
+                                     (-> (Node S) S Journal
+                                         (Values (Node S) S Journal))
+                                     (-> (Node S) S Journal
                                          Command
-                                         (Values (Node T S) S Journal)))))
+                                         (Values (Node S) S Journal)))))
 (define ((console-command-dispatch gs n-init st-init loop) n st j cmd)
   (case (car cmd)
     [(quit) (values n st j)]
@@ -96,7 +96,7 @@
                                [else j])))
                (loop rs-n rs-st (history->journal rs-h))]))
 
-(: console-step (All (T S) (-> S (Edge T S) Journal-Logger S)))
+(: console-step (All (S) (-> S (Edge S) Journal-Logger S)))
 (define (console-step st e logger)
   (define (console-message val)
     (newline)
@@ -112,7 +112,7 @@
              (printf "--- Current Node: ~a (Graph: ~a) ---\n" (node-name n) (node-graph-name n))
              (cond [(node-desc n) => displayln]))))))))
 
-(: console-prompt/log (All (T S) (-> Journal-Logger Prompt-Implementation)))
+(: console-prompt/log (All (S) (-> Journal-Logger Prompt-Implementation)))
 (define ((console-prompt/log logger) title op)
   (define-values (val attrs) (console-prompt title op))
   (journal-logger-prompt-log! logger val attrs)

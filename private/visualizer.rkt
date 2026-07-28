@@ -5,30 +5,30 @@
          find-graph reachable-visnodes visnode-id visnodes-edges visnodes->graphs
          Nested-Graphs graphs->nested)
 
-(: find-graph (All (T S) (-> (Listof (Graph T S)) Symbol (Option (Graph T S)))))
+(: find-graph (All (S) (-> (Listof (Graph S)) Symbol (Option (Graph S)))))
 (define (find-graph gs g-id)
-  (cond [(memf (lambda ([g : (Graph T S)]) (equal? (graph-id g) g-id)) gs) => car]
+  (cond [(memf (lambda ([g : (Graph S)]) (equal? (graph-id g) g-id)) gs) => car]
         [else #f]))
 
-(: filter-from (All (T S) (-> (Node T S) (Listof (Edge T S)) (Listof (Edge T S)))))
+(: filter-from (All (S) (-> (Node S) (Listof (Edge S)) (Listof (Edge S)))))
 (define (filter-from n es)
-  (filter (lambda ([e : (Edge T S)])
+  (filter (lambda ([e : (Edge S)])
             (eq? (node-id n) (node-id (edge-from e))))
           es))
 
-(define-type (VisNode-Node T S) (List 'node (Graph T S) (Node T S)))
-(define-type (VisNode-Edge T S) (List 'edge (Graph T S) (Edge T S)))
-(define-type (VisNode T S) (U (VisNode-Node T S) (VisNode-Edge T S)))
+(define-type (VisNode-Node S) (List 'node (Graph S) (Node S)))
+(define-type (VisNode-Edge S) (List 'edge (Graph S) (Edge S)))
+(define-type (VisNode S) (U (VisNode-Node S) (VisNode-Edge S)))
 
-(: node->visnode (All (T S) (-> (Graph T S) (-> (Node T S) (VisNode-Node T S)))))
+(: node->visnode (All (S) (-> (Graph S) (-> (Node S) (VisNode-Node S)))))
 (define ((node->visnode g) n)
   (list 'node g n))
 
-(: edge->visnode (All (T S) (-> (Graph T S) (-> (Edge T S) (VisNode-Edge T S)))))
+(: edge->visnode (All (S) (-> (Graph S) (-> (Edge S) (VisNode-Edge S)))))
 (define ((edge->visnode g) e)
   (list 'edge g e))
 
-(: visnode-id (All (T S) (-> (VisNode T S) Symbol)))
+(: visnode-id (All (S) (-> (VisNode S) Symbol)))
 (define (visnode-id v)
   (cond
     [(eq? (car v) 'node)
@@ -36,12 +36,12 @@
     [(eq? (car v) 'edge)
      (edge-id (caddr v))]))
 
-(: visnode-graph (All (T S) (-> (VisNode T S) (Option (Graph T S)))))
+(: visnode-graph (All (S) (-> (VisNode S) (Option (Graph S)))))
 (define (visnode-graph v)
   (cadr v))
 
-(: visnodes-edges (All (T S)
-                       (-> (Listof (VisNode T S)) (Listof (VisNode-Edge T S)))))
+(: visnodes-edges (All (S)
+                       (-> (Listof (VisNode S)) (Listof (VisNode-Edge S)))))
 (define (visnodes-edges visnodes)
   (if (null? visnodes)
       '()
@@ -53,22 +53,22 @@
            (cons visnode
                  (visnodes-edges (cdr visnodes)))]))))
 
-(: reachable-visnodes (All (T S) (-> (Listof (Graph T S)) (Node T S) (Listof (VisNode T S)))))
+(: reachable-visnodes (All (S) (-> (Listof (Graph S)) (Node S) (Listof (VisNode S)))))
 (define (reachable-visnodes gs n)
-  (: loop (-> (Node T S) (Setof Symbol) (Values (Listof (VisNode T S)) (Setof Symbol))))
+  (: loop (-> (Node S) (Setof Symbol) (Values (Listof (VisNode S)) (Setof Symbol))))
   (define (loop n seen)
     (cond [(set-member? seen (node-id n)) (values '() seen)]
           [(find-graph gs (node-graph-id n))
-           => (lambda ([g : (Graph T S)])
+           => (lambda ([g : (Graph S)])
                 (let ([edges (filter-from n (graph-edges g))])
                   (let* ([visnodes (append (list ((node->visnode g) n))
-                                           ((inst map (VisNode T S) (Edge T S)) (edge->visnode g) edges))]
-                         [seen (set-union seen (list->set ((inst map Symbol (VisNode T S)) visnode-id visnodes)))])
-                    (for/fold : (Values (Listof (VisNode T S)) (Setof Symbol))
+                                           ((inst map (VisNode S) (Edge S)) (edge->visnode g) edges))]
+                         [seen (set-union seen (list->set ((inst map Symbol (VisNode S)) visnode-id visnodes)))])
+                    (for/fold : (Values (Listof (VisNode S)) (Setof Symbol))
                               ([visnodes visnodes]
                                [seen seen])
                               ([edge edges])
-                      (: new-visnodes (Listof (VisNode T S)))
+                      (: new-visnodes (Listof (VisNode S)))
                       (: new-seen (Setof Symbol))
                       (define-values (new-visnodes new-seen)
                         (loop (edge-to edge) seen))
@@ -78,38 +78,38 @@
     (loop n (set)))
   visnodes)
 
-(: visnodes->graphs (All (T S) (-> (Listof (VisNode T S)) (Listof (Graph T S)))))
+(: visnodes->graphs (All (S) (-> (Listof (VisNode S)) (Listof (Graph S)))))
 (define (visnodes->graphs vs)
-  (let loop ([vs vs] [gs : (Listof (Graph T S)) '()])
+  (let loop ([vs vs] [gs : (Listof (Graph S)) '()])
     (if (null? vs)
         gs
         (cond [(visnode-graph (car vs))
-               => (lambda ([g : (Graph T S)])
-                    (cond [(memf (lambda ([h : (Graph T S)])
+               => (lambda ([g : (Graph S)])
+                    (cond [(memf (lambda ([h : (Graph S)])
                                    (symbol=? (graph-id g) (graph-id h)))
                                  gs)
                            (loop (cdr vs) gs)]
                           [else (loop (cdr vs) (cons g gs))]))]
               [else (loop (cdr vs) gs)]))))
 
-(define-type (Nested-Graphs T S) (Pairof (Graph T S) (Listof (Nested-Graphs T S))))
+(define-type (Nested-Graphs S) (Pairof (Graph S) (Listof (Nested-Graphs S))))
 
-(: graphs->nested (All (T S) (-> (Listof (Graph T S)) (Listof (Nested-Graphs T S)))))
+(: graphs->nested (All (S) (-> (Listof (Graph S)) (Listof (Nested-Graphs S)))))
 (define (graphs->nested gs)
-  (let ([ht : (Mutable-HashTable Symbol (Listof (Graph T S))) (make-hash)])
-    (define get-parent-id (inst graph-parent-id T S))
-    (: roots-box (Boxof (Listof (Graph T S))))
+  (let ([ht : (Mutable-HashTable Symbol (Listof (Graph S))) (make-hash)])
+    (define get-parent-id (inst graph-parent-id S))
+    (: roots-box (Boxof (Listof (Graph S))))
     (define roots-box (box '()))
-    (for-each (lambda ([g : (Graph T S)])
+    (for-each (lambda ([g : (Graph S)])
                 (cond [(get-parent-id g)
                        => (lambda ([parent-id : Symbol])
-                            ((inst hash-set! Symbol (Listof (Graph T S)))
+                            ((inst hash-set! Symbol (Listof (Graph S)))
                              ht
                              parent-id
                              (cons g (hash-ref ht parent-id (lambda () '())))))]
                       [else (set-box! roots-box (cons g (unbox roots-box)))]))
               (reverse gs))
-    (: ->nested (-> (Graph T S) (Nested-Graphs T S)))
+    (: ->nested (-> (Graph S) (Nested-Graphs S)))
     (define (->nested g)
       (cons g (map ->nested (or (hash-ref ht (graph-id g) #f) '()))))
     (map ->nested (unbox roots-box))))

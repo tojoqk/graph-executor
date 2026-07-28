@@ -15,23 +15,23 @@
          current-dot-node-config current-dot-current-node-config current-dot-visited-node-config
          current-dot-auto-edge-config current-dot-visited-auto-edge-config current-dot-choose-edge-config current-dot-visited-choose-edge-config current-dot-annotation-edge-config)
 
-(struct (T S) %dot-config ([global : DotGlobalConfig]
-                           [node : (-> (Node T S) DotNodeConfig DotNodeConfig)]
-                           [edge-node : (-> (Edge T S) DotNodeConfig DotNodeConfig)]
-                           [edge : (-> (Edge T S) DotEdgeConfig DotEdgeConfig)])
+(struct (S) %dot-config ([global : DotGlobalConfig]
+                           [node : (-> (Node S) DotNodeConfig DotNodeConfig)]
+                           [edge-node : (-> (Edge S) DotNodeConfig DotNodeConfig)]
+                           [edge : (-> (Edge S) DotEdgeConfig DotEdgeConfig)])
   #:type-name DotConfig)
 
-(: dot-config (All (T S)
+(: dot-config (All (S)
                    (-> [#:global (Option DotGlobalConfig)]
-                       [#:node (Option (-> (Node T S) DotNodeConfig DotNodeConfig))]
-                       [#:edge-node (Option (-> (Edge T S) DotNodeConfig DotNodeConfig))]
-                       [#:edge (Option (-> (Edge T S) DotEdgeConfig DotEdgeConfig))]
-                       (DotConfig T S))))
+                       [#:node (Option (-> (Node S) DotNodeConfig DotNodeConfig))]
+                       [#:edge-node (Option (-> (Edge S) DotNodeConfig DotNodeConfig))]
+                       [#:edge (Option (-> (Edge S) DotEdgeConfig DotEdgeConfig))]
+                       (DotConfig S))))
 (define (dot-config #:global [global #f]
                     #:node [node #f]
                     #:edge-node [edge-node #f]
                     #:edge [edge #f])
-  (: node-default (-> (Node T S) DotNodeConfig))
+  (: node-default (-> (Node S) DotNodeConfig))
   (define (node-default n)
     (cond [(and (dot-current-node? n)
                 (current-dot-current-node-config))
@@ -41,7 +41,7 @@
            => identity]
           [else
            (current-dot-node-config)]))
-  (: edge-default (-> (Edge T S) DotEdgeConfig))
+  (: edge-default (-> (Edge S) DotEdgeConfig))
   (define (edge-default e)
     (let ([mode (edge-mode e)])
       (cond [(eq? mode 'auto)
@@ -56,16 +56,16 @@
                     => identity]
                    [else (current-dot-choose-edge-config)])]
             [(eq? mode 'annotation) (current-dot-annotation-edge-config)])))
-  ((inst %dot-config T S) (or global (dot-global-config))
-                          (lambda ([n : (Node T S)] [_ : DotNodeConfig])
+  ((inst %dot-config S) (or global (dot-global-config))
+                          (lambda ([n : (Node S)] [_ : DotNodeConfig])
                             (if node
                                 (node n (node-default n))
                                 (node-default n)))
-                          (lambda ([e : (Edge T S)] [_ : DotNodeConfig])
+                          (lambda ([e : (Edge S)] [_ : DotNodeConfig])
                             (if edge-node
                                 (edge-node e (current-dot-edge-node-config))
                                 (current-dot-edge-node-config)))
-                          (lambda ([e : (Edge T S)] [_ : DotEdgeConfig])
+                          (lambda ([e : (Edge S)] [_ : DotEdgeConfig])
                             (let ([c (if edge
                                          (edge e (edge-default e))
                                          (edge-default e))])
@@ -202,21 +202,21 @@
 (define (write-dot x [port (current-output-port)])
   ((%dot-writer-proc x) port))
 
-(: dot-writer (All (T S) (-> (Listof (Graph T S)) (Node T S)
-                             [#:config (DotConfig T S)]
-                             [#:history (History T S)]
+(: dot-writer (All (S) (-> (Listof (Graph S)) (Node S)
+                             [#:config (DotConfig S)]
+                             [#:history (History S)]
                              DotWriter)))
 (define (dot-writer gs node
-                    #:config [config ((inst dot-config T S))]
+                    #:config [config ((inst dot-config S))]
                     #:history [h '()])
   (%dot-writer
    (lambda ([port : Output-Port])
      (%write-dot gs node #:config config #:history h #:port port))))
 
-(: %write-dot (All (T S) (-> (Listof (Graph T S)) (Node T S)
-                             #:config (DotConfig T S)
+(: %write-dot (All (S) (-> (Listof (Graph S)) (Node S)
+                             #:config (DotConfig S)
                              #:port Output-Port
-                             #:history (History T S)
+                             #:history (History S)
                              Void)))
 (define (%write-dot gs node
                     #:config config
@@ -238,16 +238,16 @@
                (dot-string (number->string
                             (global-config-fontsize (%dot-config-global config)))))
 
-      (: display-visnodes (-> (Nested-Graphs T S) Void))
+      (: display-visnodes (-> (Nested-Graphs S) Void))
       (define (display-visnodes g)
         (fprintf port "subgraph ~a {\n" (dot-string (string-append
                                                      "cluster_"
                                                      (symbol->string (graph-id (car g))))))
         (fprintf port "  label = ~a\n" (dot-string (graph-name (car g))))
 
-        (for-each (lambda ([v : (VisNode T S)])
+        (for-each (lambda ([v : (VisNode S)])
                     (when (symbol=? (graph-id (car g)) (graph-id (cadr v)))
-                      (define get-id (inst visnode-id T S))
+                      (define get-id (inst visnode-id S))
                       (cond
                         [(eq? 'node (car v))
                          (fprintf port "  ~a ~a\n"
@@ -290,7 +290,7 @@
         (displayln "}" port))
       (for-each display-visnodes (graphs->nested (visnodes->graphs visnodes)))
       (newline port)
-      (for-each (lambda ([v : (VisNode-Edge T S)])
+      (for-each (lambda ([v : (VisNode-Edge S)])
                   (fprintf port "  ~a -> ~a ~a\n"
                            (dot-string (symbol->string (node-id (edge-from (caddr v)))))
                            (dot-string (symbol->string (edge-id (caddr v))))
@@ -371,15 +371,15 @@
         [(zero? k) ""]
         [else (format "~a" k)]))
 
-(: history->visited-ids (All (T S) (-> (History T S)  (Setof Symbol))))
+(: history->visited-ids (All (S) (-> (History S)  (Setof Symbol))))
 (define (history->visited-ids h)
-  (list->set (map (lambda ([r : (History-Record T S)])
+  (list->set (map (lambda ([r : (History-Record S)])
                     (case (car r)
                       [(node) (node-id (history-record-node r))]
                       [(auto choose) (edge-id (history-record-edge r))]))
                   h)))
 
-(: history->current-node-id (All (T S) (-> (History T S) (Option Symbol))))
+(: history->current-node-id (All (S) (-> (History S) (Option Symbol))))
 (define (history->current-node-id h)
   (and (pair? h)
        (eq? (caar h) 'node)
@@ -391,15 +391,15 @@
 (: current-node-id (Parameterof (Option Symbol)))
 (define current-node-id (make-parameter #f))
 
-(: dot-visited-node? (All (T S) (-> (Node T S) Boolean)))
+(: dot-visited-node? (All (S) (-> (Node S) Boolean)))
 (define (dot-visited-node? n)
   (set-member? (current-visited-ids) (node-id n)))
 
-(: dot-visited-edge? (All (T S) (-> (Edge T S) Boolean)))
+(: dot-visited-edge? (All (S) (-> (Edge S) Boolean)))
 (define (dot-visited-edge? e)
   (set-member? (current-visited-ids) (edge-id e)))
 
-(: dot-current-node? (All (T S) (-> (Node T S) Boolean)))
+(: dot-current-node? (All (S) (-> (Node S) Boolean)))
 (define (dot-current-node? n)
   (cond [(current-node-id) => (lambda ([id : Symbol]) (eq? id (node-id n)))]
         [else #f]))

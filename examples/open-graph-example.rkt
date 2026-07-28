@@ -2,8 +2,6 @@
 
 (require graph-executor)
 
-(define-type Vending-Node-Type (U 'start 'normal 'terminal))
-
 (struct v-state ([wallet : Integer]
                  [inserted : Integer])
   #:type-name Vending-State
@@ -41,13 +39,13 @@
 
 (: vending-graph (-> String
                      (Values (-> AnyNode (Code (-> Vending-State Any))
-                                 (OpenGraph Vending-Node-Type Vending-State))
-                             (Node Vending-Node-Type Vending-State))))
+                                 (OpenGraph Vending-State))
+                             (Node Vending-State))))
 (define (vending-graph g)
-  (define v-node ((inst node Vending-Node-Type Vending-State) g))
-  (define v-edge (inst edge Vending-Node-Type Vending-State))
-  (define v-bridge (inst dot-bridge Vending-Node-Type Vending-State))
-  (define v-graph (inst open-graph Vending-Node-Type Vending-State))
+  (define v-node ((inst node Vending-State (U 'start 'normal 'terminal)) g))
+  (define v-edge (inst edge Vending-State))
+  (define v-bridge (inst dot-bridge Vending-State))
+  (define v-graph (inst open-graph Vending-State))
 
   (define idle       (v-node "Idle (Accepting Coins)" #:type 'start))
   (define has-coins  (v-node "Selecting Item"         #:type 'normal))
@@ -84,19 +82,17 @@
                  #:dot-minlen 3))))
    idle))
 
-(define-type Terminal-Node-Type 'terminal)
-
 (struct terminal ([wallet : Integer])
   #:type-name Terminal
   #:transparent)
 
 (: terminal-graph (-> String
-                      (Values (-> (OpenGraph Terminal-Node-Type Terminal))
-                              (Node Terminal-Node-Type Terminal))))
+                      (Values (-> (OpenGraph Terminal))
+                              (Node Terminal))))
 (define (terminal-graph g)
-  (define t-node ((inst node Terminal-Node-Type Terminal) g))
-  (define t-graph (inst open-graph Terminal-Node-Type Terminal))
-  (define t-edge (inst edge Terminal-Node-Type Terminal))
+  (define t-node ((inst node Terminal 'terminal) g))
+  (define t-graph (inst open-graph Terminal))
+  (define t-edge (inst edge Terminal))
   (define entry (t-node "Terminal Entry" #:type 'terminal))
   (define terminal (t-node "Terminal" #:type 'terminal))
 

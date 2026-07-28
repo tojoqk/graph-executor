@@ -7,8 +7,6 @@
          v-state?
          v-state-wallet)
 
-(define-type Vending-Node-Type (U 'start 'normal 'terminal))
-
 (struct v-state ([wallet : Integer]
                  [inserted : Integer])
   #:type-name Vending-State
@@ -44,12 +42,11 @@
   (< 0 (v-state-inserted st)))
 
 (: vending-graph (-> String
-                     (Values (Graph Vending-Node-Type Vending-State)
-                             (Node Vending-Node-Type Vending-State))))
+                     (Values (Graph Vending-State)  (Node Vending-State))))
 (define (vending-graph graph-name)
-  (define v-node ((inst node Vending-Node-Type Vending-State) graph-name))
-  (define v-edge (inst dot-edge Vending-Node-Type Vending-State))
-  (define v-graph (inst graph Vending-Node-Type Vending-State))
+  (define v-node ((inst node Vending-State (U 'start 'normal 'terminal)) graph-name))
+  (define v-edge (inst dot-edge Vending-State))
+  (define v-graph (inst graph Vending-State))
 
   (define idle       (v-node "Idle (Accepting Coins)" #:type 'start))
   (define has-coins  (v-node "Selecting Item"         #:type 'normal))
