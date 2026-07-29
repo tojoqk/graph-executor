@@ -4,47 +4,83 @@
 (require "../graph/dot.rkt")
 (require "../private/visualizer.rkt")
 (require "../history.rkt")
+(require typed/xml)
 
-(provide DotWriter dot-writer write-dot
+(provide DotNode dot-node-name dot-node-desc dot-node-type dot-node-prompt dot-node-trans
+         DotEdge dot-edge-name dot-edge-desc dot-edge-from dot-edge-to dot-edge-when dot-edge-trans
+         DotWriter dot-writer write-dot
          DotConfig dot-config
          DotNodeStatus DotEdgeStatus
          DotGlobalConfig dot-global-config
          DotNodeConfig dot-node-config
          DotEdgeConfig dot-edge-config
          current-dot-fontname current-dot-fontsize current-dot-dpi current-dot-rankdir
-         current-dot-node-config current-dot-edge-node-config current-dot-edge-config)
+         current-dot-node-config current-dot-edge-node-config current-dot-edge-config
+         current-dot-node-label-config current-dot-edge-node-label-config)
+
+(struct dot-node ([name : String]
+                  [desc : (Option String)]
+                  [type : Symbol]
+                  [prompt : (Option Sexp)]
+                  [trans : (Option Sexp)])
+  #:transparent
+  #:type-name DotNode)
+
+(: node->dot-node (All (S) (-> (Node S) DotNode)))
+(define (node->dot-node n)
+  (dot-node (node-name n) (node-desc n) (node-type n) (node-prompt-sexp n) (node-trans-sexp n)))
+
+(struct dot-edge ([name : String] [desc : (Option String)] [mode : EdgeMode] [from : Symbol] [to : Symbol] [when : (Option Sexp)] [trans : (Option Sexp)])
+  #:transparent
+  #:type-name DotEdge)
+
+(: edge->dot-edge (All (S) (-> (Edge S) DotEdge)))
+(define (edge->dot-edge e)
+  (dot-edge (edge-name e) (edge-desc e) (edge-mode e) (node-type (edge-from e)) (node-type (edge-to e)) (edge-when-sexp e) (edge-trans-sexp e)))
 
 (define-type DotNodeStatus (U 'default 'visited 'current))
-(: dot-node-status (All (S) (-> (Node S) DotNodeStatus)) )
+(: dot-node-status (All (S) (-> (Node S) DotNodeStatus)))
 (define (dot-node-status n)
   (cond [(dot-current-node? n) 'current]
         [(dot-visited-node? n) 'visited]
         [else 'default]))
 
 (define-type DotEdgeStatus (U 'default 'visited))
-(: dot-edge-status (All (S) (-> (Edge S) DotEdgeStatus)) )
+(: dot-edge-status (All (S) (-> (Edge S) DotEdgeStatus)))
 (define (dot-edge-status n)
   (cond [(dot-visited-edge? n) 'visited]
         [else 'default]))
 
 (struct %dot-config ([global : DotGlobalConfig]
-                     [node : (-> Symbol DotNodeStatus DotNodeConfig)]
-                     [edge-node : (-> EdgeMode Symbol Symbol DotEdgeStatus DotNodeConfig)]
-                     [edge : (-> EdgeMode Symbol Symbol DotEdgeStatus DotEdgeConfig)])
+                     [node : (-> DotNode DotNodeStatus DotNodeConfig)]
+                     [node-label : (-> DotNode DotNodeStatus (U (List 'text String)
+                                                                (List 'html (Listof XExpr))))]
+                     [edge-node : (-> DotEdge DotEdgeStatus DotNodeConfig)]
+                     [edge-node-label : (-> DotEdge DotEdgeStatus (U (List 'text String)
+                                                                     (List 'html (Listof XExpr))))]
+                     [edge : (-> DotEdge DotEdgeStatus DotEdgeConfig)])
   #:type-name DotConfig)
 
 (: dot-config (-> [#:global (Option DotGlobalConfig)]
-                  [#:node (Option (-> Symbol DotNodeStatus DotNodeConfig))]
-                  [#:edge-node (Option (-> EdgeMode Symbol Symbol DotEdgeStatus DotNodeConfig))]
-                  [#:edge (Option (-> EdgeMode Symbol Symbol DotEdgeStatus DotEdgeConfig))]
+                  [#:node (Option (-> DotNode DotNodeStatus DotNodeConfig))]
+                  [#:node-label (Option (-> DotNode DotNodeStatus (U (List 'text String)
+                                                                     (List 'html (Listof XExpr)))))]
+                  [#:edge-node (Option (-> DotEdge DotEdgeStatus DotNodeConfig))]
+                  [#:edge-node-label (Option (-> DotEdge DotEdgeStatus (U (List 'text String)
+                                                                          (List 'html (Listof XExpr)))))]
+                  [#:edge (Option (-> DotEdge DotEdgeStatus DotEdgeConfig))]
                   DotConfig))
 (define (dot-config #:global [global #f]
                     #:node [node #f]
+                    #:node-label [node-label #f]
                     #:edge-node [edge-node #f]
+                    #:edge-node-label [edge-node-label #f]
                     #:edge [edge #f])
   (%dot-config (or global (dot-global-config))
                (or node (current-dot-node-config))
+               (or node-label (current-dot-node-label-config))
                (or edge-node (current-dot-edge-node-config))
+               (or edge-node-label (current-dot-edge-node-label-config))
                (or edge (current-dot-edge-config))))
 
 (define-type Rankdir (U 'TB 'LR 'BT 'RL))
@@ -140,10 +176,10 @@
                    (or color "black")
                    (or minlen 1))))
 
-(: current-dot-node-config (Parameterof (-> Symbol DotNodeStatus DotNodeConfig)))
+(: current-dot-node-config (Parameterof (-> DotNode DotNodeStatus DotNodeConfig)))
 (define current-dot-node-config
   (make-parameter
-   (lambda (_t [s : DotNodeStatus])
+   (lambda (_ [s : DotNodeStatus])
      (case s
        [(default) (dot-node-config #:shape "box" #:style '("filled" "rounded"))]
        [(visited) (dot-node-config #:shape "box" #:style '("filled" "rounded")
@@ -151,22 +187,60 @@
        [(current) (dot-node-config #:shape "box" #:style '("filled" "rounded")
                                    #:fillcolor "yellow")]))))
 
-(: current-dot-edge-node-config (Parameterof (-> EdgeMode Symbol Symbol DotEdgeStatus DotNodeConfig)))
+(: current-dot-edge-node-config (Parameterof (-> DotEdge DotEdgeStatus DotNodeConfig)))
 (define current-dot-edge-node-config
-  (make-parameter (lambda (_mode _from-type _to-type _s)
+  (make-parameter (lambda (_e _s)
                     (dot-node-config #:shape "plaintext"))))
 
-(: current-dot-edge-config (Parameterof (-> EdgeMode Symbol Symbol DotEdgeStatus DotEdgeConfig)))
+(: current-dot-edge-config (Parameterof (-> DotEdge DotEdgeStatus DotEdgeConfig)))
 (define current-dot-edge-config
-  (make-parameter (lambda ([mode : EdgeMode] _ft _tt [s : DotEdgeStatus])
-                    (case mode
-                      [(auto) (case s
-                                [(default) (dot-edge-config #:color "red")]
-                                [(visited) (dot-edge-config #:color "orange")])]
-                      [(choose) (case s
-                                  [(default) (dot-edge-config #:color "blue")]
-                                  [(visited) (dot-edge-config #:color "cyan")])]
-                      [(annotation) (dot-edge-config #:style '("dashed") #:color "black")]))))
+  (make-parameter (lambda ([e : DotEdge] [s : DotEdgeStatus])
+                    (let ([mode (dot-edge-mode e)])
+                      (case mode
+                        [(auto) (case s
+                                  [(default) (dot-edge-config #:color "red")]
+                                  [(visited) (dot-edge-config #:color "orange")])]
+                        [(choose) (case s
+                                    [(default) (dot-edge-config #:color "blue")]
+                                    [(visited) (dot-edge-config #:color "cyan")])]
+                        [(annotation) (dot-edge-config #:style '("dashed") #:color "black")])))))
+
+(: current-dot-node-label-config (Parameter (-> DotNode DotNodeStatus (U (List 'text String)
+                                                                         (List 'html (Listof XExpr))))))
+(define current-dot-node-label-config
+  (make-parameter
+   (lambda ([dn : DotNode] [s : DotNodeStatus])
+     (list 'text
+           (string-join `(,(mark-node-title (dot-node-name dn))
+                          ,@(cond [(dot-node-desc dn) => list]
+                                  [else '()])
+                          ,@(cond [(dot-node-prompt dn)
+                                   => (lambda (x)
+                                        (list (format "prompt: ~a" (show-sexp x))))]
+                                  [else '()])
+                          ,@(cond [(dot-node-trans dn)
+                                   => (lambda (x)
+                                        (list (format "trans: ~a" (show-sexp x))))]
+                                  [else '()]))
+                        "\n")))))
+
+(: current-dot-edge-node-label-config (Parameter (-> DotEdge DotEdgeStatus (U (List 'text String)
+                                                                              (List 'html (Listof XExpr))))))
+(define current-dot-edge-node-label-config
+  (make-parameter (lambda ([e : DotEdge] [s : DotEdgeStatus])
+                    (list 'text
+                          (string-join `(,(mark-edge-title (dot-edge-name e))
+                                         ,@(cond [(dot-edge-desc e) => list]
+                                                 [else '()])
+                                         ,@(cond [(dot-edge-when e)
+                                                  => (lambda (x)
+                                                       (list (format "when: ~a" (show-sexp x))))]
+                                                 [else '()])
+                                         ,@(cond [(dot-edge-trans e)
+                                                  => (lambda (x)
+                                                       (list (format "trans: ~a" (show-sexp x))))]
+                                                 [else '()]))
+                                       "\n")))))
 
 (: show-sexp (-> Sexp String))
 (define (show-sexp x)
@@ -232,41 +306,19 @@
                          (fprintf port "  ~a ~a\n"
                                   (dot-string (symbol->string (get-id v)))
                                   (format-node-attributes
-                                   (string-join `(,(mark-node-title (node-name (caddr v)))
-                                                  ,@(cond [(node-desc (caddr v)) => list]
-                                                          [else '()])
-                                                  ,@(cond [(node-prompt-sexp (caddr v))
-                                                           => (lambda (x)
-                                                                (list (format "prompt: ~a" (show-sexp x))))]
-                                                          [else '()])
-                                                  ,@(cond [(node-trans-sexp (caddr v))
-                                                           => (lambda (x)
-                                                                (list (format "trans: ~a" (show-sexp x))))]
-                                                          [else '()]))
-                                                "\n")
-                                   ((%dot-config-node config) (node-type (caddr v))
+                                   ((%dot-config-node-label config) (node->dot-node (caddr v))
+                                                                    (dot-node-status (caddr v)))
+                                   ((%dot-config-node config) (node->dot-node (caddr v))
                                                               (dot-node-status (caddr v)))))]
                         [(eq? 'edge (car v))
                          (fprintf port "  ~a ~a\n"
                                   (dot-string (symbol->string (get-id v)))
                                   (format-node-attributes
-                                   (string-join `(,(mark-edge-title (edge-name (caddr v)))
-                                                  ,@(cond [(edge-desc (caddr v)) => list]
-                                                          [else '()])
-                                                  ,@(cond [(edge-when-sexp (caddr v))
-                                                           => (lambda (x)
-                                                                (list (format "when: ~a" (show-sexp x))))]
-                                                          [else '()])
-                                                  ,@(cond [(edge-trans-sexp (caddr v))
-                                                           => (lambda (x)
-                                                                (list (format "trans: ~a" (show-sexp x))))]
-                                                          [else '()]))
-                                                "\n")
-                                   ((%dot-config-edge-node config) (edge-mode (caddr v))
-                                                                   (node-type (edge-from (caddr v)))
-                                                                   (node-type (edge-to (caddr v)))
+                                   ((%dot-config-edge-node-label config) (edge->dot-edge (caddr v))
+                                                                         (dot-edge-status (caddr v)))
+                                   ((%dot-config-edge-node config) (edge->dot-edge (caddr v))
                                                                    (dot-edge-status (caddr v))
-)))])))
+                                                                   )))])))
                   visnodes)
         (for-each display-visnodes (cdr g))
         (displayln "}" port))
@@ -291,9 +343,7 @@
                             (show-priority (edge-priority (caddr v)))
                             (apply-half
                              (apply-minlen
-                              ((%dot-config-edge config) (edge-mode (caddr v))
-                                                         (node-type (edge-from (caddr v)))
-                                                         (node-type (edge-to (caddr v)))
+                              ((%dot-config-edge config) (edge->dot-edge (caddr v))
                                                          (dot-edge-status (caddr v)))))))
                   (unless (edge-half? (caddr v))
                     (fprintf port "  ~a -> ~a ~a\n"
@@ -303,9 +353,7 @@
                               ""
                               (struct-copy edge-config
                                            (apply-minlen
-                                            ((%dot-config-edge config) (edge-mode (caddr v))
-                                                                       (node-type (edge-from (caddr v)))
-                                                                       (node-type (edge-to (caddr v)))
+                                            ((%dot-config-edge config) (edge->dot-edge (caddr v))
                                                                        (dot-edge-status (caddr v))))
                                            [arrowtail "none"])))))
                 (visnodes-edges visnodes))
@@ -325,10 +373,14 @@
       (format "0~x" b)
       (format "~x" b)))
 
-(: format-node-attributes (-> String DotNodeConfig String))
+(: format-node-attributes (-> (U (List 'text String) (List 'html (Listof XExpr))) DotNodeConfig String))
 (define (format-node-attributes label nc)
   (format "[label=~a,shape=~a,style=~a,color=~a,fillcolor=~a]"
-          (dot-string label)
+          (ann (case (first label)
+                 [(text) (dot-string (second label))]
+                 [(html) (format "<~a>"
+                                 (string-join (map xexpr->string (second label)) ""))])
+               String)
           (dot-string (node-config-shape nc))
           (dot-string (string-join (node-config-style nc) ","))
           (dot-string (node-config-color nc))

@@ -25,6 +25,8 @@
          prompt
          message
          console-run current-console-random-prompt-display current-console-trace-display
+         DotNode dot-node-name dot-node-desc dot-node-type dot-node-prompt dot-node-trans
+         DotEdge dot-edge-name dot-edge-desc dot-edge-from dot-edge-to dot-edge-when dot-edge-trans
          DotWriter dot-writer write-dot
          DotNodeStatus DotEdgeStatus
          DotConfig dot-config
@@ -32,4 +34,5 @@
          DotNodeConfig dot-node-config
          DotEdgeConfig dot-edge-config
          current-dot-fontname current-dot-fontsize current-dot-dpi current-dot-rankdir
-         current-dot-node-config current-dot-edge-node-config current-dot-edge-config)
+         current-dot-node-config current-dot-edge-node-config current-dot-edge-config
+         current-dot-node-label-config current-dot-edge-node-label-config)
