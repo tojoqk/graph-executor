@@ -6,8 +6,8 @@
 (require "../history.rkt")
 
 (provide DotWriter dot-writer write-dot
-         dot-current-node? dot-visited-node? dot-visited-edge?
          DotConfig dot-config
+         DotNodeStatus DotEdgeStatus
          DotGlobalConfig dot-global-config
          DotNodeConfig dot-node-config
          DotEdgeConfig dot-edge-config
