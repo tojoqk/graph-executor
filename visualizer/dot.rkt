@@ -54,20 +54,20 @@
 (struct %dot-config ([global : DotGlobalConfig]
                      [node : (-> DotNode DotNodeStatus DotNodeConfig)]
                      [node-label : (-> DotNode DotNodeStatus (U (List 'text String)
-                                                                (List 'html (Listof XExpr))))]
+                                                                (Pairof 'html (Listof XExpr))))]
                      [edge-node : (-> DotEdge DotEdgeStatus DotNodeConfig)]
                      [edge-node-label : (-> DotEdge DotEdgeStatus (U (List 'text String)
-                                                                     (List 'html (Listof XExpr))))]
+                                                                     (Pairof 'html (Listof XExpr))))]
                      [edge : (-> DotEdge DotEdgeStatus DotEdgeConfig)])
   #:type-name DotConfig)
 
 (: dot-config (-> [#:global (Option DotGlobalConfig)]
                   [#:node (Option (-> DotNode DotNodeStatus DotNodeConfig))]
                   [#:node-label (Option (-> DotNode DotNodeStatus (U (List 'text String)
-                                                                     (List 'html (Listof XExpr)))))]
+                                                                     (Pairof 'html (Listof XExpr)))))]
                   [#:edge-node (Option (-> DotEdge DotEdgeStatus DotNodeConfig))]
                   [#:edge-node-label (Option (-> DotEdge DotEdgeStatus (U (List 'text String)
-                                                                          (List 'html (Listof XExpr)))))]
+                                                                          (Pairof 'html (Listof XExpr)))))]
                   [#:edge (Option (-> DotEdge DotEdgeStatus DotEdgeConfig))]
                   DotConfig))
 (define (dot-config #:global [global #f]
@@ -205,42 +205,63 @@
                                     [(visited) (dot-edge-config #:color "cyan")])]
                         [(annotation) (dot-edge-config #:style '("dashed") #:color "black")])))))
 
+
+(: text->xexprs (-> String (Listof XExpr)))
+(define (text->xexprs str)
+  (let rec ([lines (regexp-split #rx"\n" str)])
+    (cond [(null? lines) '()]
+          [(null? (rest lines)) lines]
+          [else (list* (first lines) '(br) (rec (rest lines)))])))
+
 (: current-dot-node-label-config (Parameter (-> DotNode DotNodeStatus (U (List 'text String)
-                                                                         (List 'html (Listof XExpr))))))
+                                                                         (Pairof 'html (Listof XExpr))))))
 (define current-dot-node-label-config
   (make-parameter
-   (lambda ([dn : DotNode] [s : DotNodeStatus])
-     (list 'text
-           (string-join `(,(mark-node-title (dot-node-name dn))
-                          ,@(cond [(dot-node-desc dn) => list]
-                                  [else '()])
-                          ,@(cond [(dot-node-prompt dn)
-                                   => (lambda (x)
-                                        (list (format "prompt: ~a" (show-sexp x))))]
-                                  [else '()])
-                          ,@(cond [(dot-node-trans dn)
-                                   => (lambda (x)
-                                        (list (format "trans: ~a" (show-sexp x))))]
-                                  [else '()]))
-                        "\n")))))
+   (lambda ([dn : DotNode] _)
+     (: center-row (-> (Listof XExpr) XExpr))
+     (define (center-row contents)
+       `(tr (td ((align "center")) ,@contents)))
+     (list 'html
+           `(table ((border "0") (cellborder "0") (cellspacing "0") (cellpadding "4"))
+                   ,(center-row (list `(b ,(dot-node-name dn))))
+                   ,@(cond [(dot-node-desc dn)
+                            => (lambda (d) (list (center-row (text->xexprs d))))]
+                           [else '()])
+                   ,@(cond [(dot-node-prompt dn)
+                            => (lambda (x)
+                                 (list (center-row
+                                        `("prompt: " ,@(text->xexprs (show-sexp x))))))]
+                           [else '()])
+                   ,@(cond [(dot-node-trans dn)
+                            => (lambda (x)
+                                 (list (center-row
+                                        `("trans: " ,@(text->xexprs (show-sexp x))))))]
+                           [else '()]))))))
 
 (: current-dot-edge-node-label-config (Parameter (-> DotEdge DotEdgeStatus (U (List 'text String)
-                                                                              (List 'html (Listof XExpr))))))
+                                                                              (Pairof 'html (Listof XExpr))))))
 (define current-dot-edge-node-label-config
-  (make-parameter (lambda ([e : DotEdge] [s : DotEdgeStatus])
-                    (list 'text
-                          (string-join `(,(mark-edge-title (dot-edge-name e))
-                                         ,@(cond [(dot-edge-desc e) => list]
-                                                 [else '()])
-                                         ,@(cond [(dot-edge-when e)
-                                                  => (lambda (x)
-                                                       (list (format "when: ~a" (show-sexp x))))]
-                                                 [else '()])
-                                         ,@(cond [(dot-edge-trans e)
-                                                  => (lambda (x)
-                                                       (list (format "trans: ~a" (show-sexp x))))]
-                                                 [else '()]))
-                                       "\n")))))
+  (make-parameter
+   (lambda ([de : DotEdge] _)
+     (: center-row (-> (Listof XExpr) XExpr))
+     (define (center-row contents)
+       `(tr (td ((align "center")) ,@contents)))
+     (list 'html
+           `(table ((border "0") (cellborder "0") (cellspacing "0") (cellpadding "2"))
+                   ,(center-row (list `(b ,(dot-edge-name de))))
+                   ,@(cond [(dot-edge-desc de)
+                            => (lambda (d) (list (center-row (text->xexprs d))))]
+                           [else '()])
+                   ,@(cond [(dot-edge-when de)
+                            => (lambda (x)
+                                 (list (center-row
+                                        `("when: " ,@(text->xexprs (show-sexp x))))))]
+                           [else '()])
+                   ,@(cond [(dot-edge-trans de)
+                            => (lambda (x)
+                                 (list (center-row
+                                        `("trans: " ,@(text->xexprs (show-sexp x))))))]
+                           [else '()]))))))
 
 (: show-sexp (-> Sexp String))
 (define (show-sexp x)
@@ -359,27 +380,19 @@
                 (visnodes-edges visnodes))
       (displayln "}" port))))
 
-(: mark-node-title (-> String String))
-(define (mark-node-title str)
-  (format "【~a】" str))
-
-(: mark-edge-title (-> String String))
-(define (mark-edge-title str)
-  (format "[~a]" str))
-
 (: byte->hex-string (-> Byte String))
 (define (byte->hex-string b)
   (if (<= b 15)
       (format "0~x" b)
       (format "~x" b)))
 
-(: format-node-attributes (-> (U (List 'text String) (List 'html (Listof XExpr))) DotNodeConfig String))
+(: format-node-attributes (-> (U (List 'text String) (Pairof 'html (Listof XExpr))) DotNodeConfig String))
 (define (format-node-attributes label nc)
   (format "[label=~a,shape=~a,style=~a,color=~a,fillcolor=~a]"
           (ann (case (first label)
                  [(text) (dot-string (second label))]
                  [(html) (format "<~a>"
-                                 (string-join (map xexpr->string (second label)) ""))])
+                                 (string-join (map xexpr->string (rest label)) ""))])
                String)
           (dot-string (node-config-shape nc))
           (dot-string (string-join (node-config-style nc) ","))
