@@ -17,11 +17,15 @@
 (define-type DotNodeStatus (U 'default 'visited 'current))
 (: dot-node-status (All (S) (-> (Node S) DotNodeStatus)) )
 (define (dot-node-status n)
-  (cond [else 'default]))
+  (cond [(dot-current-node? n) 'current]
+        [(dot-visited-node? n) 'visited]
+        [else 'default]))
+
 (define-type DotEdgeStatus (U 'default 'visited))
 (: dot-edge-status (All (S) (-> (Edge S) DotEdgeStatus)) )
 (define (dot-edge-status n)
-  (cond [else 'default]))
+  (cond [(dot-visited-edge? n) 'visited]
+        [else 'default]))
 
 (struct %dot-config ([global : DotGlobalConfig]
                      [node : (-> Symbol DotNodeStatus DotNodeConfig)]
