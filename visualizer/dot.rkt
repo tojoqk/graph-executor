@@ -91,15 +91,22 @@
                        [#:style (Option (Listof String))]
                        [#:color (Option String)]
                        [#:fillcolor (Option String)]
+                       [#:base (Option DotNodeConfig)]
                        DotNodeConfig))
 (define (dot-node-config #:shape [shape #f]
                          #:style [style #f]
                          #:color [color #f]
-                         #:fillcolor [fillcolor #f])
-  (node-config (or shape "ellipse")
-               (or style '())
-               (or color "black")
-               (or fillcolor "white")))
+                         #:fillcolor [fillcolor #f]
+                         #:base [base #f])
+  (if base
+      (node-config (or shape (node-config-shape base))
+                   (or style (node-config-style base))
+                   (or color (node-config-color base))
+                   (or fillcolor (node-config-fillcolor base)))
+      (node-config (or shape "ellipse")
+                   (or style '())
+                   (or color "black")
+                   (or fillcolor "white"))))
 
 (struct edge-config ([arrowhead : (U String)]
                      [arrowtail : (U String)]
@@ -113,17 +120,25 @@
                        [#:style (Option (Listof String))]
                        [#:color (Option String)]
                        [#:minlen (Option Natural)]
+                       [#:base (Option DotEdgeConfig)]
                        DotEdgeConfig))
 (define (dot-edge-config #:arrowhead [arrowhead #f]
                          #:arrowtail [arrowtail #f]
                          #:style [style #f]
                          #:color [color #f]
-                         #:minlen [minlen #f])
-  (edge-config (or arrowhead "normal")
-               (or arrowtail "normal")
-               (or style '())
-               (or color "black")
-               (or minlen 1)))
+                         #:minlen [minlen #f]
+                         #:base [base #f])
+  (if base
+      (edge-config (or arrowhead (edge-config-arrowhead base))
+                   (or arrowtail (edge-config-arrowtail base))
+                   (or style (edge-config-style base))
+                   (or color (edge-config-color base))
+                   (or minlen (edge-config-minlen base)))
+      (edge-config (or arrowhead "normal")
+                   (or arrowtail "normal")
+                   (or style '())
+                   (or color "black")
+                   (or minlen 1))))
 
 (: current-dot-node-config (Parameterof (-> Symbol DotNodeStatus DotNodeConfig)))
 (define current-dot-node-config
