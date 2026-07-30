@@ -41,7 +41,7 @@
                       (if (and (exact? n)
                                (positive-integer? n)
                                (<= n (length choices)))
-                          (values (list-ref choices n) '())
+                          (values (list-ref choices (sub1 n)) '())
                           (retry)))]
                 [else (retry)]))))))
 
