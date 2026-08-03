@@ -87,18 +87,18 @@
   (define state-init (v-state 400 0))
 
   (: make-system (-> (Values (->* () (Journal) Journal)
-                             (->* () (Journal) DotWriter))))
+                             (->* () (Journal) DotRenderer))))
   (define (make-system)
-    (: writer (->* () (Journal) DotWriter))
-    (define (writer [j '()])
+    (: renderer (->* () (Journal) DotRenderer))
+    (define (renderer [j '()])
       (let-values ([(_node _state h) (replay graphs node-init state-init j)])
-        (dot-writer graphs node-init #:history h)))
+        (dot-renderer graphs node-init #:history h)))
     (: run (->* () (Journal) Journal))
     (define (run [j '()])
       (let-values ([(_node _state j-result)
                     (console-run graphs node-init state-init #:journal j)])
         j-result))
-    (values run writer)))
+    (values run renderer)))
 
 (module+ main
   (require racket/cmdline)
@@ -112,7 +112,7 @@
    [("--console") "Run console" (set-box! mode 'console)]
    [("--dot") "Generate dot" (set-box! mode 'dot)]
    #:args ()
-   (define-values (run writer) (make-system))
+   (define-values (run renderer) (make-system))
    (case (unbox mode)
-     [(dot) (write-dot (writer))]
+     [(dot) (render-dot (renderer))]
      [(console) (writeln (run))])))

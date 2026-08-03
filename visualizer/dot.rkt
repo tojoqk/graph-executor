@@ -8,7 +8,7 @@
 
 (provide DotNode dot-node-name dot-node-desc dot-node-type dot-node-prompt dot-node-trans
          DotEdge dot-edge-name dot-edge-desc dot-edge-from dot-edge-to dot-edge-when dot-edge-trans
-         DotWriter dot-writer write-dot
+         DotRenderer dot-renderer render-dot
          DotConfig dot-config
          DotNodeStatus DotEdgeStatus
          DotGlobalConfig dot-global-config
@@ -269,30 +269,30 @@
     (print x out 1)
     (get-output-string out)))
 
-(struct %dot-writer ([proc : (-> Output-Port Void)])
-  #:type-name DotWriter)
+(struct %dot-renderer ([proc : (-> Output-Port Void)])
+  #:type-name DotRenderer)
 
-(: write-dot (->* (DotWriter) (Output-Port) Void))
-(define (write-dot x [port (current-output-port)])
-  ((%dot-writer-proc x) port))
+(: render-dot (->* (DotRenderer) (Output-Port) Void))
+(define (render-dot x [port (current-output-port)])
+  ((%dot-renderer-proc x) port))
 
-(: dot-writer (All (S) (-> (Listof (Graph S)) (Node S)
+(: dot-renderer (All (S) (-> (Listof (Graph S)) (Node S)
                              [#:config DotConfig]
                              [#:history (History S)]
-                             DotWriter)))
-(define (dot-writer gs node
+                             DotRenderer)))
+(define (dot-renderer gs node
                     #:config [config (dot-config)]
                     #:history [h '()])
-  (%dot-writer
+  (%dot-renderer
    (lambda ([port : Output-Port])
-     (%write-dot gs node #:config config #:history h #:port port))))
+     (%render-dot gs node #:config config #:history h #:port port))))
 
-(: %write-dot (All (S) (-> (Listof (Graph S)) (Node S)
+(: %render-dot (All (S) (-> (Listof (Graph S)) (Node S)
                              #:config DotConfig
                              #:port Output-Port
                              #:history (History S)
                              Void)))
-(define (%write-dot gs node
+(define (%render-dot gs node
                     #:config config
                     #:port port
                     #:history h)
