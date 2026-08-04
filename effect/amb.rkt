@@ -4,7 +4,8 @@
 
 (: make-amb (All (A B) (-> (Values (case-> (-> (-> A) (Option A))
                                            (-> (-> A) (-> B) (U A B)))
-                                   (-> (-> A) * A)))))
+                                   (-> (-> A) * A)
+                                   (-> Nothing)))))
 (define (make-amb)
   (: amb-tag (Prompt-Tagof (Option (List A))
                            (-> (-> (Option (List A))) (Option (List A)))))
@@ -37,4 +38,8 @@
                      [else (loop (cdr xs))]))))))
       amb-tag)))
 
-  (values call-with-amb-prompt amb))
+  (: amb-fail (-> Nothing))
+  (define (amb-fail)
+    (abort-current-continuation amb-tag (lambda () #f)))
+
+  (values call-with-amb-prompt amb amb-fail))
