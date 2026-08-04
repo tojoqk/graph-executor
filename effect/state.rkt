@@ -4,8 +4,7 @@
 
 (: make-state (All (A B) (-> (Values (-> (-> A) B (Values A B))
                                      (-> B)
-                                     (-> B Void)
-))))
+                                     (-> B Void)))))
 (define (make-state)
   (: state-tag (Prompt-Tagof (-> B (Values A B))
                              (-> (-> (-> B (Values A B)))
