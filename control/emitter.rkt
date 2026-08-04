@@ -12,7 +12,7 @@
 
   (: call-with-emitter-prompt (-> (-> A) (Values A (Listof B))))
   (define (call-with-emitter-prompt proc)
-    (let ([p (call-with-continuation-prompt (lambda () `(,(proc)))  emitter-tag)])
+    (let ([p (call-with-continuation-prompt (lambda () `(,(proc))) emitter-tag)])
       (values (car p) (cdr p))))
 
   (: emit (-> B Void))
