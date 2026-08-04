@@ -19,8 +19,7 @@
   (define (emit str)
     (call-with-composable-continuation
      (lambda ([k : (-> (Pairof A (Listof B)))])
-       (let ([k (lambda ()
-                  (call-with-continuation-prompt (lambda () (k)) emitter-tag))])
+       (let ([k (lambda () (call-with-continuation-prompt k emitter-tag))])
          (abort-current-continuation
           emitter-tag
           (lambda () : (Pairof A (Listof B))
