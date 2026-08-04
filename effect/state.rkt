@@ -39,14 +39,13 @@
   (define (set st)
     (call-with-composable-continuation
      (lambda ([k : (-> (-> B (Values A B)))])
-       (let ([k (lambda () (call-with-continuation-prompt k state-tag))])
+       (let ([k (lambda ()
+                  (call-with-continuation-prompt k state-tag))])
          (abort-current-continuation
           state-tag
           (lambda () : (-> B (Values A B))
-            (let ([f : (-> B (Values A B)) (k)])
-              (lambda ([st* : B])
-                (define-values (x _st) (f st*))
-                (values x st)))))))
+            (let ([f (k)])
+              (lambda (_) (f st)))))))
      state-tag)
     (void))
 
