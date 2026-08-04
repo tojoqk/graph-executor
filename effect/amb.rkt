@@ -2,8 +2,7 @@
 
 (provide make-amb)
 
-(: make-amb (All (A B) (-> (Values (case-> (-> (-> A) (Option A))
-                                           (-> (-> A) (-> B) (U A B)))
+(: make-amb (All (A B) (-> (Values (-> (-> A) (-> Nothing) A)
                                    (-> (-> A) * A)
                                    (-> Nothing)))))
 (define (make-amb)
@@ -11,16 +10,10 @@
                            (-> (-> (Option (List A))) (Option (List A)))))
   (define amb-tag (make-continuation-prompt-tag 'amb))
 
-  (: call-with-amb-prompt (case-> (-> (-> A) (Option A))
-                                  (-> (-> A) (-> B) (U A B))))
-  (define call-with-amb-prompt
-    (case-lambda
-      [(proc)
-       (cond [(call-with-continuation-prompt (lambda () (list (proc))) amb-tag) => car]
-             [else #f])]
-      [(proc fail)
-       (cond [(call-with-continuation-prompt (lambda () (list (proc))) amb-tag) => car]
-             [else (fail)])]))
+  (: call-with-amb-prompt (-> (-> A) (-> Nothing) A))
+  (define (call-with-amb-prompt proc fail)
+    (cond [(call-with-continuation-prompt (lambda () (list (proc))) amb-tag) => car]
+          [else (fail)]))
 
   (: amb (-> (-> A) * A))
   (define (amb . xs)
