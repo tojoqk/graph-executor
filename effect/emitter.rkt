@@ -10,8 +10,8 @@
                                    (Pairof A (Listof B)))))
   (define emitter-tag (make-continuation-prompt-tag 'emitter))
 
-  (: call-with-emitter-prompt (-> (-> A) (Values A (Listof B))))
-  (define (call-with-emitter-prompt proc)
+  (: call-with-emitter (-> (-> A) (Values A (Listof B))))
+  (define (call-with-emitter proc)
     (let ([p (call-with-continuation-prompt (lambda () `(,(proc))) emitter-tag)])
       (values (car p) (cdr p))))
 
@@ -28,4 +28,4 @@
      emitter-tag)
     (void))
 
-  (values call-with-emitter-prompt emit))
+  (values call-with-emitter emit))

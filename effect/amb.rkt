@@ -10,8 +10,8 @@
                            (-> (-> (Option (List A))) (Option (List A)))))
   (define amb-tag (make-continuation-prompt-tag 'amb))
 
-  (: call-with-amb-prompt (-> (-> A) (-> Nothing) A))
-  (define (call-with-amb-prompt proc fail)
+  (: call-with-amb (-> (-> A) (-> Nothing) A))
+  (define (call-with-amb proc fail)
     (cond [(call-with-continuation-prompt (lambda () (list (proc))) amb-tag) => car]
           [else (fail)]))
 
@@ -35,4 +35,4 @@
   (define (amb-fail)
     (abort-current-continuation amb-tag (lambda () #f)))
 
-  (values call-with-amb-prompt amb amb-fail))
+  (values call-with-amb amb amb-fail))

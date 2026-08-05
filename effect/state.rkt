@@ -11,8 +11,8 @@
                                  (-> B (Values A B)))))
   (define state-tag (make-continuation-prompt-tag 'state))
 
-  (: call-with-state-prompt (-> (-> A) B (Values A B)))
-  (define (call-with-state-prompt proc st)
+  (: call-with-state (-> (-> A) B (Values A B)))
+  (define (call-with-state proc st)
     (define f
       (call-with-continuation-prompt
        (lambda ()
@@ -48,4 +48,4 @@
      state-tag)
     (void))
 
-  (values call-with-state-prompt get set))
+  (values call-with-state get set))
