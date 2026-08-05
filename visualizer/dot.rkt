@@ -436,17 +436,17 @@
 
 (: history->visited-ids (All (S) (-> (History S)  (Setof Symbol))))
 (define (history->visited-ids h)
-  (list->set (map (lambda ([r : (History-Record S)])
+  (list->set (map (lambda ([r : (Record S)])
                     (case (car r)
-                      [(node) (node-id (history-record-node r))]
-                      [(auto choose) (edge-id (history-record-edge r))]))
+                      [(node) (node-id (record-node r))]
+                      [(auto choose) (edge-id (record-edge r))]))
                   h)))
 
 (: history->current-node-id (All (S) (-> (History S) (Option Symbol))))
 (define (history->current-node-id h)
   (and (pair? h)
        (eq? (caar h) 'node)
-       (node-id (history-record-node (car h)))))
+       (node-id (record-node (car h)))))
 
 (: current-visited-ids (Parameterof (Setof Symbol)))
 (define current-visited-ids (make-parameter ((inst set Symbol))))

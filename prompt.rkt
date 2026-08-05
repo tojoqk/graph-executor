@@ -1,7 +1,7 @@
 #lang typed/racket
 
 (provide Prompt Prompt-Type Prompt-Value Prompt-Op Prompt-Attributes current-prompt prompt
-         Prompt-Info Prompt-Implementation
+         Prompt-Info prompt-info Prompt-Implementation
          prompt-info-value prompt-info-attributes prompt-info-title
          Prompt-Info-Choose
          Prompt-Info-String
@@ -87,6 +87,10 @@
 (define (prompt-info-title pi) (third pi))
 
 (define-type Prompt-Info (List 'prompt Prompt-Op String (Pairof Prompt-Value Prompt-Attributes)))
+
+(: prompt-info (-> Prompt-Op String Prompt-Value Prompt-Attributes Prompt-Info))
+(define (prompt-info op title value attrs)
+  (list 'prompt op title (cons value attrs)))
 
 (define-type Prompt-Info-Choose (List 'prompt (U (List 'choose Procedure (Listof String))
                                                  (List 'choose (Listof String)))

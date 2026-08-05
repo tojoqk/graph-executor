@@ -7,6 +7,7 @@
 (require "../executor.rkt")
 (require "../journal.rkt")
 (require "../history.rkt")
+(require "../effect/emitter.rkt")
 
 (provide console-run console-choose console-command-dispatch
          current-console-random-prompt-display
@@ -42,6 +43,8 @@
                               (Values (Node S) S Journal))))
 (define (console-run gs entry initial-state #:journal [j '()])
   (define-values (n st _) (replay gs entry initial-state j))
+  (define-values (call-with-emitter emit)
+    ((inst make-emitter (Pairof Prompt-Value Prompt-Attributes) S)))
   (let loop ([n n] [st st] [j : Journal j])
     (define command-dispatch (console-command-dispatch gs entry initial-state loop))
     (let ([ne (next-edges gs st n)])
@@ -55,24 +58,26 @@
              (command-dispatch n st j (console-choose choose-pmt '()))
              (values n st j))]
         [(auto)
-         (let* ([chosen-edge (auto-choose ne)]
-                [logger (make-journal-logger 'auto (edge-name chosen-edge))])
+         (let* ([chosen-edge (auto-choose ne)])
            (when (current-console-trace-display?)
              (displayln (format ">> [Auto] ~a" (edge-name chosen-edge))))
-           (let ([next-st (console-step st chosen-edge logger)])
-             (loop (edge-to chosen-edge)
-                   next-st
-                   (cons (journal-logger->journal-entry logger) j))))]
+           (match-define (cons ps next-st)
+             (call-with-emitter
+              (thunk (console-step st chosen-edge emit))))
+           (loop (edge-to chosen-edge)
+                 next-st
+                 (cons (auto-journal-entry (edge-name chosen-edge) ps) j)))]
         [(choose)
          (define choose-pmt ((node-prompt n) st))
          (let ([cmd (console-choose choose-pmt (map (inst edge-name S) (second ne)))])
            (cond [(string? cmd)
                   (define chosen-edge (find-edge (second ne) cmd))
-                  (let* ([logger (make-journal-logger 'choose (edge-name chosen-edge) '())]
-                         [next-st (console-step st chosen-edge logger)])
-                    (loop (edge-to chosen-edge)
-                          next-st
-                          (cons (journal-logger->journal-entry logger) j)))]
+                  (match-define (cons ps next-st)
+                    (call-with-emitter
+                     (thunk (console-step st chosen-edge emit))))
+                  (loop (edge-to chosen-edge)
+                        next-st
+                        (cons (choose-journal-entry (edge-name chosen-edge) '() ps) j))]
                  [else (command-dispatch n st j cmd)]))]))))
 
 (: console-command-dispatch (All (S)
@@ -96,15 +101,15 @@
                                [else j])))
                (loop rs-n rs-st (history->journal rs-h))]))
 
-(: console-step (All (S) (-> S (Edge S) Journal-Logger S)))
-(define (console-step st e logger)
+(: console-step (All (S) (-> S (Edge S) (-> (Pairof Prompt-Value Prompt-Attributes) Void) S)))
+(define (console-step st e emit)
   (define (console-message val)
     (newline)
     (displayln val))
-  (parameterize ([current-prompt (console-prompt/log logger)]
+  (parameterize ([current-prompt (console-prompt/log emit)]
                  [current-message console-message])
     ((node-trans (edge-to e))
-     (parameterize ([current-prompt (console-prompt/log logger)]
+     (parameterize ([current-prompt (console-prompt/log emit)]
                     [current-message console-message])
        (begin0 ((edge-trans e) st)
          (when (current-console-trace-display?)
@@ -112,10 +117,11 @@
              (printf "--- Current Node: ~a (Graph: ~a) ---\n" (node-name n) (node-graph-name n))
              (cond [(node-desc n) => displayln]))))))))
 
-(: console-prompt/log (All (S) (-> Journal-Logger Prompt-Implementation)))
-(define ((console-prompt/log logger) title op)
+(: console-prompt/log (All (S) (-> (-> (Pairof Prompt-Value Prompt-Attributes) Void)
+                                   Prompt-Implementation)))
+(define ((console-prompt/log emit) title op)
   (define-values (val attrs) (console-prompt title op))
-  (journal-logger-prompt-log! logger val attrs)
+  (emit (cons val attrs))
   (values val attrs))
 
 (: console-command->command (-> Console-Command Command))

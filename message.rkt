@@ -1,7 +1,7 @@
 #lang typed/racket
 
 (provide Message message current-message
-         Message-Info message-info-message)
+         Message-Info message-info message-info-message)
 
 (define-type Message (-> Any Void))
 
@@ -14,6 +14,9 @@
         [else (error 'message "called outside of trans")]))
 
 (define-type Message-Info (List 'message Any))
+(: message-info (-> Any Message-Info))
+(define (message-info x)
+  (list 'message x))
 
 (: message-info-message (-> Message-Info Any))
 (define (message-info-message x) (second x))

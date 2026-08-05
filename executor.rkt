@@ -5,6 +5,8 @@
 (require "history.rkt")
 (require "prompt.rkt")
 (require "message.rkt")
+(require "effect/consumer.rkt")
+(require "effect/emitter.rkt")
 
 (provide replay
          find-graph next-edges auto-choose
@@ -35,9 +37,14 @@
   (cond [(current-edge-id) => (curry symbol=? (edge-id e))]
         [else #f]))
 
+(define-type Event (U Prompt-Info Message-Info))
+(define-type Pmt (Pairof Prompt-Value Prompt-Attributes))
+
 (: replay (All (S) (-> (Listof (Graph S)) (Node S) S Journal
-                         (Values (Node S) S (History S)))))
+                       (Values (Node S) S (History S)))))
 (define (replay gs n st j)
+  (define-values (call-with-consumer consume) ((inst make-consumer Pmt S)))
+  (define-values (call-with-emitter emit) ((inst make-emitter Event (Pairof (Listof Pmt) S))))
   (let loop ([n n] [st st] [j (reverse j)] [h : (History S) '()])
     (let ([ne (next-edges gs st n)])
       (if (null? j)
@@ -48,78 +55,37 @@
                     [j-rec (car j)]
                     [name (caadr j-rec)]
                     [attrs (cdadr j-rec)]
-                    [ps-init (reverse (cddr j-rec))])
+                    [ps-init (cddr j-rec)])
                (cond [(findf (lambda ([e : (Edge S)]) (string=? name (edge-name e))) edges)
                       => (lambda ([e : (Edge S)])
-                           (let* ([to (edge-to e)]
-                                  [mode (edge-mode e)]
-                                  [logger  (if (eq? mode 'auto)
-                                               (make-history-logger 'auto e to)
-                                               (let ([pmt ((node-prompt n) st)])
-                                                 (make-history-logger 'choose e pmt edges attrs to)))]
-                                  [bps : (Boxof (Listof (Pairof Prompt-Value Prompt-Attributes))) (box ps-init)])
-                             (: pop-bps (-> (U 'edge 'node) Prompt-Implementation))
-                             (define ((pop-bps type) title op)
-                               (: push-event! (-> String Prompt-Op Prompt-Value Prompt-Attributes Void))
-                               (define (push-event! title op val attrs)
-                                 (history-logger-prompt-log! logger type title op val attrs))
-                               (let ([ps (unbox bps)])
-                                 (set-box! bps (cdr ps))
-                                 (if (null? ps)
-                                     (error 'replay "unexpected end of prompt values")
-                                     (let ([val (caar ps)]
-                                           [attrs (cdar ps)])
-                                       (case (car op)
-                                         [(choose)
-                                          (assert val string?)
-                                          (push-event! title op val attrs)
-                                          (values val attrs)]
-                                         [(string)
-                                          (assert val string?)
-                                          (push-event! title op val attrs)
-                                          (values val attrs)]
-                                         [(integer)
-                                          (assert (assert val exact?) integer?)
-                                          (push-event! title op val attrs)
-                                          (values val attrs)]
-                                         [(natural)
-                                          (assert (assert val exact?) natural?)
-                                          (push-event! title op val attrs)
-                                          (values val attrs)]
-                                         [(positive-integer)
-                                          (assert (assert val exact?) positive-integer?)
-                                          (push-event! title op val attrs)
-                                          (values val attrs)]
-                                         [(range)
-                                          (assert val exact?)
-                                          (assert val integer?)
-                                          (let ([min (second op)] [max : Integer (third op)])
-                                            (cond
-                                              [(and (<= min val) (<= val max))
-                                               (push-event! title op val attrs)
-                                               (values val attrs)]
-                                              [else
-                                               (error 'retry "range error" val)]))]
-                                         [(random)
-                                          (assert val natural?)
-                                          (push-event! title op val attrs)
-                                          (values val attrs)])))))
-                             (: message-to-log (-> (U 'edge 'node) (-> Any Void)))
-                             (define ((message-to-log type) msg)
-                               (history-logger-message-log! logger type msg))
-                             (let ([next-st
-                                    (parameterize ([current-message (message-to-log 'node)]
-                                                   [current-prompt (pop-bps 'node)])
-                                      ((node-trans to)
-                                       (parameterize ([current-message (message-to-log 'edge)]
-                                                      [current-prompt (pop-bps 'edge)])
-                                         ((edge-trans e) st))))])
-                               (loop to
-                                     next-st
-                                     (cdr j)
-                                     (list* (history-logger->history-record-node logger)
-                                            (history-logger->history-record-edge logger)
-                                            h)))))]
+                           (match-define (list* edge-evs pvs-1 st-1)
+                             (call-with-emitter
+                              (thunk
+                               (call-with-consumer
+                                (thunk
+                                 (parameterize ([current-message (emit-message emit)]
+                                                [current-prompt (pop-prompt consume emit)])
+                                   ((edge-trans e) st)))
+                                ps-init))))
+                           (match-define (list* node-evs _ next-st)
+                             (call-with-emitter
+                              (thunk
+                               (call-with-consumer
+                                (thunk
+                                 (parameterize ([current-message (emit-message emit)]
+                                                [current-prompt (pop-prompt consume emit)])
+                                   ((node-trans (edge-to e)) st-1)))
+                                pvs-1))))
+                           (loop (edge-to e)
+                                 next-st
+                                 (cdr j)
+                                 (list*
+                                  (node-record node-evs n)
+                                  (case (edge-mode e)
+                                    [(auto) (auto-edge-record edge-evs e)]
+                                    [(choose) (choose-edge-record edge-evs e ((node-prompt n) st) edges attrs)]
+                                    [(annotation) (error 'replay "invalid edge mode")])
+                                  h)))]
                      [else (error 'replay "edge not found")]))]
             [(terminated) (error 'replay "unexpected termination")])))))
 
@@ -228,3 +194,46 @@
   (cond
     [(findf (lambda ([e : (Edge S)]) (string=? name (edge-name e))) es) => identity]
     [else (error 'find-edge "not found")]))
+
+(: emit-message (-> (-> Event Void) (-> Any Void)))
+(define ((emit-message emit) msg)
+  (emit (message-info msg)))
+
+(: pop-prompt (-> (-> (-> Nothing) Pmt)
+                  (-> Event Void)
+                  Prompt-Implementation))
+(define ((pop-prompt consume emit) title op)
+  (: push-event! (-> String Prompt-Op Prompt-Value Prompt-Attributes Void))
+  (define (push-event! title op val attrs)
+    (emit (prompt-info op title val attrs)))
+  (: fail (-> Nothing))
+  (define (fail)
+    (error 'replay "unexpected end of prompt values"))
+  (let* ([val+attrs (consume fail)]
+         [val (car val+attrs)]
+         [attrs (cdr val+attrs)])
+    (case (car op)
+      [(choose) (assert val string?)
+                (push-event! title op val attrs)
+                (values val attrs)]
+      [(string) (assert val string?)
+                (push-event! title op val attrs)
+                (values val attrs)]
+      [(integer) (assert (assert val exact?) integer?)
+                 (push-event! title op val attrs)
+                 (values val attrs)]
+      [(natural) (assert (assert val exact?) natural?)
+                 (push-event! title op val attrs)
+                 (values val attrs)]
+      [(positive-integer) (assert (assert val exact?) positive-integer?)
+                          (push-event! title op val attrs)
+                          (values val attrs)]
+      [(range) (assert val exact?)
+               (assert val integer?)
+               (let ([min (second op)] [max : Integer (third op)])
+                 (cond [(and (<= min val) (<= val max)) (push-event! title op val attrs)
+                                                        (values val attrs)]
+                       [else (error 'replay "range error" val)]))]
+      [(random) (assert val natural?)
+                (push-event! title op val attrs)
+                (values val attrs)])))
