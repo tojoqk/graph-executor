@@ -2,9 +2,9 @@
 
 (provide make-amb)
 
-(: make-amb (All (A B) (-> (Values (-> (-> A) (-> Nothing) A)
-                                   (-> (-> A) * A)
-                                   (-> Nothing)))))
+(: make-amb (All (A) (-> (Values (-> (-> A) (-> Nothing) A)
+                                 (-> (-> A) * A)
+                                 (-> Nothing)))))
 (define (make-amb)
   (: amb-tag (Prompt-Tagof (Option (List A))
                            (-> (-> (Option (List A))) (Option (List A)))))
