@@ -2,47 +2,48 @@
 
 (provide make-state)
 
-(: make-state (All (A B) (-> (Values (-> (-> A) B (Values A B))
-                                     (-> B)
-                                     (-> B Void)))))
+(: make-state (All (A B) (-> (Values (-> (-> B) A (Pairof A B))
+                                     (-> A)
+                                     (-> A Void)))))
 (define (make-state)
-  (: state-tag (Prompt-Tagof (-> B (Values A B))
-                             (-> (-> (-> B (Values A B)))
-                                 (-> B (Values A B)))))
+  (: state-tag (Prompt-Tagof (-> A (Values A B))
+                             (-> (-> (-> A (Values A B)))
+                                 (-> A (Values A B)))))
   (define state-tag (make-continuation-prompt-tag 'state))
 
-  (: call-with-state (-> (-> A) B (Values A B)))
+  (: call-with-state (-> (-> B) A (Pairof A B)))
   (define (call-with-state proc st)
     (define f
       (call-with-continuation-prompt
        (lambda ()
          (let ([x (proc)])
-           (lambda ([st : B]) (values x st))))
+           (lambda ([st : A]) (values st x))))
        state-tag))
-    (f st))
+    (define-values (result-st x) (f st))
+    (cons result-st x))
 
-  (: get (-> B))
+  (: get (-> A))
   (define (get)
     (call-with-composable-continuation
-     (lambda ([k : (-> B (-> B (Values A B)))])
-       (let ([k (lambda ([st : B])
+     (lambda ([k : (-> A (-> A (Values A B)))])
+       (let ([k (lambda ([st : A])
                   (call-with-continuation-prompt (lambda () (k st)) state-tag))])
          (abort-current-continuation
           state-tag
-          (lambda () : (-> B (Values A B))
-            (lambda ([st : B])
+          (lambda () : (-> A (Values A B))
+            (lambda ([st : A])
               ((k st) st))))))
      state-tag))
 
-  (: set (-> B Void))
+  (: set (-> A Void))
   (define (set st)
     (call-with-composable-continuation
-     (lambda ([k : (-> (-> B (Values A B)))])
+     (lambda ([k : (-> (-> A (Values A B)))])
        (let ([k (lambda ()
                   (call-with-continuation-prompt k state-tag))])
          (abort-current-continuation
           state-tag
-          (lambda () : (-> B (Values A B))
+          (lambda () : (-> A (Values A B))
             (let ([f (k)])
               (lambda (_) (f st)))))))
      state-tag)

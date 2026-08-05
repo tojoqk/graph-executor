@@ -2,29 +2,28 @@
 
 (provide make-emitter)
 
-(: make-emitter (All (A B) (-> (Values (-> (-> A) (Values A (Listof B)))
-                                       (-> B Void)))))
+(: make-emitter (All (A B) (-> (Values (-> (-> B) (Pairof (Listof A) B))
+                                       (-> A Void)))))
 (define (make-emitter)
-  (: emitter-tag (Prompt-Tagof (Pairof A (Listof B))
-                               (-> (-> (Pairof A (Listof B)))
-                                   (Pairof A (Listof B)))))
+  (: emitter-tag (Prompt-Tagof (Pairof (Listof A) B)
+                               (-> (-> (Pairof (Listof A) B))
+                                   (Pairof (Listof A) B))))
   (define emitter-tag (make-continuation-prompt-tag 'emitter))
 
-  (: call-with-emitter (-> (-> A) (Values A (Listof B))))
+  (: call-with-emitter (-> (-> B) (Pairof (Listof A) B)))
   (define (call-with-emitter proc)
-    (let ([p (call-with-continuation-prompt (lambda () `(,(proc))) emitter-tag)])
-      (values (car p) (cdr p))))
+    (call-with-continuation-prompt (lambda () `(() . ,(proc))) emitter-tag))
 
-  (: emit (-> B Void))
+  (: emit (-> A Void))
   (define (emit str)
     (call-with-composable-continuation
-     (lambda ([k : (-> (Pairof A (Listof B)))])
+     (lambda ([k : (-> (Pairof (Listof A) B))])
        (let ([k (lambda () (call-with-continuation-prompt k emitter-tag))])
          (abort-current-continuation
           emitter-tag
-          (lambda () : (Pairof A (Listof B))
-            (let ([p : (Pairof A (Listof B)) (k)])
-              `(,(car p) ,@(cons str (cdr p))))))))
+          (lambda () : (Pairof (Listof A) B)
+            (let ([p : (Pairof (Listof A) B) (k)])
+              `(,(cons str (car p)) . ,(cdr p)))))))
      emitter-tag)
     (void))
 
