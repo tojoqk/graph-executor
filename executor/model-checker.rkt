@@ -70,6 +70,7 @@
              (when (set-member? seen seen-key)
                (amb-fail))
              (define ne (next-edges gs st n))
+             (define ne-type (car ne))
              (unless (invariant (car ne) (node-type n) st)
                (journal-emit j)
                (when (current-model-checker-counterexample-display?)
@@ -77,7 +78,7 @@
                (case mode
                  [(first) (return 'done)]
                  [(all) (amb-fail)]))
-             (case (car ne)
+             (case ne-type
                [(terminated) (amb-fail)]
                [(auto choose)
                 (define-values (name _)
@@ -93,7 +94,9 @@
                     (amb-fail)
                     (loop (edge-to chosen-edge)
                           next-st
-                          (cons (choose-journal-entry (edge-name chosen-edge) '() ps) j)
+                          (cons (case ne-type
+                                  [(auto) (auto-journal-entry (edge-name chosen-edge) ps)]
+                                  [(choose) (choose-journal-entry (edge-name chosen-edge) '() ps)]) j)
                           (add1 depth)
                           (set-add seen seen-key)))])))
           (thunk 'done)))))))
