@@ -1,7 +1,7 @@
 #lang typed/racket
 
 (provide Code code make-code
-         current-seen-ids current-node-prompt
+         current-graph-used-ids current-node-prompt
          Node AnyNode make-node (rename-out [node* node])
          node-graph-id node-graph-name node-id node-name node-type node-desc node-trans node-trans-sexp node-prompt node-prompt-sexp node-attributes
          any-node
@@ -22,8 +22,8 @@
   (syntax-rules ()
     [(_ expr) (make-code 'expr expr)]))
 
-(: current-seen-ids (Parameterof (Setof Symbol)))
-(define current-seen-ids (make-parameter ((inst set Symbol))))
+(: current-graph-used-ids (Parameterof (Setof Symbol)))
+(define current-graph-used-ids (make-parameter ((inst set Symbol))))
 
 (: current-node-prompt (Parameterof String))
 (define current-node-prompt (make-parameter "Choose:"))
@@ -88,9 +88,9 @@
 (define (make-node #:graph-name graph-name #:name name #:type type #:desc desc #:trans tr #:prompt pmt #:attributes attrs)
   (let ([graph-id (make-graph-id graph-name)]
         [node-id (make-node-id graph-name name)])
-    (cond [(set-member? (current-seen-ids) node-id)
+    (cond [(set-member? (current-graph-used-ids) node-id)
            (error "node: duplicate ID" node-id)]
-          [else (current-seen-ids (set-add (current-seen-ids) node-id))])
+          [else (current-graph-used-ids (set-add (current-graph-used-ids) node-id))])
     (node graph-id graph-name node-id name type desc
           (or tr (make-code #f identity))
           (cond [(not pmt) (make-code #f (const (current-node-prompt)))]
@@ -227,9 +227,9 @@
                             #:weight weight
                             #:attributes attrs)
   (let ([edge-id (make-edge-id name from)])
-    (cond [(set-member? (current-seen-ids) edge-id)
+    (cond [(set-member? (current-graph-used-ids) edge-id)
            (error "edge, bridge: duplicate ID" edge-id)]
-          [else (current-seen-ids (set-add (current-seen-ids) edge-id))])
+          [else (current-graph-used-ids (set-add (current-graph-used-ids) edge-id))])
     ((case type [(edge) edge] [(bridge) bridge])
      edge-id
      name (or mode 'choose)
@@ -433,9 +433,9 @@
                 #:desc [desc #f]
                 #:edges [edges #f])
   (let ([graph-id (make-graph-id name)])
-    (cond [(set-member? (current-seen-ids) graph-id)
+    (cond [(set-member? (current-graph-used-ids) graph-id)
            (error "graph: duplicate ID" graph-id)]
-          [else (current-seen-ids (set-add (current-seen-ids) graph-id))])
+          [else (current-graph-used-ids (set-add (current-graph-used-ids) graph-id))])
     (graph (make-graph-id name) name
            (and parent-name (make-graph-id parent-name)) parent-name
            desc
