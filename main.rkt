@@ -18,7 +18,7 @@
          Edge AnyEdge Bridge edge bridge any-bridge any-edge edge-from edge-to
          Graph OpenGraph AnyGraph graph open-graph any-graph graph-name
          dot-bridge dot-edge
-         replay
+         replay Status
          current-auto-conflict-policy current-single-choose-policy
          Console-Command current-console-commands
          current-node? current-edge?

@@ -9,12 +9,14 @@
 (require "effect/emitter.rkt")
 
 (provide replay
-         find-graph next-edges auto-choose
+         find-graph Status next-edges auto-choose
          current-auto-conflict-policy current-single-choose-policy
          current-node-id current-node?
          current-edge-id current-edge?
          find-edge
          Command)
+
+(define-type Status (U 'terminated 'auto 'choose))
 
 (define-type Command (U (List 'transform (-> Journal Journal))
                         (List 'action (-> Journal Void))
