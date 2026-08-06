@@ -78,7 +78,7 @@
                  [(first) (return 'done)]
                  [(all) (amb-fail)]))
              (case (car ne)
-               [(terminated) 'done]
+               [(terminated) (amb-fail)]
                [(auto choose)
                 (define-values (name _)
                   ((model-checker-prompt amb) "choose"
