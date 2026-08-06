@@ -2,7 +2,9 @@
 
 (provide make-amb)
 
-(: make-amb (All (A) (-> (Values (-> (-> A) (-> Nothing) A)
+(: make-amb (All (A) (-> (Values (All (B C)
+                                      (case-> (-> (-> B) (Option B))
+                                              (-> (-> B) (-> C) (U B C))))
                                  (-> (-> A) * A)
                                  (-> Nothing)))))
 (define (make-amb)
@@ -10,8 +12,22 @@
                            (-> (-> (Option (List A))) (Option (List A)))))
   (define amb-tag (make-continuation-prompt-tag 'amb))
 
-  (: call-with-amb (-> (-> A) (-> Nothing) A))
-  (define (call-with-amb proc fail)
+  (: call-with-amb (All (B C)
+                        (case-> (-> (-> B) (Option B))
+                                (-> (-> B) (-> C) (U B C)))))
+  (define call-with-amb
+    (case-lambda
+      [(proc fail)
+       (let/cc return : (U B C)
+         (%call-with-amb (thunk (return (proc))) (thunk (return (fail))))
+         (error 'make-amb "invalid implementation error"))]
+      [(proc)
+       (let/cc return : (Option B)
+         (%call-with-amb (thunk (return (proc))) (thunk (return #f)))
+         (error 'make-amb "invalid implementation error"))]))
+
+  (: %call-with-amb (-> (-> A) (-> Nothing) A))
+  (define (%call-with-amb proc fail)
     (cond [(call-with-continuation-prompt (lambda () (list (proc))) amb-tag) => car]
           [else (fail)]))
 
