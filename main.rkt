@@ -8,6 +8,8 @@
 (require "history.rkt")
 (require "journal.rkt")
 (require "executor/console.rkt")
+(require "executor/model-checker.rkt")
+(require "prompt/model-checker.rkt")
 (require "visualizer/dot.rkt")
 
 (provide Code code
@@ -25,6 +27,11 @@
          prompt
          message
          console-run current-console-random-prompt-display current-console-trace-display
+         model-checker-run
+         current-model-checker-counterexample-display
+         current-model-checker-trace-display
+         current-model-checker-string-value
+         current-model-checker-integer-value current-model-checker-natural-value current-model-checker-positive-integer-value
          DotNode dot-node-name dot-node-desc dot-node-type dot-node-prompt dot-node-trans
          DotEdge dot-edge-name dot-edge-desc dot-edge-from dot-edge-to dot-edge-when dot-edge-trans
          DotRenderer dot-renderer render-dot
