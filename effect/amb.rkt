@@ -18,11 +18,11 @@
   (define call-with-amb
     (case-lambda
       [(proc fail)
-       (let/cc return : (U B C)
+       (let/ec return : (U B C)
          (%call-with-amb (thunk (return (proc))) (thunk (return (fail))))
          (error 'make-amb "invalid implementation error"))]
       [(proc)
-       (let/cc return : (Option B)
+       (let/ec return : (Option B)
          (%call-with-amb (thunk (return (proc))) (thunk (return #f)))
          (error 'make-amb "invalid implementation error"))]))
 
