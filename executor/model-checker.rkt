@@ -14,7 +14,7 @@
          current-model-checker-trace-display)
 
 (: current-model-checker-counterexample-display (Parameterof (U 'show 'hide)))
-(define current-model-checker-counterexample-display (make-parameter 'show))
+(define current-model-checker-counterexample-display (make-parameter 'hide))
 
 (: current-model-checker-counterexample-display? (-> Boolean))
 (define (current-model-checker-counterexample-display?)
