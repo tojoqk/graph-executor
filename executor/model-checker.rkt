@@ -31,9 +31,13 @@
     [(show) #t]
     [(hide) #f]))
 
-(struct model-checker-config ([max-depth : (Option Natural)])
+(struct %model-checker-config ([max-depth : (Option Natural)])
   #:type-name Model-Checker-Config
   #:transparent)
+
+(: model-checker-config (-> [#:max-depth (Option Natural)] Model-Checker-Config))
+(define (model-checker-config #:max-depth [max-depth #f])
+  (%model-checker-config max-depth))
 
 (: model-checker-run (All (S) (case-> (->* ((Listof (Graph S))
                                             (Node S)
@@ -52,8 +56,8 @@
 (define (model-checker-run gs entry initial-state
                            mode
                            invariant
-                           [config (model-checker-config #f)])
-  (define max-depth (model-checker-config-max-depth config))
+                           [config (model-checker-config)])
+  (define max-depth (%model-checker-config-max-depth config))
   (define-values (call-with-journal-emitter journal-emit)
     ((inst make-emitter Journal 'done)))
   (define-values (call-with-prompt-value-emitter prompt-value-emit)
