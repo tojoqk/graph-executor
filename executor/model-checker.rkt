@@ -9,7 +9,7 @@
 (require "../effect/amb.rkt")
 (require "../effect/emitter.rkt")
 
-(provide model-checker-run
+(provide model-checker-run model-checker-config Model-Checker-Config
          current-model-checker-counterexample-display
          current-model-checker-trace-display)
 
@@ -31,22 +31,29 @@
     [(show) #t]
     [(hide) #f]))
 
-(define-type Next-Mode (U 'terminated 'auto 'choose))
+(struct model-checker-config ([max-depth : (Option Natural)])
+  #:type-name Model-Checker-Config
+  #:transparent)
 
-(: model-checker-run (All (S) (case-> (-> (Listof (Graph S)) (Node S) S
-                                          #:mode 'first
-                                          #:invariant (-> Next-Mode Symbol S Any)
-                                          [#:max-depth (Option Natural)]
-                                          (Option Journal))
-                                      (-> (Listof (Graph S)) (Node S) S
-                                          #:mode 'all
-                                          #:invariant (-> Next-Mode Symbol S Any)
-                                          [#:max-depth (Option Natural)]
-                                          (Listof Journal)))))
+(: model-checker-run (All (S) (case-> (->* ((Listof (Graph S))
+                                            (Node S)
+                                            S
+                                            'first
+                                            (-> Status Symbol S Any))
+                                           (Model-Checker-Config)
+                                           (Option Journal))
+                                      (->* ((Listof (Graph S))
+                                            (Node S)
+                                            S
+                                            'all
+                                            (-> Status Symbol S Any))
+                                           (Model-Checker-Config)
+                                           (Listof Journal)))))
 (define (model-checker-run gs entry initial-state
-                           #:mode mode
-                           #:invariant invariant
-                           #:max-depth [max-depth #f])
+                           mode
+                           invariant
+                           [config (model-checker-config #f)])
+  (define max-depth (model-checker-config-max-depth config))
   (define-values (call-with-journal-emitter journal-emit)
     ((inst make-emitter Journal 'done)))
   (define-values (call-with-prompt-value-emitter prompt-value-emit)
