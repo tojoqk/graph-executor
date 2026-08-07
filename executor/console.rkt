@@ -40,45 +40,47 @@
 
 (: console-run (All (S) (-> (Listof (Graph S)) (Node S) S
                               [#:journal Journal]
-                              (Values (Node S) S Journal))))
+                              Journal)))
 (define (console-run gs entry initial-state #:journal [j '()])
   (define-values (n st _) (replay gs entry initial-state j))
   (define-values (call-with-emitter emit)
     ((inst make-emitter (Pairof Prompt-Value Prompt-Attributes) S)))
-  (let loop ([n n] [st st] [j : Journal j])
-    (define command-dispatch (console-command-dispatch gs entry initial-state loop))
-    (let ([ne (next-edges gs st n)])
-      (case (car ne)
-        [(terminated)
-         (when (current-console-trace-display?)
-           (newline)
-           (displayln ">> Terminated"))
-         (define choose-pmt ((node-prompt n) st))
-         (if (current-console-has-quit-command?)
-             (command-dispatch n st j (console-choose choose-pmt '()))
-             (values n st j))]
-        [(auto)
-         (let* ([chosen-edge (auto-choose ne)])
+  (define-values (_n _st result-j)
+    (let loop : (Values (Node S) S Journal) ([n n] [st st] [j : Journal j])
+      (define command-dispatch (console-command-dispatch gs entry initial-state loop))
+      (let ([ne (next-edges gs st n)])
+        (case (car ne)
+          [(terminated)
            (when (current-console-trace-display?)
-             (displayln (format ">> [Auto] ~a" (edge-name chosen-edge))))
-           (match-define (cons ps next-st)
-             (call-with-emitter
-              (thunk (console-step st chosen-edge emit))))
-           (loop (edge-to chosen-edge)
-                 next-st
-                 (cons (auto-journal-entry (edge-name chosen-edge) ps) j)))]
-        [(choose)
-         (define choose-pmt ((node-prompt n) st))
-         (let ([cmd (console-choose choose-pmt (map (inst edge-name S) (second ne)))])
-           (cond [(string? cmd)
-                  (define chosen-edge (find-edge (second ne) cmd))
-                  (match-define (cons ps next-st)
-                    (call-with-emitter
-                     (thunk (console-step st chosen-edge emit))))
-                  (loop (edge-to chosen-edge)
-                        next-st
-                        (cons (choose-journal-entry (edge-name chosen-edge) '() ps) j))]
-                 [else (command-dispatch n st j cmd)]))]))))
+             (newline)
+             (displayln ">> Terminated"))
+           (define choose-pmt ((node-prompt n) st))
+           (if (current-console-has-quit-command?)
+               (command-dispatch n st j (console-choose choose-pmt '()))
+               (values n st j))]
+          [(auto)
+           (let* ([chosen-edge (auto-choose ne)])
+             (when (current-console-trace-display?)
+               (displayln (format ">> [Auto] ~a" (edge-name chosen-edge))))
+             (match-define (cons ps next-st)
+               (call-with-emitter
+                (thunk (console-step st chosen-edge emit))))
+             (loop (edge-to chosen-edge)
+                   next-st
+                   (cons (auto-journal-entry (edge-name chosen-edge) ps) j)))]
+          [(choose)
+           (define choose-pmt ((node-prompt n) st))
+           (let ([cmd (console-choose choose-pmt (map (inst edge-name S) (second ne)))])
+             (cond [(string? cmd)
+                    (define chosen-edge (find-edge (second ne) cmd))
+                    (match-define (cons ps next-st)
+                      (call-with-emitter
+                       (thunk (console-step st chosen-edge emit))))
+                    (loop (edge-to chosen-edge)
+                          next-st
+                          (cons (choose-journal-entry (edge-name chosen-edge) '() ps) j))]
+                   [else (command-dispatch n st j cmd)]))]))))
+  result-j)
 
 (: console-command-dispatch (All (S)
                                  (-> (Listof (Graph S)) (Node S) S

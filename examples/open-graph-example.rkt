@@ -139,9 +139,7 @@
         (dot-renderer graphs node-init #:history h)))
     (: run (->* () (Journal) Journal))
     (define (run [j '()])
-      (let-values ([(_node _state j-result)
-                    (console-run graphs node-init state-init #:journal j)])
-        j-result))
+      (console-run graphs node-init state-init #:journal j))
     (values run renderer)))
 
 (module+ main
