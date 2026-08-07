@@ -9,7 +9,8 @@
 (require "../effect/amb.rkt")
 (require "../effect/emitter.rkt")
 
-(provide model-checker-run model-checker-config Model-Checker-Config
+(provide model-checker-run/first model-checker-run/all
+         model-checker-config Model-Checker-Config
          current-model-checker-counterexample-display
          current-model-checker-trace-display)
 
@@ -38,6 +39,30 @@
 (: model-checker-config (-> [#:max-depth (Option Natural)] Model-Checker-Config))
 (define (model-checker-config #:max-depth [max-depth #f])
   (%model-checker-config max-depth))
+
+(: model-checker-run/first (All (S) (-> (Listof (Graph S))
+                                        (Node S)
+                                        S
+                                        #:invariant (-> Status Symbol S Any)
+                                        [#:max-depth (Option Natural)]
+                                        (Option Journal))))
+(define (model-checker-run/first gs entry initial-state
+                                 #:invariant invariant
+                                 #:max-depth [max-depth #f])
+  (model-checker-run gs entry initial-state 'first invariant
+                     (model-checker-config #:max-depth max-depth)))
+
+(: model-checker-run/all (All (S) (-> (Listof (Graph S))
+                                        (Node S)
+                                        S
+                                        #:invariant (-> Status Symbol S Any)
+                                        [#:max-depth (Option Natural)]
+                                        (Listof Journal))))
+(define (model-checker-run/all gs entry initial-state
+                               #:invariant invariant
+                               #:max-depth [max-depth #f])
+  (model-checker-run gs entry initial-state 'all invariant
+                     (model-checker-config #:max-depth max-depth)))
 
 (: model-checker-run (All (S) (case-> (->* ((Listof (Graph S))
                                             (Node S)
