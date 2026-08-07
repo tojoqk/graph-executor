@@ -3,7 +3,7 @@
 (provide Code code make-code
          current-graph-used-ids current-node-prompt
          Node AnyNode make-node (rename-out [node* node])
-         node-graph-id node-graph-name node-id node-name node-type node-desc node-trans node-trans-sexp node-prompt node-prompt-sexp node-attributes
+         node-graph-id node-graph-name node-id node-name node-type node-tags node-desc node-trans node-trans-sexp node-prompt node-prompt-sexp node-attributes
          any-node
          Edge AnyEdge Bridge EdgeMode make-edge make-bridge (rename-out [edge* edge] [bridge* bridge])
          edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-sexp edge-trans edge-trans-sexp edge-priority edge-weight edge-attributes
@@ -51,6 +51,7 @@
                   [id : Symbol]
                   [name : String]
                   [type : Symbol]
+                  [tags : (Listof Symbol)]
                   [desc : (Option String)]
                   [trans-code : (Code (-> S S))]
                   [prompt-code : (Code (-> S String))]
@@ -80,18 +81,19 @@
                   (-> #:graph-name String
                       #:name String
                       #:type Symbol
+                      #:tags (Listof Symbol)
                       #:desc (Option String)
                       #:trans (Option (Code (-> S S)))
                       #:prompt (Option (U String (Code (-> S String))))
                       #:attributes (Immutable-HashTable Symbol Any)
                       (Node S))))
-(define (make-node #:graph-name graph-name #:name name #:type type #:desc desc #:trans tr #:prompt pmt #:attributes attrs)
+(define (make-node #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc #:trans tr #:prompt pmt #:attributes attrs)
   (let ([graph-id (make-graph-id graph-name)]
         [node-id (make-node-id graph-name name)])
     (cond [(set-member? (current-graph-used-ids) node-id)
            (error "node: duplicate ID" node-id)]
           [else (current-graph-used-ids (set-add (current-graph-used-ids) node-id))])
-    (node graph-id graph-name node-id name type desc
+    (node graph-id graph-name node-id name type tags desc
           (or tr (make-code #f identity))
           (cond [(not pmt) (make-code #f (const (current-node-prompt)))]
                 [(string? pmt) (make-code pmt (const pmt))]
@@ -102,12 +104,13 @@
               (-> String
                   (-> String
                       #:type (∩ T Symbol)
+                      [#:tags (Listof Symbol)]
                       [#:desc (Option String)]
                       [#:trans (Option (Code (-> S S)))]
                       [#:prompt (Option (U String (Code (-> S String))))]
                       (Node S)))))
-(define ((node* graph-name) name #:type type #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f])
-  ((inst make-node S) #:graph-name graph-name #:name name #:type type #:desc desc
+(define ((node* graph-name) name #:type type #:tags [tags '()] #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f])
+  ((inst make-node S) #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc
                       #:trans tr
                       #:prompt pmt
                       #:attributes ((inst hash Symbol Any))))

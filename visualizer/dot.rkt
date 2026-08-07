@@ -6,7 +6,7 @@
 (require "../history.rkt")
 (require typed/xml)
 
-(provide DotNode dot-node-name dot-node-desc dot-node-type dot-node-prompt dot-node-trans
+(provide DotNode dot-node-name dot-node-desc dot-node-type dot-node-tags dot-node-prompt dot-node-trans
          DotEdge dot-edge-name dot-edge-desc dot-edge-from dot-edge-to dot-edge-when dot-edge-trans
          DotRenderer dot-renderer render-dot
          DotConfig dot-config
@@ -21,6 +21,7 @@
 (struct dot-node ([name : String]
                   [desc : (Option String)]
                   [type : Symbol]
+                  [tags : (Listof Symbol)]
                   [prompt : (Option Sexp)]
                   [trans : (Option Sexp)])
   #:transparent
@@ -28,7 +29,7 @@
 
 (: node->dot-node (All (S) (-> (Node S) DotNode)))
 (define (node->dot-node n)
-  (dot-node (node-name n) (node-desc n) (node-type n) (node-prompt-sexp n) (node-trans-sexp n)))
+  (dot-node (node-name n) (node-desc n) (node-type n) (node-tags n) (node-prompt-sexp n) (node-trans-sexp n)))
 
 (struct dot-edge ([name : String] [desc : (Option String)] [mode : EdgeMode] [from : Symbol] [to : Symbol] [when : (Option Sexp)] [trans : (Option Sexp)])
   #:transparent
