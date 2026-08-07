@@ -43,7 +43,7 @@
 (: model-checker-run/first (All (S) (-> (Listof (Graph S))
                                         (Node S)
                                         S
-                                        #:invariant (-> Status Symbol S Any)
+                                        #:invariant (-> Status (Node S) S Any)
                                         [#:max-depth (Option Natural)]
                                         (Option Journal))))
 (define (model-checker-run/first gs entry initial-state
@@ -53,11 +53,11 @@
                      (model-checker-config #:max-depth max-depth)))
 
 (: model-checker-run/all (All (S) (-> (Listof (Graph S))
-                                        (Node S)
-                                        S
-                                        #:invariant (-> Status Symbol S Any)
-                                        [#:max-depth (Option Natural)]
-                                        (Listof Journal))))
+                                      (Node S)
+                                      S
+                                      #:invariant (-> Status (Node S) S Any)
+                                      [#:max-depth (Option Natural)]
+                                      (Listof Journal))))
 (define (model-checker-run/all gs entry initial-state
                                #:invariant invariant
                                #:max-depth [max-depth #f])
@@ -68,14 +68,14 @@
                                             (Node S)
                                             S
                                             'first
-                                            (-> Status Symbol S Any))
+                                            (-> Status (Node S) S Any))
                                            (Model-Checker-Config)
                                            (Option Journal))
                                       (->* ((Listof (Graph S))
                                             (Node S)
                                             S
                                             'all
-                                            (-> Status Symbol S Any))
+                                            (-> Status (Node S) S Any))
                                            (Model-Checker-Config)
                                            (Listof Journal)))))
 (define (model-checker-run gs entry initial-state
@@ -107,7 +107,7 @@
                (amb-fail))
              (define ne (next-edges gs st n))
              (define ne-type (car ne))
-             (unless (invariant (car ne) (node-type n) st)
+             (unless (invariant (car ne) n st)
                (journal-emit j)
                (when (current-model-checker-counterexample-display?)
                  (printf "Counterexample: ~s\n" j))
