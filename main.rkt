@@ -27,8 +27,7 @@
          prompt
          message
          console-run current-console-random-prompt-display current-console-trace-display
-         model-checker-run
-         current-model-checker-counterexample-display
+         find-counterexample
          current-model-checker-trace-display
          current-model-checker-string-value
          current-model-checker-integer-value current-model-checker-natural-value current-model-checker-positive-integer-value

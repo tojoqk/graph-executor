@@ -9,18 +9,8 @@
 (require "../effect/amb.rkt")
 (require "../effect/emitter.rkt")
 
-(provide model-checker-run
-         current-model-checker-counterexample-display
+(provide find-counterexample
          current-model-checker-trace-display)
-
-(: current-model-checker-counterexample-display (Parameterof (U 'show 'hide)))
-(define current-model-checker-counterexample-display (make-parameter 'hide))
-
-(: current-model-checker-counterexample-display? (-> Boolean))
-(define (current-model-checker-counterexample-display?)
-  (case (current-model-checker-counterexample-display)
-    [(show) #t]
-    [(hide) #f]))
 
 (: current-model-checker-trace-display (Parameterof (U 'show 'hide)))
 (define current-model-checker-trace-display (make-parameter 'hide))
@@ -31,68 +21,55 @@
     [(show) #t]
     [(hide) #f]))
 
-(: model-checker-run (All (S) (-> (Listof (Graph S))
-                                  (Node S)
-                                  S
-                                  (-> Status (Node S) S Any)
-                                  [#:max-depth (Option Natural)]
-                                  (Option Journal))))
-(define (model-checker-run gs entry initial-state invariant
-                           #:max-depth [max-depth #f])
-  (define-values (call-with-journal-emitter journal-emit)
-    ((inst make-emitter Journal 'done)))
+(: find-counterexample (All (S) (-> (Listof (Graph S))
+                                    (Node S)
+                                    S
+                                    (-> Status (Node S) S Any)
+                                    [#:max-depth (Option Natural)]
+                                    (Option Journal))))
+(define (find-counterexample gs entry initial-state invariant
+                             #:max-depth [max-depth #f])
   (define-values (call-with-prompt-value-emitter prompt-value-emit)
     ((inst make-emitter (Pairof Prompt-Value Prompt-Attributes) S)))
   (define-values (call-with-amb amb amb-fail)
     ((inst make-amb Prompt-Value)))
-  (: prompt Prompt-Implementation)
-  (define result
-    (car
-     (call-with-journal-emitter
-      (thunk
-       (let/ec return : 'done
-         (call-with-amb
-          (thunk
-           (let loop : 'done ([n entry]
-                              [st initial-state]
-                              [j : Journal '()]
-                              [depth 0]
-                              [seen : (Setof (Pairof Symbol S)) (set)])
-             (define seen-key `(,(node-id n) . ,st))
-             (when (set-member? seen seen-key)
-               (amb-fail))
-             (define ne (next-edges gs st n))
-             (define ne-type (car ne))
-             (unless (invariant (car ne) n st)
-               (journal-emit j)
-               (when (current-model-checker-counterexample-display?)
-                 (printf "Counterexample: ~s\n" j))
-               (return 'done))
-             (case ne-type
-               [(terminated) (amb-fail)]
-               [(auto choose)
-                (define-values (name _)
-                  ((model-checker-prompt amb) "choose"
-                                              `(choose ,(map (inst edge-name S) (second ne)))))
-                (define chosen-edge (find-edge (second ne) name))
-                (when (current-model-checker-trace-display?)
-                  (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
-                (match-define (cons ps next-st)
-                  (call-with-prompt-value-emitter
-                   (thunk (step st chosen-edge amb prompt-value-emit))))
-                (if (and max-depth (= max-depth depth))
-                    (amb-fail)
-                    (loop (edge-to chosen-edge)
-                          next-st
-                          (cons (case ne-type
-                                  [(auto) (auto-journal-entry (edge-name chosen-edge) ps)]
-                                  [(choose) (choose-journal-entry (edge-name chosen-edge) '() ps)]) j)
-                          (add1 depth)
-                          (set-add seen seen-key)))])))
-          (thunk 'done)))))))
-  (if (null? result)
-      #f
-      (car result)))
+  (let/ec return : Journal
+    (call-with-amb
+     (thunk
+      (let loop : #f ([n entry]
+                      [st initial-state]
+                      [j : Journal '()]
+                      [depth 0]
+                      [seen : (Setof (Pairof Symbol S)) (set)])
+        (define seen-key `(,(node-id n) . ,st))
+        (when (set-member? seen seen-key)
+          (amb-fail))
+        (define ne (next-edges gs st n))
+        (define ne-type (car ne))
+        (unless (invariant (car ne) n st)
+          (return j))
+        (case ne-type
+          [(terminated) (amb-fail)]
+          [(auto choose)
+           (define-values (name _)
+             ((model-checker-prompt amb) "choose"
+                                         `(choose ,(map (inst edge-name S) (second ne)))))
+           (define chosen-edge (find-edge (second ne) name))
+           (when (current-model-checker-trace-display?)
+             (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
+           (match-define (cons ps next-st)
+             (call-with-prompt-value-emitter
+              (thunk (step st chosen-edge amb prompt-value-emit))))
+           (if (and max-depth (= max-depth depth))
+               (amb-fail)
+               (loop (edge-to chosen-edge)
+                     next-st
+                     (cons (case ne-type
+                             [(auto) (auto-journal-entry (edge-name chosen-edge) ps)]
+                             [(choose) (choose-journal-entry (edge-name chosen-edge) '() ps)]) j)
+                     (add1 depth)
+                     (set-add seen seen-key)))])))
+     (thunk #f))))
 
 (: step (All (S) (-> S
                      (Edge S)
