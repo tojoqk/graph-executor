@@ -9,8 +9,7 @@
 (require "../effect/amb.rkt")
 (require "../effect/emitter.rkt")
 
-(provide model-checker-run/first model-checker-run/all
-         model-checker-config Model-Checker-Config
+(provide model-checker-run
          current-model-checker-counterexample-display
          current-model-checker-trace-display)
 
@@ -32,57 +31,14 @@
     [(show) #t]
     [(hide) #f]))
 
-(struct %model-checker-config ([max-depth : (Option Natural)])
-  #:type-name Model-Checker-Config
-  #:transparent)
-
-(: model-checker-config (-> [#:max-depth (Option Natural)] Model-Checker-Config))
-(define (model-checker-config #:max-depth [max-depth #f])
-  (%model-checker-config max-depth))
-
-(: model-checker-run/first (All (S) (-> (Listof (Graph S))
-                                        (Node S)
-                                        S
-                                        #:invariant (-> Status (Node S) S Any)
-                                        [#:max-depth (Option Natural)]
-                                        (Option Journal))))
-(define (model-checker-run/first gs entry initial-state
-                                 #:invariant invariant
-                                 #:max-depth [max-depth #f])
-  (model-checker-run gs entry initial-state 'first invariant
-                     (model-checker-config #:max-depth max-depth)))
-
-(: model-checker-run/all (All (S) (-> (Listof (Graph S))
-                                      (Node S)
-                                      S
-                                      #:invariant (-> Status (Node S) S Any)
-                                      [#:max-depth (Option Natural)]
-                                      (Listof Journal))))
-(define (model-checker-run/all gs entry initial-state
-                               #:invariant invariant
-                               #:max-depth [max-depth #f])
-  (model-checker-run gs entry initial-state 'all invariant
-                     (model-checker-config #:max-depth max-depth)))
-
-(: model-checker-run (All (S) (case-> (->* ((Listof (Graph S))
-                                            (Node S)
-                                            S
-                                            'first
-                                            (-> Status (Node S) S Any))
-                                           (Model-Checker-Config)
-                                           (Option Journal))
-                                      (->* ((Listof (Graph S))
-                                            (Node S)
-                                            S
-                                            'all
-                                            (-> Status (Node S) S Any))
-                                           (Model-Checker-Config)
-                                           (Listof Journal)))))
-(define (model-checker-run gs entry initial-state
-                           mode
-                           invariant
-                           [config (model-checker-config)])
-  (define max-depth (%model-checker-config-max-depth config))
+(: model-checker-run (All (S) (-> (Listof (Graph S))
+                                  (Node S)
+                                  S
+                                  (-> Status (Node S) S Any)
+                                  [#:max-depth (Option Natural)]
+                                  (Option Journal))))
+(define (model-checker-run gs entry initial-state invariant
+                           #:max-depth [max-depth #f])
   (define-values (call-with-journal-emitter journal-emit)
     ((inst make-emitter Journal 'done)))
   (define-values (call-with-prompt-value-emitter prompt-value-emit)
@@ -111,9 +67,7 @@
                (journal-emit j)
                (when (current-model-checker-counterexample-display?)
                  (printf "Counterexample: ~s\n" j))
-               (case mode
-                 [(first) (return 'done)]
-                 [(all) (amb-fail)]))
+               (return 'done))
              (case ne-type
                [(terminated) (amb-fail)]
                [(auto choose)
@@ -136,9 +90,9 @@
                           (add1 depth)
                           (set-add seen seen-key)))])))
           (thunk 'done)))))))
-  (case mode
-    [(first) (if (null? result) #f (car result))]
-    [(all) result]))
+  (if (null? result)
+      #f
+      (car result)))
 
 (: step (All (S) (-> S
                      (Edge S)

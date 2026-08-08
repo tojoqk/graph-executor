@@ -122,21 +122,11 @@
     (define-values (v-graph node-init) (vending-graph "Vending Machine Model"))
     (define graphs (list v-graph))
     (define state-init (v-state 400 0))
-    (check-false (model-checker-run/first graphs node-init state-init
-                                          #:invariant
-                                          (lambda (_s _n [st : Vending-State])
-                                            (not (negative? (v-state-wallet st))))))
+    (check-false (model-checker-run graphs node-init state-init
+                                    (lambda (_s _n [st : Vending-State])
+                                      (not (negative? (v-state-wallet st))))))
 
-    (check-equal? (model-checker-run/first graphs node-init state-init
-                                           #:invariant
-                                           (lambda (_s _n [st : Vending-State])
-                                             (< 100 (v-state-wallet st))))
-                  '((choose ("Insert More")) (choose ("Insert More")) (choose ("Insert 100 Yen"))))
-
-    (check-equal? (model-checker-run/all graphs node-init state-init
-                                         #:invariant
-                                         (lambda (_s _n [st : Vending-State])
-                                           (< 100 (v-state-wallet st))))
-                  '(((choose ("Insert More")) (choose ("Insert More")) (choose ("Insert 100 Yen")))
-                    ((choose ("Insert More")) (auto ("Dispense Done (Remaining Inserted)")) (choose ("Purchase Drink (150 Yen)")) (choose ("Insert More")) (choose ("Insert 100 Yen")))
-                    ((choose ("Insert More")) (choose ("Insert 100 Yen")) (auto ("Change Dispatched")) (choose ("Press Return Lever")) (auto ("Dispense Done (Remaining Inserted)")) (choose ("Purchase Drink (150 Yen)")) (choose ("Insert More")) (choose ("Insert 100 Yen")))))))
+    (check-equal? (model-checker-run graphs node-init state-init
+                                     (lambda (_s _n [st : Vending-State])
+                                       (< 100 (v-state-wallet st))))
+                  '((choose ("Insert More")) (choose ("Insert More")) (choose ("Insert 100 Yen"))))))
