@@ -9,10 +9,10 @@
 
 (: insert-money (-> Vending-State Vending-State))
 (define (insert-money st)
-  (let ([amount (prompt "How much?" `(range 1 ,(v-state-wallet st)))])
+  (let ([amount (prompt "How much(n*100)?" `(range 1 ,(quotient (v-state-wallet st) 100)))])
     (struct-copy v-state st
-                 [wallet (- (v-state-wallet st) amount)]
-                 [inserted (+ (v-state-inserted st) amount)])))
+                 [wallet (- (v-state-wallet st) (* 100 amount))]
+                 [inserted (+ (v-state-inserted st) (* 100 amount))])))
 
 (: purchase (-> Integer (-> Vending-State Vending-State)))
 (define ((purchase amount) st)
