@@ -79,15 +79,17 @@
      (v-edge "Walk Away" #:from idle #:to terminal #:dot-minlen 2)))
    idle))
 
-(module+ console
+(module+ system
   (provide make-system)
 
   (define-values (v-graph node-init) (vending-graph "Vending Machine Model"))
   (define graphs (list v-graph))
   (define state-init (v-state 400 0))
+  (define-type S Vending-State)
 
   (: make-system (-> (Values (->* () (Journal) Journal)
-                             (->* () (Journal) DotRenderer))))
+                             (->* () (Journal) DotRenderer)
+                             (-> (-> Status (Node S) S Any) [#:max-depth Natural] (Option Journal)))))
   (define (make-system)
     (: renderer (->* () (Journal) DotRenderer))
     (define (renderer [j '()])
@@ -96,11 +98,14 @@
     (: run (->* () (Journal) Journal))
     (define (run [j '()])
       (console-run graphs node-init state-init #:journal j))
-    (values run renderer)))
+    (: find-cex (-> (-> Status (Node S) S Any) [#:max-depth Natural] (Option Journal)))
+    (define (find-cex invariant #:max-depth [max-depth #f])
+      (find-counterexample graphs node-init state-init invariant #:max-depth max-depth))
+    (values run renderer find-cex)))
 
 (module+ main
   (require racket/cmdline)
-  (require (submod ".." console))
+  (require (submod ".." system))
   (: mode (Boxof (U 'dot 'console)))
   (define mode (box 'dot))
   (define program-name "graph-example")
@@ -110,23 +115,18 @@
    [("--console") "Run console" (set-box! mode 'console)]
    [("--dot") "Generate dot" (set-box! mode 'dot)]
    #:args ()
-   (define-values (run renderer) (make-system))
+   (define-values (run renderer _find-cex) (make-system))
    (case (unbox mode)
      [(dot) (render-dot (renderer))]
      [(console) (writeln (run))])))
 
 (module+ test
   (require typed/rackunit)
+  (require (submod ".." system))
 
-  (parameterize ([current-graph-used-ids (set)])
-    (define-values (v-graph node-init) (vending-graph "Vending Machine Model"))
-    (define graphs (list v-graph))
-    (define state-init (v-state 400 0))
-    (check-false (find-counterexample graphs node-init state-init
-                                      (lambda (_s _n [st : Vending-State])
-                                        (not (negative? (v-state-wallet st))))))
-
-    (check-equal? (find-counterexample graphs node-init state-init
-                                       (lambda (_s _n [st : Vending-State])
-                                         (< 100 (v-state-wallet st))))
-                  '((choose ("Insert More")) (choose ("Insert More")) (choose ("Insert 100 Yen"))))))
+  (define-values (_run _renderer find-cex) (make-system))
+  (check-false (find-cex (lambda (_s _n [st : Vending-State])
+                           (not (negative? (v-state-wallet st))))))
+  (check-equal? (find-cex (lambda (_s _n [st : Vending-State])
+                            (< 100 (v-state-wallet st))))
+                '((choose ("Insert More")) (choose ("Insert More")) (choose ("Insert 100 Yen")))))

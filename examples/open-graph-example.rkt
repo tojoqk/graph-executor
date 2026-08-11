@@ -124,14 +124,16 @@
                 (t-any-graph (gen-t-graph)))
           (v-any-node v-entry)))
 
-(module+ console
+(module+ system
   (provide make-system)
 
   (define-values (graphs node-init) (wire))
   (define state-init (v-state 400 0))
+  (define-type S Any)
 
   (: make-system (-> (Values (->* () (Journal) Journal)
-                             (->* () (Journal) DotRenderer))))
+                             (->* () (Journal) DotRenderer)
+                             (-> (-> Status (Node S) S Any) [#:max-depth Natural] (Option Journal)))))
   (define (make-system)
     (: renderer (->* () (Journal) DotRenderer))
     (define (renderer [j '()])
@@ -140,11 +142,14 @@
     (: run (->* () (Journal) Journal))
     (define (run [j '()])
       (console-run graphs node-init state-init #:journal j))
-    (values run renderer)))
+    (: find-cex (-> (-> Status (Node S) S Any) [#:max-depth Natural] (Option Journal)))
+    (define (find-cex invariant #:max-depth [max-depth #f])
+      (find-counterexample graphs node-init state-init invariant #:max-depth max-depth))
+    (values run renderer find-cex)))
 
 (module+ main
   (require racket/cmdline
-           (submod ".." console))
+           (submod ".." system))
   (: mode (Boxof (U 'dot 'console)))
   (define mode (box 'dot))
   (define program-name "open-graph-example")
@@ -154,7 +159,7 @@
    [("--console") "Run console" (set-box! mode 'console)]
    [("--dot") "Generate dot" (set-box! mode 'dot)]
    #:args ()
-   (define-values (run renderer) (make-system))
+   (define-values (run renderer _find-cex) (make-system))
    (case (unbox mode)
      [(dot) (render-dot (renderer))]
      [(console) (writeln (run))])))
