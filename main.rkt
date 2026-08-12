@@ -2,6 +2,7 @@
 
 (require "graph.rkt")
 (require "graph/dot.rkt")
+(require "model.rkt")
 (require "executor.rkt")
 (require "prompt.rkt")
 (require "message.rkt")
@@ -18,6 +19,7 @@
          Edge AnyEdge Bridge edge bridge any-bridge any-edge edge-from edge-to
          Graph OpenGraph AnyGraph graph open-graph any-graph graph-name
          dot-bridge dot-edge
+         Model model
          replay Status
          current-auto-conflict-policy current-single-choose-policy
          Console-Command current-console-commands
