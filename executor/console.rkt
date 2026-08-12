@@ -1,6 +1,7 @@
 #lang typed/racket
 
 (require "../graph.rkt")
+(require "../model.rkt")
 (require "../prompt.rkt")
 (require "../message.rkt")
 (require "../prompt/console.rkt")
@@ -38,16 +39,15 @@
     [(show) #t]
     [(hide) #f]))
 
-(: console-run (All (S) (-> (Listof (Graph S)) (Node S) S
-                              [#:journal Journal]
-                              Journal)))
-(define (console-run gs entry initial-state #:journal [j '()])
-  (define-values (n st _) (replay gs entry initial-state j))
+(: console-run (All (S) (-> (Model S) [#:journal Journal] Journal)))
+(define (console-run m #:journal [j '()])
+  (define gs (model-graphs m))
+  (define-values (n st _) (replay gs (model-node m) (model-state m) j))
   (define-values (call-with-emitter emit)
     ((inst make-emitter (Pairof Prompt-Value Prompt-Attributes) S)))
   (define-values (_n _st result-j)
     (let loop : (Values (Node S) S Journal) ([n n] [st st] [j : Journal j])
-      (define command-dispatch (console-command-dispatch gs entry initial-state loop))
+      (define command-dispatch (console-command-dispatch gs (model-node m) (model-state m) loop))
       (let ([ne (next-edges gs st n)])
         (case (car ne)
           [(terminated)

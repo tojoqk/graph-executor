@@ -1,6 +1,7 @@
 #lang typed/racket
 
 (require "graph.rkt")
+(require "model.rkt")
 (require "prompt.rkt")
 (require "message.rkt")
 (require "prompt/model-checker.rkt")
@@ -21,21 +22,19 @@
     [(show) #t]
     [(hide) #f]))
 
-(: find-counterexample (All (S) (-> (Listof (Graph S))
-                                    (Node S)
-                                    S
-                                    (-> Status (Node S) S Any)
+(: find-counterexample (All (S) (-> (Model S) (-> Status (Node S) S Any)
                                     [#:journal Journal]
                                     [#:max-depth (Option Natural)]
                                     (Option Journal))))
-(define (find-counterexample gs entry initial-state invariant
+(define (find-counterexample m invariant
                              #:journal [j '()]
                              #:max-depth [max-depth #f])
   (define-values (call-with-prompt-value-emitter prompt-value-emit)
     ((inst make-emitter (Pairof Prompt-Value Prompt-Attributes) S)))
   (define-values (call-with-amb amb amb-fail)
     ((inst make-amb Prompt-Value)))
-  (define-values (n st _h) (replay gs entry initial-state j))
+  (define gs (model-graphs m))
+  (define-values (n st _h) (replay gs (model-node m) (model-state m) j))
   (let/ec return : Journal
     (call-with-amb
      (thunk

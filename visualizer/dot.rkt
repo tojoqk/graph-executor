@@ -1,6 +1,7 @@
 #lang typed/racket
 
 (require "../graph.rkt")
+(require "../model.rkt")
 (require "../graph/dot.rkt")
 (require "../private/visualizer.rkt")
 (require "../history.rkt")
@@ -277,22 +278,17 @@
 (define (render-dot x [port (current-output-port)])
   ((%dot-renderer-proc x) port))
 
-(: dot-renderer (All (S) (-> (Listof (Graph S)) (Node S)
-                             [#:config DotConfig]
-                             [#:history (History S)]
-                             DotRenderer)))
-(define (dot-renderer gs node
-                    #:config [config (dot-config)]
-                    #:history [h '()])
+(: dot-renderer (All (S) (-> (Model S) [#:config DotConfig] [#:history (History S)] DotRenderer)))
+(define (dot-renderer m #:config [config (dot-config)] #:history [h '()])
   (%dot-renderer
    (lambda ([port : Output-Port])
-     (%render-dot gs node #:config config #:history h #:port port))))
+     (%render-dot (model-graphs m) (model-node m) #:config config #:history h #:port port))))
 
 (: %render-dot (All (S) (-> (Listof (Graph S)) (Node S)
-                             #:config DotConfig
-                             #:port Output-Port
-                             #:history (History S)
-                             Void)))
+                            #:config DotConfig
+                            #:port Output-Port
+                            #:history (History S)
+                            Void)))
 (define (%render-dot gs node
                     #:config config
                     #:port port

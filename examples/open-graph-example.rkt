@@ -124,32 +124,18 @@
                 (t-any-graph (gen-t-graph)))
           (v-any-node v-entry)))
 
-(module+ system
-  (provide make-system)
+(module+ model
+  (provide make-model)
 
-  (define-values (graphs node-init) (wire))
-  (define state-init (v-state 400 0))
-  (define-type S Any)
-
-  (: make-system (-> (Values (->* () (Journal) Journal)
-                             (->* () (Journal) DotRenderer)
-                             (-> (-> Status (Node S) S Any) [#:max-depth Natural] (Option Journal)))))
-  (define (make-system)
-    (: renderer (->* () (Journal) DotRenderer))
-    (define (renderer [j '()])
-      (let-values ([(_node _state h) (replay graphs node-init state-init j)])
-        (dot-renderer graphs node-init #:history h)))
-    (: run (->* () (Journal) Journal))
-    (define (run [j '()])
-      (console-run graphs node-init state-init #:journal j))
-    (: find-cex (-> (-> Status (Node S) S Any) [#:max-depth Natural] (Option Journal)))
-    (define (find-cex invariant #:max-depth [max-depth #f])
-      (find-counterexample graphs node-init state-init invariant #:max-depth max-depth))
-    (values run renderer find-cex)))
+  (: make-model (-> (Model Any)))
+  (define (make-model)
+    (define-values (graphs node-init) (wire))
+    (define state-init (v-state 400 0))
+    (model graphs node-init state-init)))
 
 (module+ main
   (require racket/cmdline
-           (submod ".." system))
+           (submod ".." model))
   (: mode (Boxof (U 'dot 'console)))
   (define mode (box 'dot))
   (define program-name "open-graph-example")
@@ -159,30 +145,34 @@
    [("--console") "Run console" (set-box! mode 'console)]
    [("--dot") "Generate dot" (set-box! mode 'dot)]
    #:args ()
-   (define-values (run renderer _find-cex) (make-system))
+   (define m (make-model))
    (case (unbox mode)
-     [(dot) (render-dot (renderer))]
-     [(console) (writeln (run))])))
+     [(dot) (render-dot (dot-renderer m))]
+     [(console) (writeln (console-run m))])))
 
 (module+ test
   (require typed/rackunit)
-  (require (submod ".." system))
+  (require (submod ".." model))
 
-  (define-values (_run _renderer find-cex) (make-system))
-  (check-false (find-cex (lambda ([s : Status] [n : (Node Any)] _st)
-                           (case s
-                             [(terminated) (eq? (node-type n) 'terminal)]
-                             [else #t]))))
-  (check-false (find-cex (lambda (_s _n st)
-                           (or (not (v-state? st))
-                               (not (negative? (v-state-wallet st)))))))
+  (define m (make-model))
+  (check-false (find-counterexample m
+                                    (lambda ([s : Status] [n : (Node Any)] _st)
+                                      (case s
+                                        [(terminated) (eq? (node-type n) 'terminal)]
+                                        [else #t]))))
+  (check-false (find-counterexample m
+                                    (lambda (_s _n st)
+                                      (or (not (v-state? st))
+                                          (not (negative? (v-state-wallet st)))))))
 
-  (check-equal? (find-cex (lambda (_s _n st)
-                            (or (not (v-state? st))
-                                (not (zero? (v-state-wallet st))))))
+  (check-equal? (find-counterexample m
+                                     (lambda (_s _n st)
+                                       (or (not (v-state? st))
+                                           (not (zero? (v-state-wallet st))))))
                 '((choose ("Insert More") (1)) (choose ("Insert More") (1)) (choose ("Insert More") (1)) (choose ("Insert Money") (1))))
-  (check-equal? (find-cex (lambda (_s _n st)
-                            (or (not (v-state? st))
-                                (not (zero? (v-state-wallet st)))))
-                          #:max-depth 1)
+  (check-equal? (find-counterexample m
+                                     (lambda (_s _n st)
+                                       (or (not (v-state? st))
+                                           (not (zero? (v-state-wallet st)))))
+                                     #:max-depth 1)
                 '((choose ("Insert Money") (4)))))

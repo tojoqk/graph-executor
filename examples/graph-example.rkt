@@ -79,33 +79,18 @@
      (v-edge "Walk Away" #:from idle #:to terminal #:dot-minlen 2)))
    idle))
 
-(module+ system
-  (provide make-system)
+(module+ model
+  (provide make-model)
 
-  (define-values (v-graph node-init) (vending-graph "Vending Machine Model"))
-  (define graphs (list v-graph))
-  (define state-init (v-state 400 0))
-  (define-type S Vending-State)
-
-  (: make-system (-> (Values (->* () (Journal) Journal)
-                             (->* () (Journal) DotRenderer)
-                             (-> (-> Status (Node S) S Any) [#:max-depth Natural] (Option Journal)))))
-  (define (make-system)
-    (: renderer (->* () (Journal) DotRenderer))
-    (define (renderer [j '()])
-      (let-values ([(_node _state h) (replay graphs node-init state-init j)])
-        (dot-renderer graphs node-init #:history h)))
-    (: run (->* () (Journal) Journal))
-    (define (run [j '()])
-      (console-run graphs node-init state-init #:journal j))
-    (: find-cex (-> (-> Status (Node S) S Any) [#:max-depth Natural] (Option Journal)))
-    (define (find-cex invariant #:max-depth [max-depth #f])
-      (find-counterexample graphs node-init state-init invariant #:max-depth max-depth))
-    (values run renderer find-cex)))
+  (: make-model (-> (Model Vending-State)))
+  (define (make-model)
+    (define-values (v-graph node-init) (vending-graph "Vending Machine Model"))
+    (define graphs (list v-graph))
+    (model graphs node-init (v-state 400 0))))
 
 (module+ main
   (require racket/cmdline)
-  (require (submod ".." system))
+  (require (submod ".." model))
   (: mode (Boxof (U 'dot 'console)))
   (define mode (box 'dot))
   (define program-name "graph-example")
@@ -115,18 +100,20 @@
    [("--console") "Run console" (set-box! mode 'console)]
    [("--dot") "Generate dot" (set-box! mode 'dot)]
    #:args ()
-   (define-values (run renderer _find-cex) (make-system))
+   (define m (make-model))
    (case (unbox mode)
-     [(dot) (render-dot (renderer))]
-     [(console) (writeln (run))])))
+     [(dot) (render-dot (dot-renderer m))]
+     [(console) (writeln (console-run m))])))
 
 (module+ test
   (require typed/rackunit)
-  (require (submod ".." system))
+  (require (submod ".." model))
 
-  (define-values (_run _renderer find-cex) (make-system))
-  (check-false (find-cex (lambda (_s _n [st : Vending-State])
-                           (not (negative? (v-state-wallet st))))))
-  (check-equal? (find-cex (lambda (_s _n [st : Vending-State])
-                            (< 100 (v-state-wallet st))))
+  (define m (make-model))
+  (check-false (find-counterexample m
+                                    (lambda (_s _n [st : Vending-State])
+                                      (not (negative? (v-state-wallet st))))))
+  (check-equal? (find-counterexample m
+                                     (lambda (_s _n [st : Vending-State])
+                                       (< 100 (v-state-wallet st))))
                 '((choose ("Insert More")) (choose ("Insert More")) (choose ("Insert 100 Yen")))))
