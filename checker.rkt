@@ -4,7 +4,7 @@
 (require "model.rkt")
 (require "prompt.rkt")
 (require "message.rkt")
-(require "prompt/model-checker.rkt")
+(require "prompt/checker.rkt")
 (require "executor.rkt")
 (require "journal.rkt")
 (require "effect/amb.rkt")

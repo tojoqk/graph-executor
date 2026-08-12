@@ -9,8 +9,8 @@
 (require "history.rkt")
 (require "journal.rkt")
 (require "executor/console.rkt")
-(require "model-checker.rkt")
-(require "prompt/model-checker.rkt")
+(require "checker.rkt")
+(require "prompt/checker.rkt")
 (require "visualizer/dot.rkt")
 
 (provide Code code
