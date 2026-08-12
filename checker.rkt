@@ -147,7 +147,7 @@
                (displayln "--- Start find-terminal ---"))
              (cond [(find-terminal gs n st (reachable-get))
                     => (lambda ([next-reachable : (Setof (Pairof Symbol S))])
-                         (reachable-set next-reachable)
+                         (reachable-set (set-union next-reachable breadcrumbs))
                          (when (current-model-checker-trace-display?)
                            (displayln "--- End find-terminal ---"))
                          (amb-fail))]
