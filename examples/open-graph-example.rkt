@@ -175,4 +175,6 @@
                                        (or (not (v-state? st))
                                            (not (zero? (v-state-wallet st)))))
                                      #:max-depth 1)
-                '((choose ("Insert Money") (4)))))
+                '((choose ("Insert Money") (4))))
+
+  (check-false (find-livelock m)))

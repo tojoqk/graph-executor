@@ -11,7 +11,7 @@
 (require "effect/emitter.rkt")
 (require "effect/state.rkt")
 
-(provide find-counterexample
+(provide find-counterexample find-livelock
          current-model-checker-trace-display)
 
 (: current-model-checker-trace-display (Parameterof (U 'show 'hide)))
@@ -100,3 +100,105 @@
   (define-values (val attrs) ((model-checker-prompt amb) title op))
   (emit (cons val attrs))
   (values val attrs))
+
+(: find-livelock (All (S) (-> (Model S) (Option Journal))))
+(define (find-livelock m)
+  (define-values (call-with-reachable-state reachable-get reachable-set)
+    ((inst make-state (Setof (Pairof Symbol S)) False)))
+  (define-values (call-with-prompt-value-emitter prompt-value-emit)
+    ((inst make-emitter (Pairof Prompt-Value Prompt-Attributes) S)))
+  (define-values (call-with-amb amb amb-fail)
+    ((inst make-amb Prompt-Value)))
+  (define gs (model-graphs m))
+  (let/ec return : Journal
+    (cdr
+     (call-with-reachable-state
+      (thunk
+       (call-with-amb
+        (thunk
+         (let loop : #f ([n (model-node m)] [st (model-state m)] [j : Journal '()] [breadcrumbs : (Setof (Pairof Symbol S)) (set)])
+           (define key `(,(node-id n) . ,st))
+           (when (set-member? (reachable-get) key)
+             (amb-fail))
+           (when (set-member? breadcrumbs key)
+             (cond [(find-terminal gs n st (reachable-get))
+                    => (lambda ([next-reachable : (Setof (Pairof Symbol S))])
+                         (reachable-set next-reachable)
+                         (amb-fail))]
+                   [else (return j)]))
+           (define ne (next-edges gs st n))
+           (define ne-type (car ne))
+           (case ne-type
+             [(terminated)
+              (reachable-set (set-union (reachable-get) breadcrumbs))
+              (amb-fail)]
+             [(auto choose)
+              (define-values (name _)
+                ((model-checker-prompt amb) "choose"
+                                            `(choose ,(map (inst edge-name S) (second ne)))))
+              (define chosen-edge (find-edge (second ne) name))
+              (when (current-model-checker-trace-display?)
+                (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
+              (match-define (cons ps next-st)
+                (call-with-prompt-value-emitter
+                 (thunk (step st chosen-edge amb prompt-value-emit))))
+              (loop (edge-to chosen-edge)
+                    next-st
+                    (cons (case ne-type
+                            [(auto) (auto-journal-entry (edge-name chosen-edge) ps)]
+                            [(choose) (choose-journal-entry (edge-name chosen-edge) '() ps)]) j)
+                    (set-add breadcrumbs key))])))
+        (thunk #f)))
+      (set)))))
+
+(: find-terminal (All (S) (-> (Listof (Graph S)) (Node S) S
+                              (Setof (Pairof Symbol S))
+                              (Option (Setof (Pairof Symbol S))))))
+(define (find-terminal gs n st reachable)
+  (define-values (call-with-seen-state seen-get seen-set)
+    ((inst make-state (Setof (Pairof Symbol S)) False)))
+  (define-values (call-with-amb amb amb-fail)
+    ((inst make-amb Prompt-Value)))
+  (let/ec return : (Setof (Pairof Symbol S))
+    (cdr
+     (call-with-seen-state
+      (thunk
+       (call-with-amb
+        (thunk
+         (let loop : #f ([n n] [st st] [breadcrumbs : (Listof (Pairof Symbol S)) '()])
+           (define key `(,(node-id n) . ,st))
+           (when (set-member? reachable key)
+             (return (set-union reachable (list->set breadcrumbs))))
+           (when (set-member? (seen-get) key)
+             (amb-fail))
+           (define ne (next-edges gs st n))
+           (define ne-type (car ne))
+           (case ne-type
+             [(terminated) (return (set-union reachable (list->set breadcrumbs)))]
+             [(auto choose)
+              (define-values (name _)
+                ((model-checker-prompt amb) "choose"
+                                            `(choose ,(map (inst edge-name S) (second ne)))))
+              (define chosen-edge (find-edge (second ne) name))
+              (when (current-model-checker-trace-display?)
+                (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
+              (seen-set (set-add (seen-get) key))
+              (loop (edge-to chosen-edge)
+                    (step/no-log st chosen-edge amb)
+                    (cons key breadcrumbs))])))
+        (thunk #f)))
+      (set)))))
+
+(: step/no-log (All (S) (-> S
+                            (Edge S)
+                            (-> (-> Prompt-Value) * Prompt-Value)
+                            S)))
+(define (step/no-log st e amb)
+  (define (void-message _val) (void))
+  (parameterize ([current-prompt (model-checker-prompt amb)]
+                 [current-message void-message])
+    ((node-trans (edge-to e))
+     (begin0 ((edge-trans e) st)
+       (when (current-model-checker-trace-display?)
+         (let ([n (edge-to e)])
+           (printf "Current Node: ~a (Graph: ~a)\n" (node-name n) (node-graph-name n))))))))

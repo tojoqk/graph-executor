@@ -116,4 +116,6 @@
   (check-equal? (find-counterexample m
                                      (lambda (_s _n [st : Vending-State])
                                        (< 100 (v-state-wallet st))))
-                '((choose ("Insert More")) (choose ("Insert More")) (choose ("Insert 100 Yen")))))
+                '((choose ("Insert More")) (choose ("Insert More")) (choose ("Insert 100 Yen"))))
+
+  (check-false (find-livelock m)))
