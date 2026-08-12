@@ -154,24 +154,23 @@
   (require typed/rackunit)
   (require (submod ".." model))
 
+  (: terminal-node? (All (S) (-> (Node S) Any)))
+  (define (terminal-node? n)
+    (symbol=? (node-type n) 'terminal))
+  
   (define m (make-model))
-  (check-false (find-deadlock m (lambda ([n : (Node Any)])
-                                  (symbol=? (node-type n) 'terminal))))
-  (check-false (find-counterexample m
-                                    (lambda (_n st)
-                                      (or (not (v-state? st))
-                                          (not (negative? (v-state-wallet st)))))))
+  (check-false (find-livelock m))
+  (check-false (find-deadlock m terminal-node?))
+  (check-false (find-counterexample m (lambda (_n st)
+                                        (or (not (v-state? st))
+                                            (not (negative? (v-state-wallet st)))))))
 
-  (check-equal? (find-counterexample m
-                                     (lambda (_n st)
-                                       (or (not (v-state? st))
-                                           (not (zero? (v-state-wallet st))))))
+  (check-equal? (find-counterexample m (lambda (_n st)
+                                         (or (not (v-state? st))
+                                             (not (zero? (v-state-wallet st))))))
                 '((choose ("Insert More") (1)) (choose ("Insert More") (1)) (choose ("Insert More") (1)) (choose ("Insert Money") (1))))
-  (check-equal? (find-counterexample m
-                                     (lambda (_n st)
-                                       (or (not (v-state? st))
-                                           (not (zero? (v-state-wallet st)))))
+  (check-equal? (find-counterexample m (lambda (_n st)
+                                         (or (not (v-state? st))
+                                             (not (zero? (v-state-wallet st)))))
                                      #:max-depth 1)
-                '((choose ("Insert Money") (4))))
-
-  (check-false (find-livelock m)))
+                '((choose ("Insert Money") (4)))))

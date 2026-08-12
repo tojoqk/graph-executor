@@ -109,12 +109,16 @@
   (require typed/rackunit)
   (require (submod ".." model))
 
-  (define m (make-model))
-  (check-false (find-deadlock m (lambda ([n : (Node Vending-State)])
-                                  (symbol=? (node-type n) 'terminal))))
-  (check-equal? (find-counterexample m
-                                     (lambda (_n [st : Vending-State])
-                                       (< 100 (v-state-wallet st))))
-                '((choose ("Insert More")) (choose ("Insert More")) (choose ("Insert 100 Yen"))))
+  (: terminal-node? (All (S) (-> (Node S) Any)))
+  (define (terminal-node? n)
+    (symbol=? (node-type n) 'terminal))
 
-  (check-false (find-livelock m)))
+  (define m (make-model))
+  (check-false (find-livelock m))
+  (check-false (find-deadlock m terminal-node?))
+  (check-false (find-counterexample m (lambda (_n [st : Vending-State])
+                                        (not (negative? (v-state-wallet st))))))
+
+  (check-equal? (find-counterexample m (lambda (_n [st : Vending-State])
+                                         (< 100 (v-state-wallet st))))
+                '((choose ("Insert More")) (choose ("Insert More")) (choose ("Insert 100 Yen")))))
