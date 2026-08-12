@@ -25,22 +25,21 @@
                                     (Node S)
                                     S
                                     (-> Status (Node S) S Any)
+                                    [#:journal Journal]
                                     [#:max-depth (Option Natural)]
                                     (Option Journal))))
 (define (find-counterexample gs entry initial-state invariant
+                             #:journal [j '()]
                              #:max-depth [max-depth #f])
   (define-values (call-with-prompt-value-emitter prompt-value-emit)
     ((inst make-emitter (Pairof Prompt-Value Prompt-Attributes) S)))
   (define-values (call-with-amb amb amb-fail)
     ((inst make-amb Prompt-Value)))
+  (define-values (n st _h) (replay gs entry initial-state j))
   (let/ec return : Journal
     (call-with-amb
      (thunk
-      (let loop : #f ([n entry]
-                      [st initial-state]
-                      [j : Journal '()]
-                      [depth 0]
-                      [seen : (Setof (Pairof Symbol S)) (set)])
+      (let loop : #f ([n n] [st st] [j j] [depth 0] [seen : (Setof (Pairof Symbol S)) (set)])
         (define seen-key `(,(node-id n) . ,st))
         (when (set-member? seen seen-key)
           (amb-fail))
