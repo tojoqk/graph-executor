@@ -9,10 +9,10 @@
 
 (: insert-money (-> Vending-State Vending-State))
 (define (insert-money st)
-  (let ([amount (prompt "How much(n*100)?" `(range 1 ,(quotient (v-state-wallet st) 100)))])
+  (let ([amount (prompt "How much?" `(range 1 ,(v-state-wallet st)))])
     (struct-copy v-state st
-                 [wallet (- (v-state-wallet st) (* 100 amount))]
-                 [inserted (+ (v-state-inserted st) (* 100 amount))])))
+                 [wallet (- (v-state-wallet st) amount)]
+                 [inserted (+ (v-state-inserted st) amount)])))
 
 (: purchase (-> Integer (-> Vending-State Vending-State)))
 (define ((purchase amount) st)
@@ -59,10 +59,10 @@
       #:edges
       (list
        (v-edge "Insert Money" #:from idle #:to has-coins
-               #:when (code (can-insert? 100))
+               #:when (code (can-insert? 1))
                #:trans (code insert-money))
        (v-edge "Insert More" #:from has-coins #:to has-coins
-               #:when (code (can-insert? 100))
+               #:when (code (can-insert? 1))
                #:trans (code insert-money))
        (v-edge "Purchase Drink (150 Yen)" #:from has-coins #:to dispensing
                #:when (code (price-met? 150))
@@ -130,7 +130,7 @@
   (: make-model (-> (Model Any)))
   (define (make-model)
     (define-values (graphs node-init) (wire))
-    (define state-init (v-state 400 0))
+    (define state-init (v-state 300 0))
     (model graphs node-init state-init)))
 
 (module+ main
@@ -161,16 +161,19 @@
   (define m (make-model))
   (check-false (find-livelock m))
   (check-false (find-deadlock m terminal-node?))
-  (check-false (find-counterexample m (lambda (_n st)
-                                        (or (not (v-state? st))
-                                            (not (negative? (v-state-wallet st)))))))
+  (check-false (find-counterexample m
+                                    (conjoin
+                                     (lambda (_n st)
+                                       (or (not (v-state? st))
+                                           (not (negative? (v-state-wallet st))))))))
 
   (check-equal? (find-counterexample m (lambda (_n st)
                                          (or (not (v-state? st))
                                              (not (zero? (v-state-wallet st))))))
-                '((choose ("Insert More") (1)) (choose ("Insert More") (1)) (choose ("Insert More") (1)) (choose ("Insert Money") (1))))
+                (append (make-list 299 '(choose ("Insert More") (1)))
+                        (list '(choose ("Insert Money") (1)))))
   (check-equal? (find-counterexample m (lambda (_n st)
                                          (or (not (v-state? st))
                                              (not (zero? (v-state-wallet st)))))
                                      #:max-depth 1)
-                '((choose ("Insert Money") (4)))))
+                '((choose ("Insert Money") (300)))))
