@@ -143,9 +143,13 @@
            (when (set-member? (reachable-get) key)
              (amb-fail))
            (when (set-member? breadcrumbs key)
+             (when (current-model-checker-trace-display?)
+               (displayln "--- Start find-terminal ---"))
              (cond [(find-terminal gs n st (reachable-get))
                     => (lambda ([next-reachable : (Setof (Pairof Symbol S))])
                          (reachable-set next-reachable)
+                         (when (current-model-checker-trace-display?)
+                           (displayln "--- End find-terminal ---"))
                          (amb-fail))]
                    [else (return j)]))
            (define ne (next-edges gs st n))
