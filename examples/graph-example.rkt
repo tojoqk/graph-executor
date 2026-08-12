@@ -110,11 +110,10 @@
   (require (submod ".." model))
 
   (define m (make-model))
-  (check-false (find-counterexample m
-                                    (lambda (_s _n [st : Vending-State])
-                                      (not (negative? (v-state-wallet st))))))
+  (check-false (find-deadlock m (lambda ([n : (Node Vending-State)])
+                                  (symbol=? (node-type n) 'terminal))))
   (check-equal? (find-counterexample m
-                                     (lambda (_s _n [st : Vending-State])
+                                     (lambda (_n [st : Vending-State])
                                        (< 100 (v-state-wallet st))))
                 '((choose ("Insert More")) (choose ("Insert More")) (choose ("Insert 100 Yen"))))
 

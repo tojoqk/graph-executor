@@ -11,7 +11,7 @@
 (require "effect/emitter.rkt")
 (require "effect/state.rkt")
 
-(provide find-counterexample find-livelock
+(provide find-counterexample find-deadlock find-livelock
          current-model-checker-trace-display)
 
 (: current-model-checker-trace-display (Parameterof (U 'show 'hide)))
@@ -23,13 +23,35 @@
     [(show) #t]
     [(hide) #f]))
 
-(: find-counterexample (All (S) (-> (Model S) (-> Status (Node S) S Any)
+(: find-counterexample (All (S) (-> (Model S) (-> (Node S) S Any)
                                     [#:journal Journal]
                                     [#:max-depth (Option Natural)]
                                     (Option Journal))))
-(define (find-counterexample m invariant
-                             #:journal [j '()]
-                             #:max-depth [max-depth #f])
+(define (find-counterexample m invariant #:journal [j '()] #:max-depth [max-depth #f])
+  (%find-counterexample m
+                        (lambda (_s [n : (Node S)] [st : S])
+                          (invariant n st))
+                        #:journal j
+                        #:max-depth max-depth))
+
+(: find-deadlock (All (S) (-> (Model S) (-> (Node S) Any)
+                              [#:max-depth (Option Natural)]
+                              (Option Journal))))
+(define (find-deadlock m terminal-node? #:max-depth [max-depth #f])
+  (%find-counterexample m
+                        (lambda ([s : Status] [n : (Node S)] _st)
+                          (case s
+                            [(terminated) (terminal-node? n)]
+                            [else #t]))
+                        #:max-depth max-depth))
+
+(: %find-counterexample (All (S) (-> (Model S) (-> Status (Node S) S Any)
+                                     [#:journal Journal]
+                                     [#:max-depth (Option Natural)]
+                                     (Option Journal))))
+(define (%find-counterexample m invariant
+                              #:journal [j '()]
+                              #:max-depth [max-depth #f])
   (define-values (call-with-seen-state seen-get seen-set)
     ((inst make-state (Setof (Pairof Symbol S)) False)))
   (define-values (call-with-prompt-value-emitter prompt-value-emit)
