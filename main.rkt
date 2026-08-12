@@ -20,7 +20,7 @@
          Graph OpenGraph AnyGraph graph open-graph any-graph graph-name
          dot-bridge dot-edge
          Model model
-         replay Status
+         replay
          current-auto-conflict-policy current-single-choose-policy
          Console-Command current-console-commands
          current-node? current-edge?
