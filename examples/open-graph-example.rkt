@@ -42,7 +42,7 @@
                                  (OpenGraph Vending-State))
                              (Node Vending-State))))
 (define (vending-graph g)
-  (define v-node ((inst node Vending-State (U 'start 'normal 'terminal)) g))
+  (define v-node ((inst node Vending-State (U 'start 'normal)) g))
   (define v-edge (inst edge Vending-State))
   (define v-bridge (inst dot-bridge Vending-State))
   (define v-graph (inst open-graph Vending-State))
@@ -90,10 +90,10 @@
                       (Values (-> (OpenGraph Terminal))
                               (Node Terminal))))
 (define (terminal-graph g)
-  (define t-node ((inst node Terminal 'terminal) g))
+  (define t-node ((inst node Terminal (U 'entry 'terminal)) g))
   (define t-graph (inst open-graph Terminal))
   (define t-edge (inst edge Terminal))
-  (define entry (t-node "Terminal Entry" #:type 'terminal))
+  (define entry (t-node "Terminal Entry" #:type 'entry))
   (define terminal (t-node "Terminal" #:type 'terminal))
 
   (values
@@ -163,3 +163,26 @@
    (case (unbox mode)
      [(dot) (render-dot (renderer))]
      [(console) (writeln (run))])))
+
+(module+ test
+  (require typed/rackunit)
+  (require (submod ".." system))
+
+  (define-values (_run _renderer find-cex) (make-system))
+  (check-false (find-cex (lambda ([s : Status] [n : (Node Any)] _st)
+                           (case s
+                             [(terminated) (eq? (node-type n) 'terminal)]
+                             [else #t]))))
+  (check-false (find-cex (lambda (_s _n st)
+                           (or (not (v-state? st))
+                               (not (negative? (v-state-wallet st)))))))
+
+  (check-equal? (find-cex (lambda (_s _n st)
+                            (or (not (v-state? st))
+                                (not (zero? (v-state-wallet st))))))
+                '((choose ("Insert More") (1)) (choose ("Insert More") (1)) (choose ("Insert More") (1)) (choose ("Insert Money") (1))))
+  (check-equal? (find-cex (lambda (_s _n st)
+                            (or (not (v-state? st))
+                                (not (zero? (v-state-wallet st)))))
+                          #:max-depth 1)
+                '((choose ("Insert Money") (4)))))
