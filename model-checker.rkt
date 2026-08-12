@@ -1,13 +1,13 @@
 #lang typed/racket
 
-(require "../graph.rkt")
-(require "../prompt.rkt")
-(require "../message.rkt")
-(require "../prompt/model-checker.rkt")
-(require "../executor.rkt")
-(require "../journal.rkt")
-(require "../effect/amb.rkt")
-(require "../effect/emitter.rkt")
+(require "graph.rkt")
+(require "prompt.rkt")
+(require "message.rkt")
+(require "prompt/model-checker.rkt")
+(require "executor.rkt")
+(require "journal.rkt")
+(require "effect/amb.rkt")
+(require "effect/emitter.rkt")
 
 (provide find-counterexample
          current-model-checker-trace-display)

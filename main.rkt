@@ -8,7 +8,7 @@
 (require "history.rkt")
 (require "journal.rkt")
 (require "executor/console.rkt")
-(require "executor/model-checker.rkt")
+(require "model-checker.rkt")
 (require "prompt/model-checker.rkt")
 (require "visualizer/dot.rkt")
 
