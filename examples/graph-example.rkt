@@ -44,7 +44,7 @@
 (: vending-graph (-> String
                      (Values (Graph Vending-State)  (Node Vending-State))))
 (define (vending-graph graph-name)
-  (define v-node ((inst node Vending-State (U 'start 'normal 'terminal)) graph-name))
+  (define v-node (inst (node graph-name) Vending-State (U 'start 'normal 'terminal)))
   (define v-edge (inst dot-edge Vending-State))
   (define v-graph (inst graph Vending-State))
 

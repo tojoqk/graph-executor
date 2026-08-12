@@ -100,8 +100,8 @@
                 [else pmt])
           attrs)))
 
-(: node* (All (S T)
-              (-> String
+(: node* (-> String
+             (All (S T)
                   (-> String
                       #:type (∩ T Symbol)
                       [#:tags (Listof Symbol)]
@@ -110,10 +110,10 @@
                       [#:prompt (Option (U String (Code (-> S String))))]
                       (Node S)))))
 (define ((node* graph-name) name #:type type #:tags [tags '()] #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f])
-  ((inst make-node S) #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc
-                      #:trans tr
-                      #:prompt pmt
-                      #:attributes ((inst hash Symbol Any))))
+  (make-node #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc
+             #:trans tr
+             #:prompt pmt
+             #:attributes ((inst hash Symbol Any))))
 
 (: any-node (All (S) (-> (-> Any Any : #:+ S) (-> (Node S) AnyNode))))
 (define ((any-node p?) n)
