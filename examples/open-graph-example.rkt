@@ -162,10 +162,9 @@
   (check-false (find-livelock m))
   (check-false (find-deadlock m terminal-node?))
   (check-false (find-counterexample m
-                                    (conjoin
-                                     (lambda (_n st)
-                                       (or (not (v-state? st))
-                                           (not (negative? (v-state-wallet st))))))))
+                                    (lambda (_n st)
+                                      (or (not (v-state? st))
+                                          (not (negative? (v-state-wallet st)))))))
 
   (check-equal? (find-counterexample m (lambda (_n st)
                                          (or (not (v-state? st))
