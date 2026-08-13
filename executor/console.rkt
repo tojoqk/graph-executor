@@ -42,12 +42,12 @@
 (: console-run (All (S) (-> (Model S) [#:journal Journal] Journal)))
 (define (console-run m #:journal [j '()])
   (define gs (model-graphs m))
-  (define-values (n st _) (replay gs (model-node m) (model-state m) j))
+  (define-values (n st _) (replay m j))
   (define-values (call-with-emitter emit)
     ((inst make-emitter (Pairof Prompt-Value Prompt-Attributes) S)))
   (define-values (_n _st result-j)
     (let loop : (Values (Node S) S Journal) ([n n] [st st] [j : Journal j])
-      (define command-dispatch (console-command-dispatch gs (model-node m) (model-state m) loop))
+      (define command-dispatch (console-command-dispatch m loop))
       (let ([ne (next-edges gs st n)])
         (case (car ne)
           [(terminated)
@@ -83,24 +83,24 @@
   result-j)
 
 (: console-command-dispatch (All (S)
-                                 (-> (Listof (Graph S)) (Node S) S
+                                 (-> (Model S)
                                      (-> (Node S) S Journal
                                          (Values (Node S) S Journal))
                                      (-> (Node S) S Journal
                                          Command
                                          (Values (Node S) S Journal)))))
-(define ((console-command-dispatch gs n-init st-init loop) n st j cmd)
+(define ((console-command-dispatch m loop) n st j cmd)
+  (define gs (model-graphs m))
   (case (car cmd)
     [(quit) (values n st j)]
     [(action) ((second cmd) j)
               (loop n st j)]
     [(transform) (define-values (tr-n tr-st tr-h)
-                   (replay gs n-init st-init ((second cmd) j)))
+                   (replay m ((second cmd) j)))
                  (loop tr-n tr-st (history->journal tr-h))]
     [(restore) (define-values (rs-n rs-st rs-h)
-                 (replay gs n-init st-init
-                         (cond [((second cmd)) => identity]
-                               [else j])))
+                 (replay m (cond [((second cmd)) => identity]
+                                 [else j])))
                (loop rs-n rs-st (history->journal rs-h))]))
 
 (: console-step (All (S) (-> S (Edge S) (-> (Pairof Prompt-Value Prompt-Attributes) Void) S)))

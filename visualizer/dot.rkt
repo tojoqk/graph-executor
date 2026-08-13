@@ -282,7 +282,7 @@
 
 (: dot-renderer (All (S) (-> (Model S) [#:journal Journal] DotRenderer)))
 (define (dot-renderer m #:journal [j '()])
-  (define-values (_n _s h) (replay (model-graphs m) (model-node m) (model-state m) j))
+  (define-values (_n _s h) (replay m j))
   (%dot-renderer
    (lambda ([port : Output-Port] [config : DotConfig])
      (%render-dot (model-graphs m) (model-node m) #:config config #:history h #:port port))))

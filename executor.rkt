@@ -1,6 +1,7 @@
 #lang typed/racket
 
 (require "graph.rkt")
+(require "model.rkt")
 (require "journal.rkt")
 (require "history.rkt")
 (require "prompt.rkt")
@@ -42,12 +43,12 @@
 (define-type Event (U Prompt-Info Message-Info))
 (define-type Pmt (Pairof Prompt-Value Prompt-Attributes))
 
-(: replay (All (S) (-> (Listof (Graph S)) (Node S) S Journal
-                       (Values (Node S) S (History S)))))
-(define (replay gs n st j)
+(: replay (All (S) (-> (Model S) Journal (Values (Node S) S (History S)))))
+(define (replay m j)
   (define-values (call-with-consumer consume) ((inst make-consumer Pmt S)))
   (define-values (call-with-emitter emit) ((inst make-emitter Event (Pairof (Listof Pmt) S))))
-  (let loop ([n n] [st st] [j (reverse j)] [h : (History S) '()])
+  (define gs (model-graphs m))
+  (let loop ([n (model-node m)] [st (model-state m)] [j (reverse j)] [h : (History S) '()])
     (let ([ne (next-edges gs st n)])
       (if (null? j)
           (values n st h)
