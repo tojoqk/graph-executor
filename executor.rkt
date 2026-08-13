@@ -83,7 +83,7 @@
                                  next-st
                                  (cdr j)
                                  (list*
-                                  (node-record node-evs n)
+                                  (node-record node-evs (edge-to e))
                                   (case (edge-mode e)
                                     [(auto) (auto-edge-record edge-evs e)]
                                     [(choose) (choose-edge-record edge-evs e ((node-prompt n) st) edges attrs)]
