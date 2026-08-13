@@ -27,11 +27,11 @@
 (define current-model-checker-positive-integer-values (make-parameter (lambda ([_meta : Prompt-Meta])
                                                                         '(1 2))))
 
-(: current-model-checker-range-values (Parameterof (Option (-> Prompt-Meta Integer Integer (Listof Integer)))))
-(define current-model-checker-range-values (make-parameter #f))
+(: current-model-checker-range-values (Parameterof (-> Prompt-Meta Integer Integer (Option (Listof Integer)))))
+(define current-model-checker-range-values (make-parameter (lambda (_m _from _to) #f)))
 
-(: current-model-checker-random-values (Parameterof (Option (-> Prompt-Meta Positive-Integer (Listof Natural)))))
-(define current-model-checker-random-values (make-parameter #f))
+(: current-model-checker-random-values (Parameterof (-> Prompt-Meta Positive-Integer (Option (Listof Natural)))))
+(define current-model-checker-random-values (make-parameter (lambda (_m _n) #f)))
 
 (: list->amb (All (S) (-> (-> (-> Prompt-Value) * Prompt-Value) (-> Any Boolean : #:+ S) (Listof (∩ Prompt-Value S)) S)))
 (define (list->amb amb p? lst)
@@ -82,9 +82,9 @@
         [to : Integer (third op)])
     (unless (<= from to)
       (error 'model-checker-prompt "invalid range ~a...~a" from to))
-    (values (cond [(current-model-checker-range-values)
-                   => (lambda ([f : (-> Prompt-Meta Integer Integer (Listof Integer))])
-                        (let ([n (list->amb amb exact-integer? (f meta from to))])
+    (values (cond [((current-model-checker-range-values) meta from to)
+                   => (lambda ([lst : (Listof Integer)])
+                        (let ([n (list->amb amb exact-integer? lst)])
                           (unless (and (<= from n) (<= n to))
                             (error 'current-model-checker-range-values "must be ~a <= ~a <= ~a" from n to))
                           n))]
@@ -104,9 +104,9 @@
 (: model-checker-random (-> (-> (-> Prompt-Value) * Prompt-Value) Prompt-Meta (List 'random Positive-Integer) (Values Natural Prompt-Attributes)))
 (define (model-checker-random amb meta op)
   (let ([n (second op)])
-    (values (cond [(current-model-checker-random-values)
-                   => (lambda ([f : (-> Prompt-Meta Positive-Integer (Listof Natural))])
-                        (let ([r (list->amb amb natural? (f meta n))])
+    (values (cond [((current-model-checker-random-values) meta n)
+                   => (lambda ([lst : (Listof Natural)])
+                        (let ([r (list->amb amb natural? lst)])
                           (unless (< r n)
                             (error 'current-model-checker-random-values "must be ~a < ~a" r n))
                           r))]
