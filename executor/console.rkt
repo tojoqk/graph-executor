@@ -138,10 +138,10 @@
                               (U String Command))
                           (-> Prompt-Meta Null
                               Command)))
-(define (console-choose title choices)
+(define (console-choose meta choices)
   (let ([out (open-output-string)])
     (newline)
-    (fprintf out "* ~a\n" title)
+    (fprintf out "* ~a\n" (prompt-meta-title meta))
     (unless (null? choices)
       (for ([choice choices]
             [i : Positive-Integer (in-naturals 1)])
