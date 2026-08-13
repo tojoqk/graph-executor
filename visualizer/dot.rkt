@@ -3,7 +3,9 @@
 (require "../graph.rkt")
 (require "../model.rkt")
 (require "../graph/dot.rkt")
-(require "../private/visualizer.rkt")
+(require "../executor.rkt")
+(require (except-in "../private/visualizer.rkt" find-graph))
+(require "../journal.rkt")
 (require "../history.rkt")
 (require typed/xml)
 
@@ -278,8 +280,9 @@
 (define (render-dot r #:port [port (current-output-port)] #:config [config (dot-config)])
   ((%dot-renderer-proc r) port config))
 
-(: dot-renderer (All (S) (-> (Model S) [#:history (History S)] DotRenderer)))
-(define (dot-renderer m #:history [h '()])
+(: dot-renderer (All (S) (-> (Model S) [#:journal Journal] DotRenderer)))
+(define (dot-renderer m #:journal [j '()])
+  (define-values (_n _s h) (replay (model-graphs m) (model-node m) (model-state m) j))
   (%dot-renderer
    (lambda ([port : Output-Port] [config : DotConfig])
      (%render-dot (model-graphs m) (model-node m) #:config config #:history h #:port port))))
