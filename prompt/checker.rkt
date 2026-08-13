@@ -17,11 +17,11 @@
 (: current-model-checker-integer-values (Parameterof (-> Prompt-Meta (Listof Integer))))
 (define current-model-checker-integer-values (make-parameter
                                               (lambda ([_meta : Prompt-Meta])
-                                                '(-1 0 1))))
+                                                '(-1 0 1 2))))
 
 (: current-model-checker-natural-values (Parameterof (-> Prompt-Meta (Listof Natural))))
 (define current-model-checker-natural-values (make-parameter (lambda ([_meta : Prompt-Meta])
-                                                               '(0 1))))
+                                                               '(0 1 2))))
 
 (: current-model-checker-positive-integer-values (Parameterof (-> Prompt-Meta (Listof Positive-Integer))))
 (define current-model-checker-positive-integer-values (make-parameter (lambda ([_meta : Prompt-Meta])
