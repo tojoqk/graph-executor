@@ -205,10 +205,10 @@
 (: pop-prompt (-> (-> (-> Nothing) Pmt)
                   (-> Event Void)
                   Prompt-Implementation))
-(define ((pop-prompt consume emit) title op)
-  (: push-event! (-> String Prompt-Op Prompt-Value Prompt-Attributes Void))
-  (define (push-event! title op val attrs)
-    (emit (prompt-info op title val attrs)))
+(define ((pop-prompt consume emit) meta op)
+  (: push-event! (-> Prompt-Value Prompt-Attributes Void))
+  (define (push-event! val attrs)
+    (emit (prompt-info op meta val attrs)))
   (: fail (-> Nothing))
   (define (fail)
     (error 'replay "unexpected end of prompt values"))
@@ -217,26 +217,26 @@
          [attrs (cdr val+attrs)])
     (case (car op)
       [(choose) (assert val string?)
-                (push-event! title op val attrs)
+                (push-event! val attrs)
                 (values val attrs)]
       [(string) (assert val string?)
-                (push-event! title op val attrs)
+                (push-event! val attrs)
                 (values val attrs)]
       [(integer) (assert (assert val exact?) integer?)
-                 (push-event! title op val attrs)
+                 (push-event! val attrs)
                  (values val attrs)]
       [(natural) (assert (assert val exact?) natural?)
-                 (push-event! title op val attrs)
+                 (push-event! val attrs)
                  (values val attrs)]
       [(positive-integer) (assert (assert val exact?) positive-integer?)
-                          (push-event! title op val attrs)
+                          (push-event! val attrs)
                           (values val attrs)]
       [(range) (assert val exact?)
                (assert val integer?)
                (let ([min (second op)] [max : Integer (third op)])
-                 (cond [(and (<= min val) (<= val max)) (push-event! title op val attrs)
+                 (cond [(and (<= min val) (<= val max)) (push-event! val attrs)
                                                         (values val attrs)]
                        [else (error 'replay "range error" val)]))]
       [(random) (assert val natural?)
-                (push-event! title op val attrs)
+                (push-event! val attrs)
                 (values val attrs)])))

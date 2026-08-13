@@ -45,6 +45,8 @@
                             [else #t]))
                         #:max-depth max-depth))
 
+(define pmt-meta (prompt-meta "choose"))
+
 (: %find-counterexample (All (S) (-> (Model S) (-> Status (Node S) S Any)
                                      [#:journal Journal]
                                      [#:max-depth (Option Natural)]
@@ -78,7 +80,7 @@
              [(terminated) (amb-fail)]
              [(auto choose)
               (define-values (name _)
-                ((model-checker-prompt amb) "choose"
+                ((model-checker-prompt amb) pmt-meta
                                             `(choose ,(map (inst edge-name S) (second ne)))))
               (define chosen-edge (find-edge (second ne) name))
               (when (current-model-checker-trace-display?)
@@ -118,8 +120,8 @@
 (: prompt/log (All (S) (-> (-> (-> Prompt-Value) * Prompt-Value)
                            (-> (Pairof Prompt-Value Prompt-Attributes) Void)
                            Prompt-Implementation)))
-(define ((prompt/log amb emit) title op)
-  (define-values (val attrs) ((model-checker-prompt amb) title op))
+(define ((prompt/log amb emit) meta op)
+  (define-values (val attrs) ((model-checker-prompt amb) meta op))
   (emit (cons val attrs))
   (values val attrs))
 
@@ -160,7 +162,7 @@
               (amb-fail)]
              [(auto choose)
               (define-values (name _)
-                ((model-checker-prompt amb) "choose"
+                ((model-checker-prompt amb) pmt-meta
                                             `(choose ,(map (inst edge-name S) (second ne)))))
               (define chosen-edge (find-edge (second ne) name))
               (when (current-model-checker-trace-display?)
@@ -203,7 +205,7 @@
              [(terminated) (return (set-union reachable (list->set breadcrumbs)))]
              [(auto choose)
               (define-values (name _)
-                ((model-checker-prompt amb) "choose"
+                ((model-checker-prompt amb) pmt-meta
                                             `(choose ,(map (inst edge-name S) (second ne)))))
               (define chosen-edge (find-edge (second ne) name))
               (when (current-model-checker-trace-display?)

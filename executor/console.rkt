@@ -134,9 +134,9 @@
     [(transform) (list (first c) (fourth c))]
     [(restore) (list (first c) (fourth c))]))
 
-(: console-choose (case-> (-> String (Pairof String (Listof String))
+(: console-choose (case-> (-> Prompt-Meta (Pairof String (Listof String))
                               (U String Command))
-                          (-> String Null
+                          (-> Prompt-Meta Null
                               Command)))
 (define (console-choose title choices)
   (let ([out (open-output-string)])
