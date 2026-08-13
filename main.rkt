@@ -31,8 +31,9 @@
          console-run current-console-random-prompt-display current-console-trace-display
          find-counterexample find-deadlock find-livelock
          current-model-checker-trace-display
-         current-model-checker-string-value
-         current-model-checker-integer-value current-model-checker-natural-value current-model-checker-positive-integer-value
+         current-model-checker-string-values
+         current-model-checker-integer-values current-model-checker-natural-values current-model-checker-positive-integer-values
+         current-model-checker-range-values current-model-checker-random-values
          DotNode dot-node-name dot-node-desc dot-node-type dot-node-prompt dot-node-trans
          DotEdge dot-edge-name dot-edge-desc dot-edge-from dot-edge-to dot-edge-when dot-edge-trans
          DotRenderer dot-renderer render-dot
