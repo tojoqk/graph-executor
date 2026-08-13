@@ -10,27 +10,27 @@
          current-model-checker-range-values
          current-model-checker-random-values)
 
-(: current-model-checker-string-values (Parameterof (-> Prompt-Meta (Listof String))))
+(: current-model-checker-string-values (Parameterof (-> Prompt-Meta (Pairof String (Listof String)))))
 (define current-model-checker-string-values
   (make-parameter (lambda ([_meta : Prompt-Meta]) '("test" " " ""))))
 
-(: current-model-checker-integer-values (Parameterof (-> Prompt-Meta (Listof Integer))))
+(: current-model-checker-integer-values (Parameterof (-> Prompt-Meta (Pairof Integer (Listof Integer)))))
 (define current-model-checker-integer-values (make-parameter
                                               (lambda ([_meta : Prompt-Meta])
                                                 '(-1 0 1 2))))
 
-(: current-model-checker-natural-values (Parameterof (-> Prompt-Meta (Listof Natural))))
+(: current-model-checker-natural-values (Parameterof (-> Prompt-Meta (Pairof Natural (Listof Natural)))))
 (define current-model-checker-natural-values (make-parameter (lambda ([_meta : Prompt-Meta])
                                                                '(0 1 2))))
 
-(: current-model-checker-positive-integer-values (Parameterof (-> Prompt-Meta (Listof Positive-Integer))))
+(: current-model-checker-positive-integer-values (Parameterof (-> Prompt-Meta (Pairof Positive-Integer (Listof Positive-Integer)))))
 (define current-model-checker-positive-integer-values (make-parameter (lambda ([_meta : Prompt-Meta])
                                                                         '(1 2))))
 
-(: current-model-checker-range-values (Parameterof (-> Prompt-Meta Integer Integer (Option (Listof Integer)))))
+(: current-model-checker-range-values (Parameterof (-> Prompt-Meta Integer Integer (Option (Pairof Integer (Listof Integer))))))
 (define current-model-checker-range-values (make-parameter (lambda (_m _from _to) #f)))
 
-(: current-model-checker-random-values (Parameterof (-> Prompt-Meta Positive-Integer (Option (Listof Natural)))))
+(: current-model-checker-random-values (Parameterof (-> Prompt-Meta Positive-Integer (Option (Pairof Natural (Listof Natural))))))
 (define current-model-checker-random-values (make-parameter (lambda (_m _n) #f)))
 
 (: list->amb (All (S) (-> (-> (-> Prompt-Value) * Prompt-Value) (-> Any Boolean : #:+ S) (Listof (∩ Prompt-Value S)) S)))
