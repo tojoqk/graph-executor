@@ -4,14 +4,14 @@
 
 (require "state.rkt")
 
-(: make-consumer (All (A B) (-> (Values (-> (-> B) (Listof A) (Pairof (Listof A) B))
+(: make-consumer (All (A B) (-> (Values (-> (Listof A) (-> B) (Pairof (Listof A) B))
                                         (-> (-> Nothing) A)))))
 (define (make-consumer)
   (define-values (call-with-state get set) ((inst make-state (Listof A) B)))
 
-  (: call-with-consumer (-> (-> B) (Listof A) (Pairof (Listof A) B)))
-  (define (call-with-consumer proc lst)
-    (call-with-state proc lst))
+  (: call-with-consumer (-> (Listof A) (-> B) (Pairof (Listof A) B)))
+  (define (call-with-consumer lst proc)
+    (call-with-state lst proc))
 
   (: consume (-> (-> Nothing) A))
   (define (consume fail)

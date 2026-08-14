@@ -65,6 +65,7 @@
   (let/ec return : Journal
     (cdr
      (call-with-seen-state
+      (set)
       (thunk
        (call-with-amb
         (thunk
@@ -98,8 +99,7 @@
                                   [(auto) (auto-journal-entry (edge-name chosen-edge) ps)]
                                   [(choose) (choose-journal-entry (edge-name chosen-edge) '() ps)]) j)
                           (add1 depth))))])))
-        (thunk #f)))
-      (set)))))
+        (thunk #f)))))))
 
 (: step (All (S) (-> S
                      (Edge S)
@@ -137,6 +137,7 @@
   (let/ec return : Journal
     (cdr
      (call-with-reachable-state
+      (set)
       (thunk
        (call-with-amb
         (thunk
@@ -176,8 +177,7 @@
                             [(auto) (auto-journal-entry (edge-name chosen-edge) ps)]
                             [(choose) (choose-journal-entry (edge-name chosen-edge) '() ps)]) j)
                     (set-add breadcrumbs key))])))
-        (thunk #f)))
-      (set)))))
+        (thunk #f)))))))
 
 (: find-terminal (All (S) (-> (Listof (Graph S)) (Node S) S
                               (Setof (Pairof Symbol S))
@@ -190,6 +190,7 @@
   (let/ec return : (Setof (Pairof Symbol S))
     (cdr
      (call-with-seen-state
+      (set)      
       (thunk
        (call-with-amb
         (thunk
@@ -214,8 +215,7 @@
               (loop (edge-to chosen-edge)
                     (step/no-log st chosen-edge amb)
                     (cons key breadcrumbs))])))
-        (thunk #f)))
-      (set)))))
+        (thunk #f)))))))
 
 (: step/no-log (All (S) (-> S
                             (Edge S)

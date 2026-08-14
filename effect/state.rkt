@@ -2,7 +2,7 @@
 
 (provide make-state)
 
-(: make-state (All (A B) (-> (Values (-> (-> B) A (Pairof A B))
+(: make-state (All (A B) (-> (Values (-> A (-> B) (Pairof A B))
                                      (-> A)
                                      (-> A Void)))))
 (define (make-state)
@@ -11,8 +11,8 @@
                                  (-> A (Values A B)))))
   (define state-tag (make-continuation-prompt-tag 'state))
 
-  (: call-with-state (-> (-> B) A (Pairof A B)))
-  (define (call-with-state proc st)
+  (: call-with-state (-> A (-> B) (Pairof A B)))
+  (define (call-with-state st proc)
     (define f
       (call-with-continuation-prompt
        (lambda ()

@@ -65,20 +65,20 @@
                              (call-with-emitter
                               (thunk
                                (call-with-consumer
+                                ps-init
                                 (thunk
                                  (parameterize ([current-message (emit-message emit)]
                                                 [current-prompt (pop-prompt consume emit)])
-                                   ((edge-trans e) st)))
-                                ps-init))))
+                                   ((edge-trans e) st)))))))
                            (match-define (list* node-evs _ next-st)
                              (call-with-emitter
                               (thunk
                                (call-with-consumer
+                                pvs-1
                                 (thunk
                                  (parameterize ([current-message (emit-message emit)]
                                                 [current-prompt (pop-prompt consume emit)])
-                                   ((node-trans (edge-to e)) st-1)))
-                                pvs-1))))
+                                   ((node-trans (edge-to e)) st-1)))))))
                            (loop (edge-to e)
                                  next-st
                                  (cdr j)
