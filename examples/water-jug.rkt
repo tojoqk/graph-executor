@@ -149,7 +149,7 @@
 
   (define m (make-model 3 5 4))
 
-  (: terminal-node? (All (S) (-> (Node S) Boolean)))
+  (: terminal-node? (-> (Node Jug-State) Boolean))
   (define (terminal-node? x) (eq? (node-type x) 'terminal))
 
   (check-false (find-livelock m))
@@ -164,16 +164,16 @@
                                         (<= (+ (jug-state-left st) (jug-state-right st))
                                             (+ 3 5)))))
 
-  (define shortest-path
+  (: shortest-path (-> (Model Jug-State) (Option Journal)))
+  (define (shortest-path m)
     (let loop : (Option Journal) ([depth : Natural 0])
-      (find-counterexample m (negate (lambda (_n [st : Jug-State])
-                                       (or (= (jug-state-left st) 4)
-                                           (= (jug-state-right st) 4))))
-                           #:bound depth
-                           #:bounded (thunk (loop (add1 depth))))))
+      (find-deadlock m (negate terminal-node?)
+                     #:bound depth
+                     #:bounded (thunk (loop (add1 depth))))))
 
-  (check-equal? shortest-path
-                '((choose ("Pour 5G -> 3G"))
+  (check-equal? (shortest-path m)
+                '((auto ("Clear!"))
+                  (choose ("Pour 5G -> 3G"))
                   (auto ("Not yet"))
                   (choose ("Fill 5G"))
                   (auto ("Not yet"))
