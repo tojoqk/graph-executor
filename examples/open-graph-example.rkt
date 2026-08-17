@@ -129,9 +129,11 @@
 
   (: make-model (-> (Model Any)))
   (define (make-model)
-    (define-values (graphs node-init) (wire))
-    (define state-init (v-state 300 0))
-    (model graphs node-init state-init)))
+    (model
+     (thunk
+      (define-values (graphs node-init) (wire))
+      (define state-init (v-state 300 0))
+      (values graphs node-init state-init)))))
 
 (module+ main
   (require racket/cmdline

@@ -84,9 +84,10 @@
 
   (: make-model (-> (Model Vending-State)))
   (define (make-model)
-    (define-values (v-graph node-init) (vending-graph "Vending Machine Model"))
-    (define graphs (list v-graph))
-    (model graphs node-init (v-state 400 0))))
+    (model
+     (thunk
+      (define-values (v-graph node-init) (vending-graph "Vending Machine Model"))
+      (values (list v-graph) node-init (v-state 400 0))))))
 
 (module+ main
   (require racket/cmdline)

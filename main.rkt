@@ -14,7 +14,7 @@
 (require "visualizer/dot.rkt")
 
 (provide Code code
-         current-graph-used-ids current-node-prompt
+         current-node-prompt
          Node AnyNode node node-graph-name node-name node-type node-tags any-node
          Edge AnyEdge Bridge edge bridge any-bridge any-edge edge-from edge-to
          Graph OpenGraph AnyGraph graph open-graph any-graph graph-name
