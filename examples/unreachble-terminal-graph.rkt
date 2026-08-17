@@ -61,21 +61,27 @@
 
   (: make-id-model (-> (Model Null)))
   (define (make-id-model)
-    (define-values (graph node-init) (id-graph "ID"))
-    (define graphs (list graph))
-    (model graphs node-init '()))
+    (model
+     (thunk
+      (define-values (graph node-init) (id-graph "ID"))
+      (define graphs (list graph))
+      (values graphs node-init '()))))
 
   (: make-triangle-model (-> (Model Null)))
   (define (make-triangle-model)
-    (define-values (graph node-init) (triangle-graph "TRIANGLE"))
-    (define graphs (list graph))
-    (model graphs node-init '()))
+    (model
+     (thunk
+      (define-values (graph node-init) (triangle-graph "TRIANGLE"))
+      (define graphs (list graph))
+      (values graphs node-init '()))))
 
   (: make-ρ-model (-> (Model Null)))
   (define (make-ρ-model)
-    (define-values (graph node-init) (ρ-graph "ρ"))
-    (define graphs (list graph))
-    (model graphs node-init '())))
+    (model
+     (thunk
+      (define-values (graph node-init) (ρ-graph "ρ"))
+      (define graphs (list graph))
+      (values graphs node-init '())))))
 
 (module+ test
   (require typed/rackunit)
