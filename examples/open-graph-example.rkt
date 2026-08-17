@@ -161,6 +161,7 @@
   (define m (make-model))
   (check-false (find-livelock m))
   (check-false (find-deadlock m terminal-node?))
+  (check-false (find-false-terminal m terminal-node?))
   (check-false (find-counterexample m
                                     (lambda (_n st)
                                       (or (not (v-state? st))
