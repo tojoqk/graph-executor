@@ -26,37 +26,44 @@
 (: find-counterexample (All (S) (-> (Model S) (-> (Node S) S Any)
                                     [#:journal Journal]
                                     [#:bound (Option Natural)]
+                                    [#:bounded (-> (Option Journal))]
                                     (Option Journal))))
 (define (find-counterexample m invariant
                              #:journal [j '()]
-                             #:bound [bound #f])
+                             #:bound [bound #f]
+                             #:bounded [bounded (const #f)])
   (%find-counterexample m
                         (lambda (_s [n : (Node S)] [st : S])
                           (invariant n st))
                         #:journal j
-                        #:bound bound))
+                        #:bound bound
+                        #:bounded bounded))
 
 (: find-deadlock (All (S) (-> (Model S) (-> (Node S) Any)
                               [#:bound (Option Natural)]
+                              [#:bounded (-> (Option Journal))]
                               (Option Journal))))
-(define (find-deadlock m terminal-node? #:bound [bound #f])
+(define (find-deadlock m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)])
   (%find-counterexample m
                         (lambda ([s : Status] [n : (Node S)] _st)
                           (case s
                             [(terminated) (terminal-node? n)]
                             [else #t]))
-                        #:bound bound))
+                        #:bound bound
+                        #:bounded bounded))
 
 (: find-false-terminal (All (S) (-> (Model S) (-> (Node S) Any)
                                     [#:bound (Option Natural)]
+                                    [#:bounded (-> (Option Journal))]
                                     (Option Journal))))
-(define (find-false-terminal m terminal-node? #:bound [bound #f])
+(define (find-false-terminal m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)])
   (%find-counterexample m
                         (lambda ([s : Status] [n : (Node S)] _st)
                           (case s
                             [(terminated) #t]
                             [else (not (terminal-node? n))]))
-                        #:bound bound))
+                        #:bound bound
+                        #:bounded bounded))
 
 (define pmt-meta (prompt-meta "choose"))
 
