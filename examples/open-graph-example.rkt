@@ -175,5 +175,5 @@
   (check-equal? (find-counterexample m (lambda (_n st)
                                          (or (not (v-state? st))
                                              (not (zero? (v-state-wallet st)))))
-                                     #:max-depth 1)
+                                     #:bound 1)
                 '((choose ("Insert Money") (300)))))

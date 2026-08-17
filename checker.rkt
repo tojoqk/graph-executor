@@ -25,92 +25,113 @@
 
 (: find-counterexample (All (S) (-> (Model S) (-> (Node S) S Any)
                                     [#:journal Journal]
-                                    [#:max-depth (Option Natural)]
+                                    [#:bound (Option Natural)]
                                     (Option Journal))))
-(define (find-counterexample m invariant #:journal [j '()] #:max-depth [max-depth #f])
+(define (find-counterexample m invariant
+                             #:journal [j '()]
+                             #:bound [bound #f])
   (%find-counterexample m
                         (lambda (_s [n : (Node S)] [st : S])
                           (invariant n st))
                         #:journal j
-                        #:max-depth max-depth))
+                        #:bound bound))
 
 (: find-deadlock (All (S) (-> (Model S) (-> (Node S) Any)
-                              [#:max-depth (Option Natural)]
+                              [#:bound (Option Natural)]
                               (Option Journal))))
-(define (find-deadlock m terminal-node? #:max-depth [max-depth #f])
+(define (find-deadlock m terminal-node? #:bound [bound #f])
   (%find-counterexample m
                         (lambda ([s : Status] [n : (Node S)] _st)
                           (case s
                             [(terminated) (terminal-node? n)]
                             [else #t]))
-                        #:max-depth max-depth))
+                        #:bound bound))
 
 (: find-false-terminal (All (S) (-> (Model S) (-> (Node S) Any)
-                                    [#:max-depth (Option Natural)]
+                                    [#:bound (Option Natural)]
                                     (Option Journal))))
-(define (find-false-terminal m terminal-node? #:max-depth [max-depth #f])
+(define (find-false-terminal m terminal-node? #:bound [bound #f])
   (%find-counterexample m
                         (lambda ([s : Status] [n : (Node S)] _st)
                           (case s
                             [(terminated) #t]
                             [else (not (terminal-node? n))]))
-                        #:max-depth max-depth))
+                        #:bound bound))
 
 (define pmt-meta (prompt-meta "choose"))
 
 (: %find-counterexample (All (S) (-> (Model S) (-> Status (Node S) S Any)
                                      [#:journal Journal]
-                                     [#:max-depth (Option Natural)]
+                                     [#:bound (Option Natural)]
+                                     [#:bounded (-> (Option Journal))]
                                      (Option Journal))))
 (define (%find-counterexample m invariant
                               #:journal [j '()]
-                              #:max-depth [max-depth #f])
+                              #:bound [bound #f]
+                              #:bounded [bounded (const #f)])
+  (define-values (call-with-bounded-state _bounded-get bounded-set)
+    ((inst make-state Boolean (Pairof (Immutable-HashTable (Pairof Symbol S) Natural)
+                                      (Option Journal)))))
   (define-values (call-with-seen-state seen-get seen-set)
-    ((inst make-state (Setof (Pairof Symbol S)) False)))
+    ((inst make-state (Immutable-HashTable (Pairof Symbol S) Natural) (Option Journal))))
   (define-values (call-with-prompt-value-emitter prompt-value-emit)
     ((inst make-emitter (Pairof Prompt-Value Prompt-Attributes) S)))
   (define-values (call-with-amb amb amb-fail)
     ((inst make-amb Prompt-Value)))
   (define gs (model-graphs m))
   (define-values (n st _h) (replay m j))
-  (let/ec return : Journal
-    (cdr
-     (call-with-seen-state
-      (set)
-      (thunk
-       (call-with-amb
-        (thunk
-         (let loop : #f ([n n] [st st] [j j] [depth 0])
-           (define seen-key `(,(node-id n) . ,st))
-           (when (set-member? (seen-get) seen-key)
-             (amb-fail))
-           (define ne (next-edges gs st n))
-           (define ne-type (car ne))
-           (unless (invariant (car ne) n st)
-             (return j))
-           (case ne-type
-             [(terminated) (amb-fail)]
-             [(auto choose)
-              (define-values (name _)
-                ((model-checker-prompt amb) pmt-meta
-                                            `(choose ,(map (inst edge-name S) (second ne)))))
-              (define chosen-edge (find-edge (second ne) name))
-              (when (current-model-checker-trace-display?)
-                (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
-              (match-define (cons ps next-st)
-                (call-with-prompt-value-emitter
-                 (thunk (step st chosen-edge amb prompt-value-emit))))
-              (if (and max-depth (= max-depth depth))
-                  (amb-fail)
-                  (begin
-                    (seen-set (set-add (seen-get) seen-key))
-                    (loop (edge-to chosen-edge)
-                          next-st
-                          (cons (case ne-type
-                                  [(auto) (auto-journal-entry (edge-name chosen-edge) ps)]
-                                  [(choose) (choose-journal-entry (edge-name chosen-edge) '() ps)]) j)
-                          (add1 depth))))])))
-        (thunk #f)))))))
+  (match-define (list* bounded? _ result)
+    (call-with-bounded-state
+     #f
+     (thunk
+      (call-with-seen-state
+       (hash)
+       (thunk
+        (let/ec return : Journal
+          (call-with-amb
+           (thunk
+            (let loop : #f ([n n] [st st] [j j] [depth : Natural 0])
+              (define seen-key `(,(node-id n) . ,st))
+              (let ([seen-depth (hash-ref (seen-get) seen-key #f)])
+                (when seen-depth
+                  (if bound
+                      (if (< depth seen-depth)
+                          (void)
+                          (amb-fail))
+                      (amb-fail))))
+              (define ne (next-edges gs st n))
+              (define ne-type (car ne))
+              (unless (invariant (car ne) n st)
+                (return j))
+              (case ne-type
+                [(terminated) (amb-fail)]
+                [(auto choose)
+                 (define-values (name _)
+                   ((model-checker-prompt amb) pmt-meta
+                                               `(choose ,(map (inst edge-name S) (second ne)))))
+                 (define chosen-edge (find-edge (second ne) name))
+                 (when (current-model-checker-trace-display?)
+                   (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
+                 (match-define (cons ps next-st)
+                   (call-with-prompt-value-emitter
+                    (thunk (step st chosen-edge amb prompt-value-emit))))
+                 (if (and bound (= bound depth))
+                     (begin (bounded-set #t)
+                            (amb-fail))
+                     (begin
+                       (seen-set (hash-set (seen-get) seen-key depth))
+                       (loop (edge-to chosen-edge)
+                             next-st
+                             (cons (case ne-type
+                                     [(auto) (auto-journal-entry (edge-name chosen-edge) ps)]
+                                     [(choose) (choose-journal-entry (edge-name chosen-edge) '() ps)]) j)
+                             (add1 depth))))])))
+           (thunk #f))))))))
+  (if result
+      result
+      (if bounded?
+          (bounded)
+          #f)))
 
 (: step (All (S) (-> S
                      (Edge S)
