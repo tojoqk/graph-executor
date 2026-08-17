@@ -139,10 +139,7 @@
      [(console)
       (parameterize ([current-console-commands (list (list 'quit 'q "Quit"))]
                      [current-console-trace-display 'hide])
-        (let ([journal (console-run m)])
-          (displayln "\n==========================================")
-          (displayln "▼ Journal (Play History):")
-          (pretty-write journal)))])))
+        (writeln (console-run m)))])))
 
 (module+ test
   (require typed/rackunit (submod ".." model))
