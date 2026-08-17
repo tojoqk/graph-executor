@@ -11,7 +11,7 @@
 (require "effect/emitter.rkt")
 (require "effect/state.rkt")
 
-(provide find-counterexample find-deadlock find-livelock
+(provide find-counterexample find-deadlock find-false-terminal find-livelock
          current-model-checker-trace-display)
 
 (: current-model-checker-trace-display (Parameterof (U 'show 'hide)))
@@ -43,6 +43,17 @@
                           (case s
                             [(terminated) (terminal-node? n)]
                             [else #t]))
+                        #:max-depth max-depth))
+
+(: find-false-terminal (All (S) (-> (Model S) (-> (Node S) Any)
+                                    [#:max-depth (Option Natural)]
+                                    (Option Journal))))
+(define (find-false-terminal m terminal-node? #:max-depth [max-depth #f])
+  (%find-counterexample m
+                        (lambda ([s : Status] [n : (Node S)] _st)
+                          (case s
+                            [(terminated) #t]
+                            [else (not (terminal-node? n))]))
                         #:max-depth max-depth))
 
 (define pmt-meta (prompt-meta "choose"))
