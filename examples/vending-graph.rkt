@@ -193,5 +193,5 @@
                   (auto ("Dispense Done (Remaining Inserted)"))
                   (choose ("Purchase Drink (150 Yen)"))
                   ,@(make-list 299 '(choose ("Insert More") (1)))
-                  (list '(choose ("Insert Money") (1)))
+                  (choose ("Insert Money") (1))
                   (choose ("Go to Vending Machine")))))
