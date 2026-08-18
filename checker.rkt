@@ -11,7 +11,7 @@
 (require "effect/emitter.rkt")
 (require "effect/state.rkt")
 
-(provide find-counterexample find-deadlock find-false-terminal find-livelock
+(provide find-counterexample find-deadlock find-false-terminal find-auto-conflict find-livelock
          current-model-checker-trace-display)
 
 (: current-model-checker-trace-display (Parameterof (U 'show 'hide)))
@@ -23,6 +23,11 @@
     [(show) #t]
     [(hide) #f]))
 
+(define-type (Next-Edge S)
+  (U (List 'auto (Pairof (Edge S) (Listof (Edge S))))
+     (List 'choose (Pairof (Edge S) (Listof (Edge S))))
+     (List 'terminated)))
+
 (: find-counterexample (All (S) (-> (Model S) (-> (Node S) S Any)
                                     [#:journal Journal]
                                     [#:bound (Option Natural)]
@@ -33,7 +38,7 @@
                              #:bound [bound #f]
                              #:bounded [bounded (const #f)])
   (%find-counterexample m
-                        (lambda (_s [n : (Node S)] [st : S])
+                        (lambda (_ne [n : (Node S)] [st : S])
                           (invariant n st))
                         #:journal j
                         #:bound bound
@@ -45,8 +50,8 @@
                               (Option Journal))))
 (define (find-deadlock m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)])
   (%find-counterexample m
-                        (lambda ([s : Status] [n : (Node S)] _st)
-                          (case s
+                        (lambda ([ne : (Next-Edge S)] [n : (Node S)] _st)
+                          (case (car ne)
                             [(terminated) (terminal-node? n)]
                             [else #t]))
                         #:bound bound
@@ -58,16 +63,29 @@
                                     (Option Journal))))
 (define (find-false-terminal m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)])
   (%find-counterexample m
-                        (lambda ([s : Status] [n : (Node S)] _st)
-                          (case s
+                        (lambda ([ne : (Next-Edge S)] [n : (Node S)] _st)
+                          (case (car ne)
                             [(terminated) #t]
                             [else (not (terminal-node? n))]))
                         #:bound bound
                         #:bounded bounded))
 
+(: find-auto-conflict (All (S) (-> (Model S)
+                                   [#:bound (Option Natural)]
+                                   [#:bounded (-> (Option Journal))]
+                                   (Option Journal))))
+(define (find-auto-conflict m #:bound [bound #f] #:bounded [bounded (const #f)])
+  (%find-counterexample m
+                        (lambda ([ne : (Next-Edge S)] _n _st)
+                          (case (car ne)
+                            [(terminated choose) #t]
+                            [(auto) (pair? (cdr ne))]))
+                        #:bound bound
+                        #:bounded bounded))
+
 (define pmt-meta (prompt-meta "choose"))
 
-(: %find-counterexample (All (S) (-> (Model S) (-> Status (Node S) S Any)
+(: %find-counterexample (All (S) (-> (Model S) (-> (Next-Edge S) (Node S) S Any)
                                      [#:journal Journal]
                                      [#:bound (Option Natural)]
                                      [#:bounded (-> (Option Journal))]
@@ -108,7 +126,7 @@
                       (amb-fail))))
               (define ne (next-edges gs st n))
               (define ne-type (car ne))
-              (unless (invariant (car ne) n st)
+              (unless (invariant ne n st)
                 (return j))
               (case ne-type
                 [(terminated) (amb-fail)]

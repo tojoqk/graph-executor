@@ -29,7 +29,7 @@
          prompt
          message
          console-run current-console-random-prompt-display current-console-trace-display
-         find-counterexample find-deadlock find-false-terminal find-livelock
+         find-counterexample find-deadlock find-false-terminal find-auto-conflict find-livelock
          current-model-checker-trace-display
          current-model-checker-string-values
          current-model-checker-integer-values current-model-checker-natural-values current-model-checker-positive-integer-values
