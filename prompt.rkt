@@ -10,15 +10,20 @@
          Prompt-Info-Positive-Integer
          Prompt-Info-Range
          Prompt-Info-Random
-         Prompt-Meta (rename-out [prompt-meta* prompt-meta]) prompt-meta-title prompt-meta-tags)
+         Prompt-Meta (rename-out [prompt-meta* prompt-meta]) prompt-meta-title prompt-meta-tags prompt-meta-options
+         Prompt-Option (struct-out prompt-option))
+
+(struct prompt-option ()
+  #:type-name Prompt-Option)
 
 (struct prompt-meta ([title : String]
-                     [tags : (Listof Symbol)])
+                     [tags : (Listof Symbol)]
+                     [options : (Listof Prompt-Option)])
   #:type-name Prompt-Meta)
 
-(: prompt-meta* (-> String [#:tags (Listof Symbol)] Prompt-Meta))
-(define (prompt-meta* title #:tags [tags '()])
-  (prompt-meta title tags))
+(: prompt-meta* (-> String [#:tags (Listof Symbol)] [#:options (Listof Prompt-Option)] Prompt-Meta))
+(define (prompt-meta* title #:tags [tags '()] #:options [options '()])
+  (prompt-meta title tags options))
 
 (define-type (Prompt A)
   (case-> (-> (U String Prompt-Meta) (List 'choose (-> Any Boolean : #:+ A) (Listof (∩ A String))) (∩ String A))
@@ -53,7 +58,7 @@
 (: prompt (All (A) (Prompt A)))
 (define (prompt title-or-meta op)
   (define meta (if (string? title-or-meta)
-                   (prompt-meta title-or-meta '())
+                   (prompt-meta* title-or-meta)
                    title-or-meta))
   (cond [(current-prompt) => (lambda ([p : Prompt-Implementation])
                                (define-values (value _attrs) (p meta op))
