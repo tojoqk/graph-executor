@@ -14,7 +14,8 @@
 (define (vending-graph g)
   (: insert-money (-> Vending-State Vending-State))
   (define (insert-money st)
-    (let ([amount (prompt "How much?" `(range 1 ,(v-state-wallet st)))])
+    (let ([amount (prompt (prompt-meta "How much?" #:tags '(how-much))
+                          `(range 1 ,(v-state-wallet st)))])
       (struct-copy v-state st
                    [wallet (- (v-state-wallet st) amount)]
                    [inserted (+ (v-state-inserted st) amount)])))
@@ -172,7 +173,7 @@
   (: terminal-node? (-> (Node Any) Any))
   (define (terminal-node? n)
     (symbol=? (node-type n) 'terminal))
-  
+
   (define m (make-model))
   (check-false (find-livelock m))
   (check-false (find-deadlock m terminal-node?))
@@ -186,13 +187,32 @@
   (check-equal? (find-counterexample m (negate (lambda ([n : (Node Any)] st)
                                                  (and (terminal-node? n)
                                                       (street? st)
-                                                      (= (street-wallet st) 0)))))
+                                                      (= (street-wallet st) 150)))))
                 `((choose ("Sit on Bench"))
                   (choose ("Walk Away"))
-                  (auto ("Dispense Done (Just Zero)"))
-                  (choose ("Purchase Drink (150 Yen)"))
+                  (auto ("Change Dispatched"))
+                  (choose ("Press Return Lever"))
                   (auto ("Dispense Done (Remaining Inserted)"))
                   (choose ("Purchase Drink (150 Yen)"))
                   ,@(make-list 299 '(choose ("Insert More") (1)))
                   (choose ("Insert Money") (1))
-                  (choose ("Go to Vending Machine")))))
+                  (choose ("Go to Vending Machine"))))
+
+  (parameterize ([current-model-checker-range-values
+                  (lambda ([m : Prompt-Meta] _from _to)
+                    (if (memq 'how-much (prompt-meta-tags m))
+                        'descending
+                        'ascending))])
+    (check-equal? (let loop : (Option Journal) ([depth : Natural 0])
+                    (find-counterexample m (negate (lambda ([n : (Node Any)] st)
+                                                     (and (terminal-node? n)
+                                                          (street? st)
+                                                          (= (street-wallet st) 150))))
+                                         #:bound depth
+                                         #:bounded (thunk (loop (add1 depth)))))
+                  '((choose ("Sit on Bench"))
+                    (choose ("Walk Away"))
+                    (auto ("Dispense Done (Just Zero)"))
+                    (choose ("Purchase Drink (150 Yen)"))
+                    (choose ("Insert Money") (150))
+                    (choose ("Go to Vending Machine"))))))
