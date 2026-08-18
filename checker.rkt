@@ -143,14 +143,13 @@
                  (match-define (cons ps next-st)
                    (call-with-prompt-value-emitter
                     (thunk (step st chosen-edge amb prompt-value-emit))))
-                 (begin
-                   (seen-set (hash-set (seen-get) seen-key depth))
-                   (loop (edge-to chosen-edge)
-                         next-st
-                         (cons (case ne-type
-                                 [(auto) (auto-journal-entry (edge-name chosen-edge) ps)]
-                                 [(choose) (choose-journal-entry (edge-name chosen-edge) '() ps)]) j)
-                         (add1 depth)))])))
+                 (seen-set (hash-set (seen-get) seen-key depth))
+                 (loop (edge-to chosen-edge)
+                       next-st
+                       (cons (case ne-type
+                               [(auto) (auto-journal-entry (edge-name chosen-edge) ps)]
+                               [(choose) (choose-journal-entry (edge-name chosen-edge) '() ps)]) j)
+                       (add1 depth))])))
            (thunk #f))))))))
   (if result
       result
