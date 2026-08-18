@@ -26,7 +26,7 @@
          current-node? current-edge?
          Journal journal?
          History Record
-         prompt prompt-meta prompt-meta-tags
+         prompt Prompt-Meta prompt-meta prompt-meta-tags
          message
          console-run current-console-random-prompt-display current-console-trace-display
          find-counterexample find-deadlock find-false-terminal find-auto-conflict find-livelock
