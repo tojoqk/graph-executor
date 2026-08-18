@@ -177,6 +177,7 @@
   (check-false (find-livelock m))
   (check-false (find-deadlock m terminal-node?))
   (check-false (find-false-terminal m terminal-node?))
+  (check-false (find-auto-conflict m))
   (check-false (find-counterexample m
                                     (negate (lambda (_n st)
                                               (and (v-state? st)
