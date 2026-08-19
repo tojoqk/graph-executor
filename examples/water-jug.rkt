@@ -85,7 +85,8 @@
 
   (: prompt-playing (-> Jug-State String))
   (define (prompt-playing st)
-    (format "Current Status:\n    [ ~aG Jug: ~a/~a | ~aG Jug: ~a/~a ]\n  What will you do?"
+    (format "Goal: Make exactly ~aG\n  Current Status:\n    [ ~aG Jug: ~a/~a | ~aG Jug: ~a/~a ]\n  What will you do?"
+            target
             left-cap (jug-state-left st) left-cap
             right-cap (jug-state-right st) right-cap))
 
