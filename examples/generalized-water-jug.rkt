@@ -144,6 +144,7 @@
                           (emit (list cmd cap))))]
              [(Pour) (let ([cap1 (assert (list->amb amb caps) number?)]
                            [cap2 (assert (list->amb amb caps) number?)])
+                       (when (= cap1 cap2) (amb-fail))
                        (when ((can-pour? cap1 cap2) st)
                          (emit (list 'Pour cap1 cap2))))])
            (amb-fail))))))))
