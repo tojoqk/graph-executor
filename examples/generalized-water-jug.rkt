@@ -28,8 +28,7 @@
 (: uniq (All (A) (-> (Listof A) (Listof A))))
 (define (uniq xs)
   (cond [(null? xs) '()]
-        [(null? (cdr xs)) xs]
-        [(equal? (car xs) (cadr xs)) (uniq (cdr xs))]
+        [(member (car xs) (cdr xs)) (uniq (cdr xs))]
         [else (cons (car xs) (uniq (cdr xs)))]))
 
 (define-type Command (U (List 'Fill Positive-Integer)
@@ -99,7 +98,9 @@
 
   (: can-pour? (-> Positive-Integer Positive-Integer (-> Jug-State Boolean)))
   (define ((can-pour? src dst) st)
-    (and (< 0 (hash-ref st src)) (< (hash-ref st dst) dst)))
+    (and (not (= src dst))
+         (< 0 (hash-ref st src))
+         (< (hash-ref st dst) dst)))
 
   (: is-cleared? (-> Jug-State Boolean))
   (define (is-cleared? st)
@@ -144,7 +145,6 @@
                           (emit (list cmd cap))))]
              [(Pour) (let ([cap1 (assert (list->amb amb caps) number?)]
                            [cap2 (assert (list->amb amb caps) number?)])
-                       (when (= cap1 cap2) (amb-fail))
                        (when ((can-pour? cap1 cap2) st)
                          (emit (list 'Pour cap1 cap2))))])
            (amb-fail))))))))
@@ -169,9 +169,12 @@
                          [cap1 (symbol->cap
                                 (prompt "Pour FROM which jug?"
                                         `(choose ,(uniq (map (compose cap->symbol command-arg1) pour-cmds)))))]
+                         [pour-cap1-cmds (filter (lambda ([cmd : (List 'Pour Positive-Integer Positive-Integer)])
+                                                   (= (command-arg1 cmd) cap1))
+                                                 pour-cmds)]
                          [cap2 (symbol->cap
                                 (prompt "Pour TO which jug?"
-                                        `(choose ,(uniq (map (compose cap->symbol command-arg2) pour-cmds)))))])
+                                        `(choose ,(uniq (map (compose cap->symbol command-arg2) pour-cap1-cmds)))))])
                     ((pour cap1 cap2) st))]))))
 
   (define playing (j-node "Playing" #:type 'puzzle #:prompt (code prompt-playing)))
