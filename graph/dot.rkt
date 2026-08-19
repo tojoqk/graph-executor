@@ -15,7 +15,6 @@
                        [#:when (Option (Code (-> S Any)))]
                        #:trans (Code (-> S Any))
                        [#:priority (Option Integer)]
-                       [#:weight (Option Exact-Positive-Integer)]
                        [#:dot-minlen (Option Natural)]
                        [#:attributes (Immutable-HashTable Symbol Any)]
                        (Bridge S))))
@@ -28,7 +27,6 @@
                     #:when [when #f]
                     #:trans tr
                     #:priority [priority #f]
-                    #:weight [weight #f]
                     #:dot-minlen [dot-minlen #f]
                     #:attributes [attrs ((inst hash Symbol Any))])
   ((inst make-bridge S) #:name name
@@ -40,7 +38,6 @@
                         #:when when
                         #:trans (or tr (inst identity S))
                         #:priority priority
-                        #:weight weight
                         #:attributes (hash-union attrs
                                                  (hash 'dot-minlen dot-minlen))))
 
@@ -54,7 +51,6 @@
                      [#:when (Option (Code (-> S Any)))]
                      [#:trans (Option (Code (-> S S)))]
                      [#:priority (Option Integer)]
-                     [#:weight (Option Exact-Positive-Integer)]
                      [#:dot-minlen (Option Natural)]
                      [#:attributes (Immutable-HashTable Symbol Any)]
                      (Edge S))))
@@ -67,7 +63,6 @@
                   #:when [when #f]
                   #:trans [tr #f]
                   #:priority [priority #f]
-                  #:weight [weight #f]
                   #:dot-minlen [dot-minlen #f]
                   #:attributes [attrs ((inst hash Symbol Any))])
   ((inst make-edge S) #:name name
@@ -79,7 +74,6 @@
                       #:when when
                       #:trans (or tr (make-code #f (inst identity S)))
                       #:priority priority
-                      #:weight weight
                       #:attributes (hash-union attrs
                                                (hash 'dot-minlen dot-minlen))))
 

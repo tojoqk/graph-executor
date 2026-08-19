@@ -21,7 +21,6 @@
          dot-bridge dot-edge
          Model model
          replay
-         current-auto-conflict-policy current-single-choose-policy
          Console-Command current-console-commands
          current-node? current-edge?
          Journal journal?

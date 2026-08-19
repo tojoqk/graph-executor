@@ -8,7 +8,7 @@
          node-graph-id node-graph-name node-id node-name node-type node-tags node-desc node-trans node-trans-sexp node-prompt node-prompt-sexp node-attributes
          any-node
          Edge AnyEdge Bridge EdgeMode make-edge make-bridge (rename-out [edge* edge] [bridge* bridge])
-         edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-sexp edge-trans edge-trans-sexp edge-priority edge-weight edge-attributes
+         edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-sexp edge-trans edge-trans-sexp edge-priority edge-attributes
          any-bridge any-edge
          Graph AnyGraph OpenGraph (rename-out [graph* graph]) (rename-out [open-graph* open-graph])
          graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges
@@ -145,7 +145,6 @@
                   [when-code : (Code (-> S Any))]
                   [trans-code : (Code (-> S S))]
                   [priority : Integer]
-                  [weight : Exact-Positive-Integer]
                   [attributes : (Immutable-HashTable Symbol Any)])
   #:transparent
   #:type-name Edge)
@@ -177,7 +176,6 @@
                     [when-code : (Code (-> S Any))]
                     [trans-code : (Code (-> S Any))]
                     [priority : Integer]
-                    [weight : Exact-Positive-Integer]
                     [attributes : (Immutable-HashTable Symbol Any)])
   #:transparent
   #:type-name Bridge)
@@ -211,7 +209,6 @@
                                        #:when (Option (Code (-> S Any)))
                                        #:trans (Code (-> S S))
                                        #:priority (Option Integer)
-                                       #:weight (Option Exact-Positive-Integer)
                                        #:attributes (Immutable-HashTable Symbol Any)
                                        (Edge S))
                                    (-> 'bridge
@@ -224,7 +221,6 @@
                                        #:when (Option (Code (-> S Any)))
                                        #:trans (Code (-> S Any))
                                        #:priority (Option Integer)
-                                       #:weight (Option Exact-Positive-Integer)
                                        #:attributes (Immutable-HashTable Symbol Any)
                                        (Bridge S)))))
 (define (make-generic-edge* type
@@ -237,7 +233,6 @@
                             #:when when
                             #:trans tr
                             #:priority priority
-                            #:weight weight
                             #:attributes attrs)
   (let ([edge-id (make-edge-id name from)])
     (cond [(set-member? (current-graph-used-ids) edge-id)
@@ -252,7 +247,6 @@
      (or when (make-code #f (const #t)))
      tr
      (or priority 0)
-     (or weight 1)
      attrs)))
 
 (: make-bridge (All (S)
@@ -265,7 +259,6 @@
                         #:when (Option (Code (-> S Any)))
                         #:trans (Code (-> S Any))
                         #:priority (Option Integer)
-                        #:weight (Option Exact-Positive-Integer)
                         #:attributes (Immutable-HashTable Symbol Any)
                         (Bridge S))))
 (define (make-bridge #:name name
@@ -277,7 +270,6 @@
                      #:when when
                      #:trans tr
                      #:priority priority
-                     #:weight weight
                      #:attributes attrs)
   ((inst make-generic-edge* S) 'bridge
                                #:name name
@@ -289,7 +281,6 @@
                                #:when when
                                #:trans tr
                                #:priority priority
-                               #:weight weight
                                #:attributes attrs))
 
 (: bridge* (All (S)
@@ -302,7 +293,6 @@
                     [#:when (Option (Code (-> S Any)))]
                     #:trans (Code (-> S Any))
                     [#:priority (Option Integer)]
-                    [#:weight (Option Exact-Positive-Integer)]
                     (Bridge S))))
 (define (bridge* name
                  #:mode [mode #f]
@@ -312,8 +302,7 @@
                  #:desc [desc #f]
                  #:when [when #f]
                  #:trans tr
-                 #:priority [priority #f]
-                 #:weight [weight #f])
+                 #:priority [priority #f])
   ((inst make-bridge S) #:name name
                         #:mode mode
                         #:half? half?
@@ -323,7 +312,6 @@
                         #:when when
                         #:trans (or tr (inst identity S))
                         #:priority priority
-                        #:weight weight
                         #:attributes ((inst hash Symbol Any))))
 
 (: make-edge (All (S)
@@ -336,7 +324,6 @@
                       #:when (Option (Code (-> S Any)))
                       #:trans (Option (Code (-> S S)))
                       #:priority (Option Integer)
-                      #:weight (Option Exact-Positive-Integer)
                       #:attributes (Immutable-HashTable Symbol Any)
                       (Edge S))))
 (define (make-edge #:name name
@@ -348,7 +335,6 @@
                    #:when when
                    #:trans tr
                    #:priority priority
-                   #:weight weight
                    #:attributes attrs)
   ((inst make-generic-edge* S) 'edge
                                #:name name
@@ -360,7 +346,6 @@
                                #:when when
                                #:trans (or tr (make-code #f (inst identity S)))
                                #:priority priority
-                               #:weight weight
                                #:attributes attrs))
 
 (: edge* (All (S)
@@ -373,7 +358,6 @@
                   [#:when (Option (Code (-> S Any)))]
                   [#:trans (Option (Code (-> S S)))]
                   [#:priority (Option Integer)]
-                  [#:weight (Option Exact-Positive-Integer)]
                   (Edge S))))
 (define (edge* name
                #:mode [mode #f]
@@ -383,8 +367,7 @@
                #:desc [desc #f]
                #:when [when #f]
                #:trans [tr #f]
-               #:priority [priority #f]
-               #:weight [weight #f])
+               #:priority [priority #f])
   ((inst make-edge S) #:name name
                       #:mode mode
                       #:half? half?
@@ -394,7 +377,6 @@
                       #:when when
                       #:trans (or tr (make-code #f (inst identity S)))
                       #:priority priority
-                      #:weight weight
                       #:attributes ((inst hash Symbol Any))))
 
 (: any-bridge (All (S) (-> (-> Any Any : #:+ S)
@@ -410,7 +392,6 @@
         (make-code (bridge-when-sexp b) (lambda (x) ((bridge-when b) (assert x p?))))
         (make-code (bridge-trans-sexp b) (lambda (x) ((bridge-trans b) (assert x p?))))
         (bridge-priority b)
-        (bridge-weight b)
         (bridge-attributes b)))
 
 (: any-edge (All (S) (-> (-> Any Any : #:+ S)

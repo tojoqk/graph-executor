@@ -26,7 +26,8 @@
 (define-type (Next-Edge S)
   (U (List 'auto (Pairof (Edge S) (Listof (Edge S))))
      (List 'choose (Pairof (Edge S) (Listof (Edge S))))
-     (List 'terminated)))
+     (List 'terminated)
+     (List 'auto-conflicted (Pairof String (Listof String)))))
 
 (: find-counterexample (All (S) (-> (Model S) (-> (Node S) S Any)
                                     [#:journal Journal]
@@ -78,8 +79,8 @@
   (%find-counterexample m
                         (lambda ([ne : (Next-Edge S)] _n _st)
                           (case (car ne)
-                            [(terminated choose) #t]
-                            [(auto) (pair? (cdr ne))]))
+                            [(auto-conflicted) #f]
+                            [else #t]))
                         #:bound bound
                         #:bounded bounded))
 
@@ -129,7 +130,7 @@
               (unless (invariant ne n st)
                 (return j))
               (case ne-type
-                [(terminated) (amb-fail)]
+                [(terminated auto-conflicted) (amb-fail)]
                 [(auto choose)
                  (when (and bound (= bound depth))
                    (begin (bounded-set #t)
@@ -214,7 +215,7 @@
            (define ne (next-edges gs st n))
            (define ne-type (car ne))
            (case ne-type
-             [(terminated)
+             [(terminated auto-conflicted)
               (reachable-set (set-union (reachable-get) breadcrumbs))
               (amb-fail)]
              [(auto choose)
@@ -259,7 +260,11 @@
            (define ne (next-edges gs st n))
            (define ne-type (car ne))
            (case ne-type
-             [(terminated) (return (set-union reachable (list->set breadcrumbs)))]
+             [(terminated)
+              (return (set-union reachable (list->set breadcrumbs)))]
+             [(auto-conflicted)
+              (seen-set (set-add (seen-get) key))
+              (amb-fail)]
              [(auto choose)
               (define-values (name _)
                 ((model-checker-prompt amb) pmt-meta

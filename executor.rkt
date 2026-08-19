@@ -9,9 +9,8 @@
 (require "effect/consumer.rkt")
 (require "effect/emitter.rkt")
 
-(provide replay
-         find-graph next-edges auto-choose
-         current-auto-conflict-policy current-single-choose-policy
+(provide replay auto-choose
+         find-graph next-edges
          current-node-id current-node?
          current-edge-id current-edge?
          find-edge
@@ -88,13 +87,8 @@
                                     [(annotation) (error 'replay "invalid edge mode")])
                                   h)))]
                      [else (error 'replay "edge not found")]))]
-            [(terminated) (error 'replay "unexpected termination")])))))
-
-(: current-auto-conflict-policy (Parameterof (U 'random 'choose)))
-(define current-auto-conflict-policy (make-parameter 'random))
-
-(: current-single-choose-policy (Parameterof (U 'skip 'choose)))
-(define current-single-choose-policy (make-parameter 'choose))
+            [(terminated) (error 'replay "unexpected termination")]
+            [(auto-conflicted) (error 'replay "unexpected auto-conflicted error: ~s" (second ne))])))))
 
 (: find-graph (All (S) (-> (Listof (Graph S)) Symbol (Graph S))))
 (define (find-graph gs g-id)
@@ -105,9 +99,10 @@
                    (-> (Listof (Graph S))
                        S
                        (Node S)
-                       (U (List 'auto (Pairof (Edge S) (Listof (Edge S))))
+                       (U (List 'auto (List (Edge S)))
                           (List 'choose (Pairof (Edge S) (Listof (Edge S))))
-                          (List 'terminated)))))
+                          (List 'terminated)
+                          (List 'auto-conflicted (Pairof String (Listof String)))))))
 (define (next-edges gs st n)
   (let* ([g (find-graph gs (node-graph-id n))]
          [es (edge-sort (filter-state st (remove-annotation (filter-node n (graph-edges g)))))]
@@ -115,30 +110,14 @@
     (if (null? aes)
         (if (null? es)
             (list 'terminated)
-            (if (null? (cdr es))
-                (let ([policy (current-single-choose-policy)])
-                  (cond [(eq? policy 'skip) (list 'auto es)]
-                        [(eq? policy 'choose) (list 'choose es)]))
-                (list 'choose es)))
+            (list 'choose es))
         (if (null? (cdr aes))
             (list 'auto aes)
-            (let ([policy (current-auto-conflict-policy)])
-              (cond [(eq? policy 'random) (list 'auto aes)]
-                    [(eq? policy 'choose) (list 'choose aes)]))))))
+            (list 'auto-conflicted (cons (edge-name (car aes))
+                                         (map (inst edge-name S) (cdr aes))))))))
 
-(: auto-choose (All (S)
-                    (-> (List 'auto (Pairof (Edge S) (Listof (Edge S)))) (Edge S))))
-(define (auto-choose ne)
-  (let* ([edges (cadr ne)]
-         [s (sum-weight edges)]
-         [r (random s)])
-    (let loop ([edges edges]
-               [r r])
-      (let ([fst (car edges)]
-            [rst (cdr edges)])
-        (cond [(< r (edge-weight fst)) fst]
-              [(null? rst) (error "auto-choose: unreachble")]
-              [else (loop rst (- r (edge-weight fst)))])))))
+(: auto-choose (All (S) (-> (List 'auto (List (Edge S))) (Edge S))))
+(define (auto-choose ne) (caadr ne))
 
 ;; --- private ---
 (: edge-sort (All (S) (-> (Listof (Edge S)) (Listof (Edge S)))))
@@ -174,15 +153,6 @@
           (if (null? auto-es)
               (loop (cdr ess))
               auto-es)))))
-
-(: sum-weight (All (S) (-> (Pairof (Edge S) (Listof (Edge S))) Positive-Integer)))
-(define (sum-weight es)
-  (define any-edge-foldl (inst foldl (Edge S) Exact-Positive-Integer))
-  (any-edge-foldl (lambda ([e1 : (Edge S)] [acc : Exact-Positive-Integer])
-                    (+ (edge-weight e1)
-                       acc))
-                  (edge-weight (car es))
-                  (cdr es)))
 
 (: filter-node (All (S) (-> (Node S) (Listof (Edge S)) (Listof (Edge S)))))
 (define (filter-node n es)
