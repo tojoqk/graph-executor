@@ -131,26 +131,25 @@
                 (return j))
               (case ne-type
                 [(terminated auto-conflicted) (amb-fail)]
-                [(auto choose)
-                 (when (and bound (= bound depth))
-                   (begin (bounded-set #t)
-                          (amb-fail)))
-                 (define-values (name _)
-                   ((model-checker-prompt amb) pmt-meta
-                                               `(choose ,(map (inst edge-name S) (second ne)))))
-                 (define chosen-edge (find-edge (second ne) name))
-                 (when (current-model-checker-trace-display?)
-                   (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
-                 (match-define (cons ps next-st)
-                   (call-with-prompt-value-emitter
-                    (thunk (step st chosen-edge amb prompt-value-emit))))
-                 (seen-set (hash-set (seen-get) seen-key depth))
-                 (loop (edge-to chosen-edge)
-                       next-st
-                       (cons (case ne-type
-                               [(auto) (auto-journal-entry (edge-name chosen-edge) ps)]
-                               [(choose) (choose-journal-entry (edge-name chosen-edge) '() ps)]) j)
-                       (add1 depth))])))
+                [(auto choose) (when (and bound (= bound depth))
+                                 (begin (bounded-set #t)
+                                        (amb-fail)))
+                               (define-values (name _)
+                                 ((model-checker-prompt amb) pmt-meta
+                                                             `(choose ,(map (inst edge-name S) (second ne)))))
+                               (define chosen-edge (find-edge (second ne) name))
+                               (when (current-model-checker-trace-display?)
+                                 (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
+                               (match-define (cons ps next-st)
+                                 (call-with-prompt-value-emitter
+                                  (thunk (step st chosen-edge amb prompt-value-emit))))
+                               (seen-set (hash-set (seen-get) seen-key depth))
+                               (loop (edge-to chosen-edge)
+                                     next-st
+                                     (cons (case ne-type
+                                             [(auto) (auto-journal-entry (edge-name chosen-edge) ps)]
+                                             [(choose) (choose-journal-entry (edge-name chosen-edge) '() ps)]) j)
+                                     (add1 depth))])))
            (thunk #f))))))))
   (if result
       result
@@ -215,25 +214,23 @@
            (define ne (next-edges gs st n))
            (define ne-type (car ne))
            (case ne-type
-             [(terminated auto-conflicted)
-              (reachable-set (set-union (reachable-get) breadcrumbs))
-              (amb-fail)]
-             [(auto choose)
-              (define-values (name _)
-                ((model-checker-prompt amb) pmt-meta
-                                            `(choose ,(map (inst edge-name S) (second ne)))))
-              (define chosen-edge (find-edge (second ne) name))
-              (when (current-model-checker-trace-display?)
-                (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
-              (match-define (cons ps next-st)
-                (call-with-prompt-value-emitter
-                 (thunk (step st chosen-edge amb prompt-value-emit))))
-              (loop (edge-to chosen-edge)
-                    next-st
-                    (cons (case ne-type
-                            [(auto) (auto-journal-entry (edge-name chosen-edge) ps)]
-                            [(choose) (choose-journal-entry (edge-name chosen-edge) '() ps)]) j)
-                    (set-add breadcrumbs key))])))
+             [(terminated auto-conflicted) (reachable-set (set-union (reachable-get) breadcrumbs))
+                                           (amb-fail)]
+             [(auto choose) (define-values (name _)
+                              ((model-checker-prompt amb) pmt-meta
+                                                          `(choose ,(map (inst edge-name S) (second ne)))))
+                            (define chosen-edge (find-edge (second ne) name))
+                            (when (current-model-checker-trace-display?)
+                              (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
+                            (match-define (cons ps next-st)
+                              (call-with-prompt-value-emitter
+                               (thunk (step st chosen-edge amb prompt-value-emit))))
+                            (loop (edge-to chosen-edge)
+                                  next-st
+                                  (cons (case ne-type
+                                          [(auto) (auto-journal-entry (edge-name chosen-edge) ps)]
+                                          [(choose) (choose-journal-entry (edge-name chosen-edge) '() ps)]) j)
+                                  (set-add breadcrumbs key))])))
         (thunk #f)))))))
 
 (: find-terminal (All (S) (-> (Listof (Graph S)) (Node S) S
@@ -260,22 +257,19 @@
            (define ne (next-edges gs st n))
            (define ne-type (car ne))
            (case ne-type
-             [(terminated)
-              (return (set-union reachable (list->set breadcrumbs)))]
-             [(auto-conflicted)
-              (seen-set (set-add (seen-get) key))
-              (amb-fail)]
-             [(auto choose)
-              (define-values (name _)
-                ((model-checker-prompt amb) pmt-meta
-                                            `(choose ,(map (inst edge-name S) (second ne)))))
-              (define chosen-edge (find-edge (second ne) name))
-              (when (current-model-checker-trace-display?)
-                (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
-              (seen-set (set-add (seen-get) key))
-              (loop (edge-to chosen-edge)
-                    (step/no-log st chosen-edge amb)
-                    (cons key breadcrumbs))])))
+             [(terminated) (return (set-union reachable (list->set breadcrumbs)))]
+             [(auto-conflicted) (seen-set (set-add (seen-get) key))
+                                (amb-fail)]
+             [(auto choose) (define-values (name _)
+                              ((model-checker-prompt amb) pmt-meta
+                                                          `(choose ,(map (inst edge-name S) (second ne)))))
+                            (define chosen-edge (find-edge (second ne) name))
+                            (when (current-model-checker-trace-display?)
+                              (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
+                            (seen-set (set-add (seen-get) key))
+                            (loop (edge-to chosen-edge)
+                                  (step/no-log st chosen-edge amb)
+                                  (cons key breadcrumbs))])))
         (thunk #f)))))))
 
 (: step/no-log (All (S) (-> S
