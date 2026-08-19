@@ -120,7 +120,6 @@
 
 (module+ main
   (require racket/cmdline
-           racket/pretty
            (submod ".." model))
 
   (: mode (Boxof (U 'dot 'console)))
