@@ -226,7 +226,7 @@
 (module+ test
   (require typed/rackunit (submod ".." model))
 
-  (define m (make-model '(3 5 7) 4))
+  (define m (make-model '(3 5 7) 1))
 
   (: terminal-node? (-> (Node Jug-State) Boolean))
   (define (terminal-node? x) (eq? (node-type x) 'terminal))
@@ -245,6 +245,10 @@
 
   (check-equal? (shortest-path m)
                 '((auto ("Clear!"))
-                  (choose ("Make a Move") (Pour) (7G) (3G))
+                  (choose ("Make a Move") (Pour) (5G) (7G))
                   (auto ("Not yet"))
-                  (choose ("Make a Move") (Fill) (7G)))))
+                  (choose ("Make a Move") (Pour) (3G) (7G))
+                  (auto ("Not yet"))
+                  (choose ("Make a Move") (Fill) (5G))
+                  (auto ("Not yet"))
+                  (choose ("Make a Move") (Fill) (3G)))))
