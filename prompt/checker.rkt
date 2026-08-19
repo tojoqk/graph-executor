@@ -58,9 +58,9 @@
     [(random) (model-checker-random amb meta op)]))
 
 (: model-checker-choose (-> (-> (-> Prompt-Value) * Prompt-Value)
-                            (U (List 'choose Procedure (Listof String))
-                               (List 'choose (Listof String)))
-                            (Values String Prompt-Attributes)))
+                            (U (List 'choose Procedure (Listof Symbol))
+                               (List 'choose (Listof Symbol)))
+                            (Values Symbol Prompt-Attributes)))
 (define (model-checker-choose amb op)
   (let* ([choices (if (procedure? (second op))
                       (third op)
@@ -70,7 +70,7 @@
                       (amb)
                       (amb (thunk (car choices))
                            (thunk (loop (cdr choices))))))])
-    (values (assert value string?) '())))
+    (values (assert value symbol?) '())))
 
 (: model-checker-range (case-> (-> (-> (-> Prompt-Value) * Prompt-Value)
                                    Prompt-Meta

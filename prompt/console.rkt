@@ -17,9 +17,9 @@
     [(range) (console-range meta op)]
     [(random) (console-random meta op)]))
 
-(: console-choose (-> Prompt-Meta (U (List 'choose Procedure (Listof String))
-                                     (List 'choose (Listof String)))
-                      (Values String Prompt-Attributes)))
+(: console-choose (-> Prompt-Meta (U (List 'choose Procedure (Listof Symbol))
+                                     (List 'choose (Listof Symbol)))
+                      (Values Symbol Prompt-Attributes)))
 (define (console-choose meta op)
   (let ([choices (if (procedure? (second op))
                      (third op)

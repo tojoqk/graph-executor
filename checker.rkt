@@ -134,9 +134,8 @@
                 [(auto choose) (when (and bound (= bound depth))
                                  (begin (bounded-set #t)
                                         (amb-fail)))
-                               (define-values (name _)
-                                 ((model-checker-prompt amb) pmt-meta
-                                                             `(choose ,(map (inst edge-name S) (second ne)))))
+                               (define name
+                                 (choose amb (map (inst edge-name S) (second ne))))
                                (define chosen-edge (find-edge (second ne) name))
                                (when (current-model-checker-trace-display?)
                                  (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
@@ -216,9 +215,8 @@
            (case ne-type
              [(terminated auto-conflicted) (reachable-set (set-union (reachable-get) breadcrumbs))
                                            (amb-fail)]
-             [(auto choose) (define-values (name _)
-                              ((model-checker-prompt amb) pmt-meta
-                                                          `(choose ,(map (inst edge-name S) (second ne)))))
+             [(auto choose) (define name
+                              (choose amb (map (inst edge-name S) (second ne))))
                             (define chosen-edge (find-edge (second ne) name))
                             (when (current-model-checker-trace-display?)
                               (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
@@ -260,9 +258,8 @@
              [(terminated) (return (set-union reachable (list->set breadcrumbs)))]
              [(auto-conflicted) (seen-set (set-add (seen-get) key))
                                 (amb-fail)]
-             [(auto choose) (define-values (name _)
-                              ((model-checker-prompt amb) pmt-meta
-                                                          `(choose ,(map (inst edge-name S) (second ne)))))
+             [(auto choose) (define name
+                              (choose amb (map (inst edge-name S) (second ne))))
                             (define chosen-edge (find-edge (second ne) name))
                             (when (current-model-checker-trace-display?)
                               (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
@@ -285,3 +282,12 @@
        (when (current-model-checker-trace-display?)
          (let ([n (edge-to e)])
            (printf "Current Node: ~a (Graph: ~a)\n" (node-name n) (node-graph-name n))))))))
+
+(: choose (-> (-> (-> Prompt-Value) * Prompt-Value) (Listof String) String))
+(define (choose amb lst)
+  (assert (let loop : Prompt-Value ([lst lst])
+            (if (null? lst)
+                (amb)
+                (amb (thunk (car lst))
+                     (thunk (loop (cdr lst))))))
+          string?))

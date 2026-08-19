@@ -184,7 +184,7 @@
          [val (car val+attrs)]
          [attrs (cdr val+attrs)])
     (case (car op)
-      [(choose) (assert val string?)
+      [(choose) (assert val symbol?)
                 (push-event! val attrs)
                 (values val attrs)]
       [(string) (assert val string?)
