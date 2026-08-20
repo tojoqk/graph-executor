@@ -7,4 +7,4 @@
 
 @defmodule[graph-executor]
 
-A library for modeling and executing directed graph structures.
+A Typed Racket library for modeling, executing, visualizing, and model-checking directed graphs.

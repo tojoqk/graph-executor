@@ -3,7 +3,7 @@
 (define deps '("base" "typed-racket-lib" "typed-racket-more"))
 (define build-deps '("scribble-lib" "racket-doc" "rackunit-lib"))
 (define scribblings '(("scribblings/graph-executor.scrbl" ())))
-(define pkg-desc "A library for modeling and executing directed graph structures")
+(define pkg-desc "A Typed Racket library for modeling, executing, visualizing, and model-checking directed graphs")
 (define version "0.0")
 (define pkg-authors '(tojoqk))
 (define license '(Apache-2.0))
