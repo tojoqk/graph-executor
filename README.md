@@ -18,3 +18,7 @@ A Typed Racket library for modeling, executing, visualizing, and model-checking 
 - **Powered by Delimited Continuations**: Uses Racket's delimited continuations (`call-with-composable-continuation`) to implement internal effects like state, event logging (`emitter`), and nondeterministic computation (`amb`).
 - **Dual Code Representation**: The `code` macro captures both executable functions and their S-expressions, keeping execution logic and DOT visualization in sync.
 - **Journal-Driven Design**: Journals are core data structures, not just logs. They power deterministic replay, visualization, and counterexample generation.
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE) for details.
