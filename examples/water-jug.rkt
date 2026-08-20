@@ -21,10 +21,6 @@
         [(member (car xs) (cdr xs)) (uniq (cdr xs))]
         [else (cons (car xs) (uniq (cdr xs)))]))
 
-(define-type Command-Type (U 'Fill 'Empty 'Pour))
-
-(define-predicate command-type? Command-Type)
-
 (: cap->symbol (-> Positive-Integer Symbol))
 (define (cap->symbol c) (string->symbol (format "~aG" c)))
 
