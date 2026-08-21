@@ -13,24 +13,27 @@
 (: current-checker-string-values (Parameterof (-> Prompt-Meta (Pairof String (Listof String)))))
 (define current-checker-string-values
   (make-parameter (lambda (_meta)
-                    (error 'prompt "string prompt is not supported by default. Please configure `current-checker-string-values`."))))
+                    (error 'prompt "checker does not support string prompt by default. Please configure `current-checker-string-values`."))))
 
 (: current-checker-integer-values (Parameterof (-> Prompt-Meta (Pairof Integer (Listof Integer)))))
-(define current-checker-integer-values (make-parameter
-                                              (lambda (_meta)
-                                                (error 'prompt "integer prompt is not supported by default. Please configure `current-checker-integer-values`."))))
+(define current-checker-integer-values
+  (make-parameter
+   (lambda (_meta)
+     (error 'prompt "checker does not support integer prompt by default. Please configure `current-checker-integer-values`."))))
 
 (: current-checker-natural-values (Parameterof (-> Prompt-Meta (Pairof Natural (Listof Natural)))))
-(define current-checker-natural-values (make-parameter (lambda ([_meta : Prompt-Meta])
-                                                               (error 'prompt "natural prompt is not supported by default. Please configure `current-checker-natural-values`."))))
+(define current-checker-natural-values
+  (make-parameter (lambda (_meta)
+                    (error 'prompt "checker does not support natural prompt by default. Please configure `current-checker-natural-values`."))))
 
 (: current-checker-positive-integer-values (Parameterof (-> Prompt-Meta (Pairof Positive-Integer (Listof Positive-Integer)))))
-(define current-checker-positive-integer-values (make-parameter (lambda ([_meta : Prompt-Meta])
-                                                                        (error 'prompt "positive-integer prompt is not supported by default. Please configure `current-checker-positive-integer-values`."))))
+(define current-checker-positive-integer-values
+  (make-parameter (lambda (_meta)
+                    (error 'prompt "checker does not support positive-integer prompt by default. Please configure `current-checker-positive-integer-values`."))))
 
 (: current-checker-range-values (Parameterof (-> Prompt-Meta Integer Integer (U (Pairof Integer (Listof Integer))
-                                                                                      'ascending
-                                                                                      'descending))))
+                                                                                'ascending
+                                                                                'descending))))
 (define current-checker-range-values (make-parameter (lambda (_m _from _to) 'ascending)))
 
 (: current-checker-random-values (Parameterof (-> Prompt-Meta Positive-Integer (U (Pairof Natural (Listof Natural))
