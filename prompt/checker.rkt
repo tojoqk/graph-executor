@@ -17,9 +17,8 @@
 
 (: current-checker-integer-values (Parameterof (-> Prompt-Meta (Pairof Integer (Listof Integer)))))
 (define current-checker-integer-values
-  (make-parameter
-   (lambda (_meta)
-     (error 'prompt "checker does not support integer prompt by default. Please configure `current-checker-integer-values`."))))
+  (make-parameter (lambda (_meta)
+                    (error 'prompt "checker does not support integer prompt by default. Please configure `current-checker-integer-values`."))))
 
 (: current-checker-natural-values (Parameterof (-> Prompt-Meta (Pairof Natural (Listof Natural)))))
 (define current-checker-natural-values
