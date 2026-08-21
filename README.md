@@ -19,6 +19,14 @@ A Typed Racket library for modeling, executing, visualizing, and model-checking 
 - **Dual Code Representation**: The `code` macro captures both executable functions and their S-expressions, keeping execution logic and DOT visualization in sync.
 - **Journal-Driven Design**: Journals are core data structures, not just logs. They power deterministic replay, visualization, and counterexample generation.
 
+## Installation
+
+Install the library directly from GitHub using `raco`:
+
+```shell
+raco pkg install https://github.com/tojoqk/graph-executor.git
+```
+
 ## Quick Start: The Water Jug Puzzle
 
 ![Water Jug Graph](examples/simple-water-jug.svg)
