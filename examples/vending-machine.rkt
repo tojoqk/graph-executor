@@ -4,48 +4,48 @@
 
 (struct v-state ([wallet : Integer]
                  [inserted : Integer])
-  #:type-name Vending-State
+  #:type-name Vending-Machine-State
   #:transparent)
 
-(: vending-graph (-> String
-                     (Values (-> AnyNode (Code (-> Vending-State Any))
-                                 (OpenGraph Vending-State))
-                             (Node Vending-State))))
-(define (vending-graph g)
-  (: insert-money (-> Vending-State Vending-State))
+(: vending-machine-graph (-> String
+                     (Values (-> AnyNode (Code (-> Vending-Machine-State Any))
+                                 (OpenGraph Vending-Machine-State))
+                             (Node Vending-Machine-State))))
+(define (vending-machine-graph g)
+  (: insert-money (-> Vending-Machine-State Vending-Machine-State))
   (define (insert-money st)
     (let ([amount (prompt "How much?" `(range 1 ,(v-state-wallet st)))])
       (struct-copy v-state st
                    [wallet (- (v-state-wallet st) amount)]
                    [inserted (+ (v-state-inserted st) amount)])))
 
-  (: purchase (-> Integer (-> Vending-State Vending-State)))
+  (: purchase (-> Integer (-> Vending-Machine-State Vending-Machine-State)))
   (define ((purchase amount) st)
     (struct-copy v-state st
                  [inserted (- (v-state-inserted st) amount)]))
 
-  (: reset-money (-> Vending-State Vending-State))
+  (: reset-money (-> Vending-Machine-State Vending-Machine-State))
   (define (reset-money st)
     (struct-copy v-state st
                  [wallet (+ (v-state-wallet st) (v-state-inserted st))]
                  [inserted 0]))
 
-  (: price-met? (-> Integer (-> Vending-State Boolean)))
+  (: price-met? (-> Integer (-> Vending-Machine-State Boolean)))
   (define ((price-met? price) st)
     (>= (v-state-inserted st) price))
 
-  (: can-insert? (-> Integer (-> Vending-State Boolean)))
+  (: can-insert? (-> Integer (-> Vending-Machine-State Boolean)))
   (define ((can-insert? price) st)
     (<= price (v-state-wallet st)))
 
-  (: inserted? (-> Vending-State Boolean))
+  (: inserted? (-> Vending-Machine-State Boolean))
   (define (inserted? st)
     (< 0 (v-state-inserted st)))
 
-  (define v-node (inst (node g) Vending-State (U 'start 'normal)))
-  (define v-edge (inst edge Vending-State))
-  (define v-bridge (inst dot-bridge Vending-State))
-  (define v-graph (inst open-graph Vending-State))
+  (define v-node (inst (node g) Vending-Machine-State (U 'start 'normal)))
+  (define v-edge (inst edge Vending-Machine-State))
+  (define v-bridge (inst dot-bridge Vending-Machine-State))
+  (define v-graph (inst open-graph Vending-Machine-State))
 
   (define idle       (v-node "Idle (Accepting Coins)" #:type 'start))
   (define has-coins  (v-node "Selecting Item"         #:type 'normal))
@@ -112,12 +112,12 @@
                          #:trans output-edge))))
    on-street))
 
-(: vending-graph->street-graph (-> Vending-State Street-State))
-(define (vending-graph->street-graph x)
+(: vending-machine-graph->street-graph (-> Vending-Machine-State Street-State))
+(define (vending-machine-graph->street-graph x)
   (street (v-state-wallet x)))
 
-(: street-graph->vending-graph (-> Street-State Vending-State))
-(define (street-graph->vending-graph x)
+(: street-graph->vending-machine-graph (-> Street-State Vending-Machine-State))
+(define (street-graph->vending-machine-graph x)
   (v-state (street-wallet x) 0))
 
 (: wire (-> (Values (Listof AnyGraph) AnyNode)))
@@ -129,12 +129,12 @@
   (define-values (gen-t-graph t-entry)
     (street-graph "Street"))
   (define-values (gen-v-graph v-entry)
-    (vending-graph "Vending Machine Model"))
+    (vending-machine-graph "Vending Machine Model"))
 
   (values (list (v-any-graph (gen-v-graph (t-any-node t-entry)
-                                          (code vending-graph->street-graph)))
+                                          (code vending-machine-graph->street-graph)))
                 (t-any-graph (gen-t-graph (v-any-node v-entry)
-                                          (code street-graph->vending-graph))))
+                                          (code street-graph->vending-machine-graph))))
           (t-any-node t-entry)))
 
 (module+ model
