@@ -12,20 +12,21 @@
 
 (: current-model-checker-string-values (Parameterof (-> Prompt-Meta (Pairof String (Listof String)))))
 (define current-model-checker-string-values
-  (make-parameter (lambda ([_meta : Prompt-Meta]) '("test" " " ""))))
+  (make-parameter (lambda (_meta)
+                    (error 'prompt "string prompt is not supported by default. Please configure `current-model-checker-string-values`."))))
 
 (: current-model-checker-integer-values (Parameterof (-> Prompt-Meta (Pairof Integer (Listof Integer)))))
 (define current-model-checker-integer-values (make-parameter
-                                              (lambda ([_meta : Prompt-Meta])
-                                                '(-1 0 1 2))))
+                                              (lambda (_meta)
+                                                (error 'prompt "integer prompt is not supported by default. Please configure `current-model-checker-integer-values`."))))
 
 (: current-model-checker-natural-values (Parameterof (-> Prompt-Meta (Pairof Natural (Listof Natural)))))
 (define current-model-checker-natural-values (make-parameter (lambda ([_meta : Prompt-Meta])
-                                                               '(0 1 2))))
+                                                               (error 'prompt "natural prompt is not supported by default. Please configure `current-model-checker-natural-values`."))))
 
 (: current-model-checker-positive-integer-values (Parameterof (-> Prompt-Meta (Pairof Positive-Integer (Listof Positive-Integer)))))
 (define current-model-checker-positive-integer-values (make-parameter (lambda ([_meta : Prompt-Meta])
-                                                                        '(1 2))))
+                                                                        (error 'prompt "positive-integer prompt is not supported by default. Please configure `current-model-checker-positive-integer-values`."))))
 
 (: current-model-checker-range-values (Parameterof (-> Prompt-Meta Integer Integer (U (Pairof Integer (Listof Integer))
                                                                                       'ascending
