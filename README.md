@@ -238,6 +238,8 @@ Play the game in your terminal:
 racket examples/simple-water-jug.rkt --console
 ```
 
+<details><summary>See console output: Interactive gameplay and the final Journal</summary>
+
 ```
 
 * Goal: Make exactly 4G
@@ -348,6 +350,8 @@ Congratulations! You made exactly 4 gallons!
 ? q
 ((auto ("Clear!")) (choose ("Pour 3G -> 5G")) (auto ("Not yet")) (choose ("Fill 3G")) (auto ("Not yet")) (choose ("Pour 3G -> 5G")) (auto ("Not yet")) (choose ("Empty 5G")) (auto ("Not yet")) (choose ("Pour 3G -> 5G")) (auto ("Not yet")) (choose ("Fill 3G")) (auto ("Not yet")) (choose ("Pour 3G -> 5G")) (auto ("Not yet")) (choose ("Fill 3G")))
 ```
+
+</details>
 
 Run tests and model checking:
 
