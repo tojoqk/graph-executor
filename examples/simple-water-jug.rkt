@@ -12,10 +12,6 @@
   (when (= left-cap right-cap)
     (error 'jug-graph "must not be same caps (~a, ~a)" left-cap right-cap))
 
-  (define j-node (inst (node g) Jug-State (U 'puzzle 'check 'terminal)))
-  (define j-edge (inst dot-edge Jug-State))
-  (define j-graph (inst graph Jug-State))
-
   (: show-cleared (-> Jug-State Jug-State))
   (define (show-cleared st)
     (message (format "Congratulations! You made exactly ~a gallons!" target))
@@ -88,6 +84,10 @@
             target
             left-cap (jug-state-left st) left-cap
             right-cap (jug-state-right st) right-cap))
+
+  (define j-node (inst (node g) Jug-State (U 'puzzle 'check 'terminal)))
+  (define j-edge (inst dot-edge Jug-State))
+  (define j-graph (inst graph Jug-State))
 
   (define playing (j-node "Playing" #:type 'puzzle #:prompt (code prompt-playing)))
   (define check   (j-node "Check Clear" #:type 'check))
