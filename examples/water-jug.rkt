@@ -32,13 +32,6 @@
 (: jug-graph (-> String (Listof Positive-Integer) Natural
                  (Values (Graph Jug-State) (Node Jug-State))))
 (define (jug-graph g caps target)
-  (cond [(dup caps) => (lambda ([dup-cap : Positive-Integer])
-                         (error 'jug-graph "must not be same caps (~a, ~a)" dup-cap dup-cap))])
-
-  (define j-node (inst (node g) Jug-State (U 'puzzle 'check 'terminal)))
-  (define j-edge (inst edge Jug-State))
-  (define j-graph (inst graph Jug-State))
-
   (: show-cleared (-> Jug-State Jug-State))
   (define (show-cleared st)
     (message (format "Congratulations! You made exactly ~a gallons!" target))
@@ -90,6 +83,13 @@
                                         cap (hash-ref st cap) cap))
                               caps)
                          "\n")))
+
+  (define j-node (inst (node g) Jug-State (U 'puzzle 'check 'terminal)))
+  (define j-edge (inst edge Jug-State))
+  (define j-graph (inst graph Jug-State))
+
+  (cond [(dup caps) => (lambda ([dup-cap : Positive-Integer])
+                         (error 'jug-graph "must not be same caps (~a, ~a)" dup-cap dup-cap))])
 
   (define playing (j-node "Playing" #:type 'puzzle #:prompt (code prompt-playing)))
   (define check   (j-node "Check Clear" #:type 'check))
