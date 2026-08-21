@@ -21,14 +21,6 @@
         [(member (car xs) (cdr xs)) (uniq (cdr xs))]
         [else (cons (car xs) (uniq (cdr xs)))]))
 
-(: cap->symbol (-> Positive-Integer Symbol))
-(define (cap->symbol c) (string->symbol (format "~aG" c)))
-
-(: symbol->cap (-> Symbol Positive-Integer))
-(define (symbol->cap c)
-  (assert (string->number (car (string-split (symbol->string c) "G")))
-          exact-positive-integer?))
-
 (: jug-graph (-> String (Listof Positive-Integer) Natural
                  (Values (Graph Jug-State) (Node Jug-State))))
 (define (jug-graph g caps target)
