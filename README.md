@@ -363,7 +363,7 @@ raco test examples/simple-water-jug.rkt
 
 ![Vending Machine Graph](examples/vending-machine.svg)
 
-The `examples/vending-machine.rkt` model shows two advanced features:
+The [examples/vending-machine.rkt](examples/vending-machine.rkt) model shows two advanced features:
 
 - **Connecting Graphs with Different States**: Connects independent graphs that have different state types (`Street-State` and `Vending-Machine-State`) into a single model using `OpenGraph` and `bridge`.
 - **Safe Inputs and Outputs (`prompt` and `message`)**: Transitions can ask the user "How much?" using `prompt`. In the console, this is real I/O. But every choice is saved in a `Journal`. This makes replaying a pure function. The model checker can safely test all possible inputs to find bugs.
