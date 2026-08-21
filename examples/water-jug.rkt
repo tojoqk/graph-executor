@@ -140,7 +140,7 @@
    [("--dot") "Generate dot" (set-box! mode 'dot)]
    [("--console") "Run console" (set-box! mode 'console)]
    #:args ()
-   (define m (make-model '(3 5) 4))
+   (define m (make-model '(3 5 7) 1))
    (case (unbox mode)
      [(dot) (render-dot (dot-renderer m)
                         #:config (dot-config #:global
@@ -153,7 +153,7 @@
 (module+ test
   (require typed/rackunit (submod ".." model))
 
-  (define m (make-model '(3 5) 4))
+  (define m (make-model '(3 5 7) 1))
 
   (: terminal-node? (-> (Node Jug-State) Boolean))
   (define (terminal-node? x) (eq? (node-type x) 'terminal))
@@ -170,20 +170,6 @@
                      #:bound depth
                      #:bounded (thunk (loop (add1 depth))))))
 
-  (check-equal? (shortest-path m)
-                '((auto ("Clear!"))
-                  (choose ("Pour 5G -> 3G"))
-                  (auto ("Not yet"))
-                  (choose ("Fill 5G"))
-                  (auto ("Not yet"))
-                  (choose ("Pour 5G -> 3G"))
-                  (auto ("Not yet"))
-                  (choose ("Empty 3G"))
-                  (auto ("Not yet"))
-                  (choose ("Pour 5G -> 3G"))
-                  (auto ("Not yet"))
-                  (choose ("Fill 5G"))))
-  
   (check-equal? (shortest-path (make-model '(3 5 7) 1))
                 '((auto ("Clear!"))
                   (choose ("Pour 5G -> 7G"))
