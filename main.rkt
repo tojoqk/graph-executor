@@ -29,10 +29,10 @@
          message
          console-run current-console-random-prompt-display current-console-trace-display
          find-counterexample find-deadlock find-false-terminal find-auto-conflict find-livelock
-         current-model-checker-trace-display
-         current-model-checker-string-values
-         current-model-checker-integer-values current-model-checker-natural-values current-model-checker-positive-integer-values
-         current-model-checker-range-values current-model-checker-random-values
+         current-checker-trace-display
+         current-checker-string-values
+         current-checker-integer-values current-checker-natural-values current-checker-positive-integer-values
+         current-checker-range-values current-checker-random-values
          DotNode dot-node-name dot-node-desc dot-node-type dot-node-prompt dot-node-trans
          DotEdge dot-edge-name dot-edge-desc dot-edge-from dot-edge-to dot-edge-when dot-edge-trans
          DotRenderer dot-renderer render-dot

@@ -2,41 +2,41 @@
 
 (require "../prompt.rkt")
 
-(provide model-checker-prompt
-         current-model-checker-string-values
-         current-model-checker-integer-values
-         current-model-checker-natural-values
-         current-model-checker-positive-integer-values
-         current-model-checker-range-values
-         current-model-checker-random-values)
+(provide checker-prompt
+         current-checker-string-values
+         current-checker-integer-values
+         current-checker-natural-values
+         current-checker-positive-integer-values
+         current-checker-range-values
+         current-checker-random-values)
 
-(: current-model-checker-string-values (Parameterof (-> Prompt-Meta (Pairof String (Listof String)))))
-(define current-model-checker-string-values
+(: current-checker-string-values (Parameterof (-> Prompt-Meta (Pairof String (Listof String)))))
+(define current-checker-string-values
   (make-parameter (lambda (_meta)
-                    (error 'prompt "string prompt is not supported by default. Please configure `current-model-checker-string-values`."))))
+                    (error 'prompt "string prompt is not supported by default. Please configure `current-checker-string-values`."))))
 
-(: current-model-checker-integer-values (Parameterof (-> Prompt-Meta (Pairof Integer (Listof Integer)))))
-(define current-model-checker-integer-values (make-parameter
+(: current-checker-integer-values (Parameterof (-> Prompt-Meta (Pairof Integer (Listof Integer)))))
+(define current-checker-integer-values (make-parameter
                                               (lambda (_meta)
-                                                (error 'prompt "integer prompt is not supported by default. Please configure `current-model-checker-integer-values`."))))
+                                                (error 'prompt "integer prompt is not supported by default. Please configure `current-checker-integer-values`."))))
 
-(: current-model-checker-natural-values (Parameterof (-> Prompt-Meta (Pairof Natural (Listof Natural)))))
-(define current-model-checker-natural-values (make-parameter (lambda ([_meta : Prompt-Meta])
-                                                               (error 'prompt "natural prompt is not supported by default. Please configure `current-model-checker-natural-values`."))))
+(: current-checker-natural-values (Parameterof (-> Prompt-Meta (Pairof Natural (Listof Natural)))))
+(define current-checker-natural-values (make-parameter (lambda ([_meta : Prompt-Meta])
+                                                               (error 'prompt "natural prompt is not supported by default. Please configure `current-checker-natural-values`."))))
 
-(: current-model-checker-positive-integer-values (Parameterof (-> Prompt-Meta (Pairof Positive-Integer (Listof Positive-Integer)))))
-(define current-model-checker-positive-integer-values (make-parameter (lambda ([_meta : Prompt-Meta])
-                                                                        (error 'prompt "positive-integer prompt is not supported by default. Please configure `current-model-checker-positive-integer-values`."))))
+(: current-checker-positive-integer-values (Parameterof (-> Prompt-Meta (Pairof Positive-Integer (Listof Positive-Integer)))))
+(define current-checker-positive-integer-values (make-parameter (lambda ([_meta : Prompt-Meta])
+                                                                        (error 'prompt "positive-integer prompt is not supported by default. Please configure `current-checker-positive-integer-values`."))))
 
-(: current-model-checker-range-values (Parameterof (-> Prompt-Meta Integer Integer (U (Pairof Integer (Listof Integer))
+(: current-checker-range-values (Parameterof (-> Prompt-Meta Integer Integer (U (Pairof Integer (Listof Integer))
                                                                                       'ascending
                                                                                       'descending))))
-(define current-model-checker-range-values (make-parameter (lambda (_m _from _to) 'ascending)))
+(define current-checker-range-values (make-parameter (lambda (_m _from _to) 'ascending)))
 
-(: current-model-checker-random-values (Parameterof (-> Prompt-Meta Positive-Integer (U (Pairof Natural (Listof Natural))
+(: current-checker-random-values (Parameterof (-> Prompt-Meta Positive-Integer (U (Pairof Natural (Listof Natural))
                                                                                         'ascending
                                                                                         'descending))))
-(define current-model-checker-random-values (make-parameter (lambda (_m _n) 'ascending)))
+(define current-checker-random-values (make-parameter (lambda (_m _n) 'ascending)))
 
 (: list->amb (All (S) (-> (-> (-> Prompt-Value) * Prompt-Value) (-> Any Boolean : #:+ S) (Listof (∩ Prompt-Value S)) S)))
 (define (list->amb amb p? lst)
@@ -47,22 +47,22 @@
                      (thunk (loop (cdr lst))))))
           p?))
 
-(: model-checker-prompt (-> (-> (-> Prompt-Value) * Prompt-Value) Prompt-Implementation))
-(define ((model-checker-prompt amb) meta op)
+(: checker-prompt (-> (-> (-> Prompt-Value) * Prompt-Value) Prompt-Implementation))
+(define ((checker-prompt amb) meta op)
   (case (car op)
-    [(choose) (model-checker-choose amb op)]
-    [(integer) (values (list->amb amb exact-integer? ((current-model-checker-integer-values) meta)) '())]
-    [(natural) (values (list->amb amb natural? ((current-model-checker-natural-values) meta)) '())]
-    [(positive-integer) (values (list->amb amb exact-positive-integer? ((current-model-checker-positive-integer-values) meta)) '())]
-    [(string) (values (list->amb amb string? ((current-model-checker-string-values) meta)) '())]
-    [(range) (model-checker-range amb meta op)]
-    [(random) (model-checker-random amb meta op)]))
+    [(choose) (checker-choose amb op)]
+    [(integer) (values (list->amb amb exact-integer? ((current-checker-integer-values) meta)) '())]
+    [(natural) (values (list->amb amb natural? ((current-checker-natural-values) meta)) '())]
+    [(positive-integer) (values (list->amb amb exact-positive-integer? ((current-checker-positive-integer-values) meta)) '())]
+    [(string) (values (list->amb amb string? ((current-checker-string-values) meta)) '())]
+    [(range) (checker-range amb meta op)]
+    [(random) (checker-random amb meta op)]))
 
-(: model-checker-choose (-> (-> (-> Prompt-Value) * Prompt-Value)
+(: checker-choose (-> (-> (-> Prompt-Value) * Prompt-Value)
                             (U (List 'choose Procedure (Listof Symbol))
                                (List 'choose (Listof Symbol)))
                             (Values Symbol Prompt-Attributes)))
-(define (model-checker-choose amb op)
+(define (checker-choose amb op)
   (let* ([choices (if (procedure? (second op))
                       (third op)
                       (second op))]
@@ -73,7 +73,7 @@
                            (thunk (loop (cdr choices))))))])
     (values (assert value symbol?) '())))
 
-(: model-checker-range (case-> (-> (-> (-> Prompt-Value) * Prompt-Value)
+(: checker-range (case-> (-> (-> (-> Prompt-Value) * Prompt-Value)
                                    Prompt-Meta
                                    (List 'range Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
                                (-> (-> (-> Prompt-Value) * Prompt-Value)
@@ -82,16 +82,16 @@
                                (-> (-> (-> Prompt-Value) * Prompt-Value)
                                    Prompt-Meta
                                    (List 'range Integer Integer) (Values Integer Prompt-Attributes))))
-(define (model-checker-range amb meta op)
+(define (checker-range amb meta op)
   (let ([from (second op)]
         [to : Integer (third op)])
     (unless (<= from to)
-      (error 'model-checker-prompt "invalid range ~a...~a" from to))
-    (values (let ([vals ((current-model-checker-range-values) meta from to)])
+      (error 'checker-prompt "invalid range ~a...~a" from to))
+    (values (let ([vals ((current-checker-range-values) meta from to)])
               (if (pair? vals)
                   (let ([n (list->amb amb exact-integer? vals)])
                     (unless (and (<= from n) (<= n to))
-                      (error 'current-model-checker-range-values "must be ~a <= ~a <= ~a" from n to))
+                      (error 'current-checker-range-values "must be ~a <= ~a <= ~a" from n to))
                     n)
                   (let ([value : Prompt-Value
                                (case vals
@@ -108,13 +108,13 @@
                     (if (and (exact? value) (integer? value)
                              (<= from value) (<= value to))
                         value
-                        (error 'model-checker-prompt "invalid range value ~a" value)))))
+                        (error 'checker-prompt "invalid range value ~a" value)))))
             '())))
 
-(: model-checker-random (-> (-> (-> Prompt-Value) * Prompt-Value) Prompt-Meta (List 'random Positive-Integer) (Values Natural Prompt-Attributes)))
-(define (model-checker-random amb meta op)
+(: checker-random (-> (-> (-> Prompt-Value) * Prompt-Value) Prompt-Meta (List 'random Positive-Integer) (Values Natural Prompt-Attributes)))
+(define (checker-random amb meta op)
   (let ([n (second op)])
-    (values (let ([vals ((current-model-checker-random-values) meta n)])
+    (values (let ([vals ((current-checker-random-values) meta n)])
               (case vals
                 [(ascending) (assert (let loop : Prompt-Value ([i 0])
                                        (if (= i n)
@@ -130,7 +130,7 @@
                                       natural?)]
                 [else (let ([r (list->amb amb natural? vals)])
                         (unless (< r n)
-                          (error 'current-model-checker-random-values "must be ~a < ~a" r n))
+                          (error 'current-checker-random-values "must be ~a < ~a" r n))
                         r)]))
 
             '())))

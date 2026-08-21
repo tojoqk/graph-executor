@@ -197,7 +197,7 @@
                   (choose ("Insert Money") (1))
                   (choose ("Go to Vending Machine"))))
 
-  (parameterize ([current-model-checker-range-values (lambda (_meta _from _to) 'descending)])
+  (parameterize ([current-checker-range-values (lambda (_meta _from _to) 'descending)])
     (check-equal? (let loop : (Option Journal) ([depth : Natural 0])
                     (find-counterexample m (negate (lambda ([n : (Node Any)] st)
                                                      (and (terminal-node? n)

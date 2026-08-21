@@ -12,14 +12,14 @@
 (require "effect/state.rkt")
 
 (provide find-counterexample find-deadlock find-false-terminal find-auto-conflict find-livelock
-         current-model-checker-trace-display)
+         current-checker-trace-display)
 
-(: current-model-checker-trace-display (Parameterof (U 'show 'hide)))
-(define current-model-checker-trace-display (make-parameter 'hide))
+(: current-checker-trace-display (Parameterof (U 'show 'hide)))
+(define current-checker-trace-display (make-parameter 'hide))
 
-(: current-model-checker-trace-display? (-> Boolean))
-(define (current-model-checker-trace-display?)
-  (case (current-model-checker-trace-display)
+(: current-checker-trace-display? (-> Boolean))
+(define (current-checker-trace-display?)
+  (case (current-checker-trace-display)
     [(show) #t]
     [(hide) #f]))
 
@@ -137,7 +137,7 @@
                                (define name
                                  (choose amb (map (inst edge-name S) (second ne))))
                                (define chosen-edge (find-edge (second ne) name))
-                               (when (current-model-checker-trace-display?)
+                               (when (current-checker-trace-display?)
                                  (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
                                (match-define (cons ps next-st)
                                  (call-with-prompt-value-emitter
@@ -168,7 +168,7 @@
                  [current-message void-message])
     ((node-trans (edge-to e))
      (begin0 ((edge-trans e) st)
-       (when (current-model-checker-trace-display?)
+       (when (current-checker-trace-display?)
          (let ([n (edge-to e)])
            (printf "Current Node: ~a (Graph: ~a)\n" (node-name n) (node-graph-name n))))))))
 
@@ -176,7 +176,7 @@
                            (-> (Pairof Prompt-Value Prompt-Attributes) Void)
                            Prompt-Implementation)))
 (define ((prompt/log amb emit) meta op)
-  (define-values (val attrs) ((model-checker-prompt amb) meta op))
+  (define-values (val attrs) ((checker-prompt amb) meta op))
   (emit (cons val attrs))
   (values val attrs))
 
@@ -201,12 +201,12 @@
            (when (set-member? (reachable-get) key)
              (amb-fail))
            (when (set-member? breadcrumbs key)
-             (when (current-model-checker-trace-display?)
+             (when (current-checker-trace-display?)
                (displayln "--- Start find-terminal ---"))
              (cond [(find-terminal gs n st (reachable-get))
                     => (lambda ([next-reachable : (Setof (Pairof Symbol S))])
                          (reachable-set (set-union next-reachable breadcrumbs))
-                         (when (current-model-checker-trace-display?)
+                         (when (current-checker-trace-display?)
                            (displayln "--- End find-terminal ---"))
                          (amb-fail))]
                    [else (return j)]))
@@ -218,7 +218,7 @@
              [(auto choose) (define name
                               (choose amb (map (inst edge-name S) (second ne))))
                             (define chosen-edge (find-edge (second ne) name))
-                            (when (current-model-checker-trace-display?)
+                            (when (current-checker-trace-display?)
                               (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
                             (match-define (cons ps next-st)
                               (call-with-prompt-value-emitter
@@ -261,7 +261,7 @@
              [(auto choose) (define name
                               (choose amb (map (inst edge-name S) (second ne))))
                             (define chosen-edge (find-edge (second ne) name))
-                            (when (current-model-checker-trace-display?)
+                            (when (current-checker-trace-display?)
                               (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
                             (seen-set (set-add (seen-get) key))
                             (loop (edge-to chosen-edge)
@@ -275,11 +275,11 @@
                             S)))
 (define (step/no-log st e amb)
   (define (void-message _val) (void))
-  (parameterize ([current-prompt (model-checker-prompt amb)]
+  (parameterize ([current-prompt (checker-prompt amb)]
                  [current-message void-message])
     ((node-trans (edge-to e))
      (begin0 ((edge-trans e) st)
-       (when (current-model-checker-trace-display?)
+       (when (current-checker-trace-display?)
          (let ([n (edge-to e)])
            (printf "Current Node: ~a (Graph: ~a)\n" (node-name n) (node-graph-name n))))))))
 
