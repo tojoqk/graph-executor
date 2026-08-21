@@ -105,8 +105,8 @@
 
              (j-edge (format "Pour ~aG -> ~aG" left-cap right-cap) #:from playing #:to check #:when (code can-pour-left-to-right?) #:trans (code pour-left-to-right))
              (j-edge (format "Pour ~aG -> ~aG" right-cap left-cap) #:from playing #:to check #:when (code can-pour-right-to-left?) #:trans (code pour-right-to-left))
-             (j-edge "Not yet" #:from check #:to playing #:mode 'auto #:when (code (negate is-cleared?)))
-             (j-edge "Clear!" #:from check #:to cleared #:mode 'auto #:when (code is-cleared?))))
+             (j-edge "Not yet" #:mode 'auto #:from check #:to playing #:when (code (negate is-cleared?)))
+             (j-edge "Clear!" #:mode 'auto #:from check #:to cleared #:when (code is-cleared?))))
    playing))
 
 (module+ model
