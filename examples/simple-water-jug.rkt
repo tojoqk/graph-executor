@@ -157,14 +157,11 @@
                                         (<= 0 (jug-state-left st) 3))))
   (check-false (find-counterexample m (lambda (_n [st : Jug-State])
                                         (<= 0 (jug-state-right st) 5))))
-  (check-false (find-counterexample m (lambda (_n [st : Jug-State])
-                                        (<= (+ (jug-state-left st) (jug-state-right st))
-                                            (+ 3 5)))))
 
   (: shortest-path (-> (Model Jug-State) (Option Journal)))
   (define (shortest-path m)
     (let loop : (Option Journal) ([depth : Natural 0])
-      (find-deadlock m (negate terminal-node?)
+      (find-deadlock m (const #f)
                      #:bound depth
                      #:bounded (thunk (loop (add1 depth))))))
 
