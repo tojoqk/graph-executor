@@ -97,10 +97,11 @@
           [else (current-graph-used-ids (set-add (current-graph-used-ids) node-id))])
     (node graph-id graph-name node-id name type tags desc
           (or tr (make-code #f identity))
-          (cond [(not pmt) (make-code #f (const (let ([title-or-meta (current-node-prompt)])
-                                                  (if (string? title-or-meta)
-                                                      (prompt-meta title-or-meta)
-                                                      title-or-meta))))]
+          (cond [(not pmt) (make-code #f (lambda (_st)
+                                           (let ([title-or-meta (current-node-prompt)])
+                                             (if (string? title-or-meta)
+                                                 (prompt-meta title-or-meta)
+                                                 title-or-meta))))]
                 [(string? pmt) (make-code pmt (const (prompt-meta pmt)))]
                 [else (make-code (%code-sexp pmt)
                                  (lambda ([s : S])
