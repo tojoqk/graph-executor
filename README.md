@@ -8,7 +8,7 @@ A Typed Racket library for modeling, executing, visualizing, and model-checking 
 - **Unified Model**: Define a model once to enable execution, visualization, and model checking.
 - **Modular Composition**: Build independent graphs with different state types, then connect them into a single model.
 - **Reproducible Execution**: Every run is deterministic and can be replayed from journals.
-- **Deterministic I/O**: Use `prompt` (input) and `message` (output) inside transitions; replaying with a journal remains a pure function.
+- **Deterministic Replay of I/O**: Use `prompt` (input) and `message` (output) inside transitions; replaying with a journal remains a pure, deterministic function.
 - **Graph Visualization**: Render models to Graphviz (DOT) and highlight execution paths from journals.
 - **Model Checking**: Detects deadlocks, livelocks, and invariant violations across states and `prompt` branches, outputting counterexamples as journals.
 
