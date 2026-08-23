@@ -293,9 +293,9 @@
                             #:history (History S)
                             Void)))
 (define (%render-dot gs node
-                    #:config config
-                    #:port port
-                    #:history h)
+                     #:config config
+                     #:port port
+                     #:history h)
   (parameterize ([current-visited-ids (history->visited-ids h)]
                  [current-node-id (history->current-node-id h)])
     (let ([visnodes (reachable-visnodes gs node)])

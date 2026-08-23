@@ -117,14 +117,14 @@
               ,(j-edge "Clear!" #:mode 'auto #:from check #:to cleared #:when (code is-cleared?))))
    playing))
 
-  (module+ model
-    (provide make-model)
-    (: make-model (-> (Listof Positive-Integer) Positive-Integer (Model Jug-State)))
-    (define (make-model caps target)
-      (model
-       (thunk
-        (define-values (graph node-init) (jug-graph "Water Jug Puzzle" caps target))
-        (values (list graph) node-init (caps->jug-state caps))))))
+(module+ model
+  (provide make-model)
+  (: make-model (-> (Listof Positive-Integer) Positive-Integer (Model Jug-State)))
+  (define (make-model caps target)
+    (model
+     (thunk
+      (define-values (graph node-init) (jug-graph "Water Jug Puzzle" caps target))
+      (values (list graph) node-init (caps->jug-state caps))))))
 
 (module+ main
   (require racket/cmdline

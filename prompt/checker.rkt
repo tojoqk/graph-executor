@@ -36,8 +36,8 @@
 (define current-checker-range-values (make-parameter (lambda (_m _from _to) 'ascending)))
 
 (: current-checker-random-values (Parameterof (-> Prompt-Meta Positive-Integer (U (Pairof Natural (Listof Natural))
-                                                                                        'ascending
-                                                                                        'descending))))
+                                                                                  'ascending
+                                                                                  'descending))))
 (define current-checker-random-values (make-parameter (lambda (_m _n) 'ascending)))
 
 (: list->amb (All (S) (-> (-> (-> Prompt-Value) * Prompt-Value) (-> Any Boolean : #:+ S) (Listof (∩ Prompt-Value S)) S)))
@@ -61,9 +61,9 @@
     [(random) (checker-random amb meta op)]))
 
 (: checker-choose (-> (-> (-> Prompt-Value) * Prompt-Value)
-                            (U (List 'choose Procedure (Listof Symbol))
-                               (List 'choose (Listof Symbol)))
-                            (Values Symbol Prompt-Attributes)))
+                      (U (List 'choose Procedure (Listof Symbol))
+                         (List 'choose (Listof Symbol)))
+                      (Values Symbol Prompt-Attributes)))
 (define (checker-choose amb op)
   (let* ([choices (if (procedure? (second op))
                       (third op)
@@ -76,14 +76,14 @@
     (values (assert value symbol?) '())))
 
 (: checker-range (case-> (-> (-> (-> Prompt-Value) * Prompt-Value)
-                                   Prompt-Meta
-                                   (List 'range Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
-                               (-> (-> (-> Prompt-Value) * Prompt-Value)
-                                   Prompt-Meta
-                                   (List 'range Natural Natural) (Values Natural Prompt-Attributes))
-                               (-> (-> (-> Prompt-Value) * Prompt-Value)
-                                   Prompt-Meta
-                                   (List 'range Integer Integer) (Values Integer Prompt-Attributes))))
+                             Prompt-Meta
+                             (List 'range Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
+                         (-> (-> (-> Prompt-Value) * Prompt-Value)
+                             Prompt-Meta
+                             (List 'range Natural Natural) (Values Natural Prompt-Attributes))
+                         (-> (-> (-> Prompt-Value) * Prompt-Value)
+                             Prompt-Meta
+                             (List 'range Integer Integer) (Values Integer Prompt-Attributes))))
 (define (checker-range amb meta op)
   (let ([from (second op)]
         [to : Integer (third op)])

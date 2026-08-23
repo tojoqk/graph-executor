@@ -8,9 +8,9 @@
   #:transparent)
 
 (: vending-machine-graph (-> String
-                     (Values (-> AnyNode (Code (-> Vending-Machine-State Any))
-                                 (OpenGraph Vending-Machine-State))
-                             (Node Vending-Machine-State))))
+                             (Values (-> AnyNode (Code (-> Vending-Machine-State Any))
+                                         (OpenGraph Vending-Machine-State))
+                                     (Node Vending-Machine-State))))
 (define (vending-machine-graph g)
   (: insert-money (-> Vending-Machine-State Vending-Machine-State))
   (define (insert-money st)
