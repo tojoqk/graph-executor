@@ -13,7 +13,7 @@
 (require "prompt/checker.rkt")
 (require "visualizer/dot.rkt")
 
-(provide Code code make-code
+(provide Code code
          current-node-prompt
          Node AnyNode node node-graph-name any-node
          Node-Meta node-meta-name node-meta-type node-meta-tags node-meta-desc
