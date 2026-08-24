@@ -1,15 +1,15 @@
 #lang typed/racket
 
 (provide Prompt Prompt-Type Prompt-Value Prompt-Op Prompt-Attributes current-prompt prompt
-         Prompt-Info prompt-info Prompt-Implementation
-         prompt-info-value prompt-info-attributes prompt-info-meta
-         Prompt-Info-Choose
-         Prompt-Info-String
-         Prompt-Info-Integer
-         Prompt-Info-Natural
-         Prompt-Info-Positive-Integer
-         Prompt-Info-Range
-         Prompt-Info-Random
+         Prompt-Result prompt-result Prompt-Implementation
+         prompt-result-value prompt-result-attributes prompt-result-meta
+         Prompt-Result-Choose
+         Prompt-Result-String
+         Prompt-Result-Integer
+         Prompt-Result-Natural
+         Prompt-Result-Positive-Integer
+         Prompt-Result-Range
+         Prompt-Result-Random
          Prompt-Meta (rename-out [prompt-meta* prompt-meta]) prompt-meta-title prompt-meta-tags)
 
 (struct prompt-meta ([title : String]
@@ -80,37 +80,37 @@
           (-> Prompt-Meta (List 'range Integer Integer) (Values Integer Prompt-Attributes))
           (-> Prompt-Meta (List 'random Positive-Integer) (Values Natural Prompt-Attributes))))
 
-(: prompt-info-value (case-> (-> Prompt-Info-Choose String)
-                             (-> Prompt-Info-String String)
-                             (-> Prompt-Info-Integer Integer)
-                             (-> Prompt-Info-Natural Natural)
-                             (-> Prompt-Info-Positive-Integer Positive-Integer)
-                             (-> Prompt-Info-Range Integer)
-                             (-> Prompt-Info-Random Natural)
-                             (-> Prompt-Info Prompt-Value)))
-(define (prompt-info-value pi) (car (fourth pi)))
+(: prompt-result-value (case-> (-> Prompt-Result-Choose String)
+                               (-> Prompt-Result-String String)
+                               (-> Prompt-Result-Integer Integer)
+                               (-> Prompt-Result-Natural Natural)
+                               (-> Prompt-Result-Positive-Integer Positive-Integer)
+                               (-> Prompt-Result-Range Integer)
+                               (-> Prompt-Result-Random Natural)
+                               (-> Prompt-Result Prompt-Value)))
+(define (prompt-result-value pi) (car (fourth pi)))
 
-(: prompt-info-attributes (-> Prompt-Info Prompt-Attributes))
-(define (prompt-info-attributes pi) (cdr (fourth pi)))
+(: prompt-result-attributes (-> Prompt-Result Prompt-Attributes))
+(define (prompt-result-attributes pi) (cdr (fourth pi)))
 
-(: prompt-info-meta (-> Prompt-Info Prompt-Meta))
-(define (prompt-info-meta pi) (third pi))
+(: prompt-result-meta (-> Prompt-Result Prompt-Meta))
+(define (prompt-result-meta pi) (third pi))
 
-(define-type Prompt-Info (List 'prompt Prompt-Op Prompt-Meta (Pairof Prompt-Value Prompt-Attributes)))
+(define-type Prompt-Result (List 'prompt Prompt-Op Prompt-Meta (Pairof Prompt-Value Prompt-Attributes)))
 
-(: prompt-info (-> Prompt-Op Prompt-Meta Prompt-Value Prompt-Attributes Prompt-Info))
-(define (prompt-info op meta value attrs)
+(: prompt-result (-> Prompt-Op Prompt-Meta Prompt-Value Prompt-Attributes Prompt-Result))
+(define (prompt-result op meta value attrs)
   (list 'prompt op meta (cons value attrs)))
 
-(define-type Prompt-Info-Choose (List 'prompt (U (List 'choose Procedure (Listof String))
-                                                 (List 'choose (Listof String)))
-                                      String
-                                      (Pairof String Prompt-Attributes)))
-(define-type Prompt-Info-String (List 'prompt (List 'string) String (Pairof String Prompt-Attributes)))
-(define-type Prompt-Info-Integer (List 'prompt (List 'integer) String (Pairof Integer Prompt-Attributes)))
-(define-type Prompt-Info-Natural (List 'prompt (List 'natural) String (Pairof Natural Prompt-Attributes)))
-(define-type Prompt-Info-Positive-Integer (List 'prompt (List 'positive-integer) String (Pairof Positive-Integer Prompt-Attributes)))
-(define-type Prompt-Info-Range  (U (List 'prompt (List 'range Natural Natural) String (Pairof Natural Prompt-Attributes))
-                                   (List 'prompt (List 'range Positive-Integer Positive-Integer) String (Pairof Positive-Integer Prompt-Attributes))
-                                   (List 'prompt (List 'range Integer Integer) String (Pairof Integer Prompt-Attributes))))
-(define-type Prompt-Info-Random (List 'prompt (List 'random Positive-Integer) String (Pairof Natural Prompt-Attributes)))
+(define-type Prompt-Result-Choose (List 'prompt (U (List 'choose Procedure (Listof String))
+                                                   (List 'choose (Listof String)))
+                                        String
+                                        (Pairof String Prompt-Attributes)))
+(define-type Prompt-Result-String (List 'prompt (List 'string) String (Pairof String Prompt-Attributes)))
+(define-type Prompt-Result-Integer (List 'prompt (List 'integer) String (Pairof Integer Prompt-Attributes)))
+(define-type Prompt-Result-Natural (List 'prompt (List 'natural) String (Pairof Natural Prompt-Attributes)))
+(define-type Prompt-Result-Positive-Integer (List 'prompt (List 'positive-integer) String (Pairof Positive-Integer Prompt-Attributes)))
+(define-type Prompt-Result-Range  (U (List 'prompt (List 'range Natural Natural) String (Pairof Natural Prompt-Attributes))
+                                     (List 'prompt (List 'range Positive-Integer Positive-Integer) String (Pairof Positive-Integer Prompt-Attributes))
+                                     (List 'prompt (List 'range Integer Integer) String (Pairof Integer Prompt-Attributes))))
+(define-type Prompt-Result-Random (List 'prompt (List 'random Positive-Integer) String (Pairof Natural Prompt-Attributes)))

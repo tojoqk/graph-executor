@@ -11,7 +11,7 @@
          record-events record-node record-edge record-meta record-choices record-attributes
          history->journal)
 
-(define-type Event (U Message-Info Prompt-Info))
+(define-type Event (U Message-Result Prompt-Result))
 (define-type (Node-Record S) (List 'node (Listof Event) (Node S)))
 (define-type (Edge-Record S) (U (Auto-Edge-Record S) (Choose-Edge-Record S)))
 (define-type (Auto-Edge-Record S) (List 'auto (Listof Event) (Edge S)))
@@ -55,10 +55,10 @@
 
 (: history->journal (All (S) (-> (History S) Journal)))
 (define (history->journal h)
-  (: prompt-values (-> (Listof (U Prompt-Info Message-Info))
+  (: prompt-values (-> (Listof (U Prompt-Result Message-Result))
                        (Listof (Pairof Prompt-Value Prompt-Attributes))))
   (define (prompt-values xs)
-    (filter-map (lambda ([x : (U Prompt-Info Message-Info)])
+    (filter-map (lambda ([x : (U Prompt-Result Message-Result)])
                   (case (first x)
                     [(prompt) (fourth x)]
                     [(message) #f]))

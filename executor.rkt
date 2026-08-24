@@ -37,7 +37,7 @@
   (cond [(current-edge-id) => (curry symbol=? (edge-id e))]
         [else #f]))
 
-(define-type Event (U Prompt-Info Message-Info))
+(define-type Event (U Prompt-Result Message-Result))
 (define-type Pmt (Pairof Prompt-Value Prompt-Attributes))
 
 (: replay (All (S) (-> (Model S) Journal (Values (Node S) S (History S)))))
@@ -168,7 +168,7 @@
 
 (: emit-message (-> (-> Event Void) (-> Any Void)))
 (define ((emit-message emit) msg)
-  (emit (message-info msg)))
+  (emit (message-result msg)))
 
 (: pop-prompt (-> (-> (-> Nothing) Pmt)
                   (-> Event Void)
@@ -176,7 +176,7 @@
 (define ((pop-prompt consume emit) meta op)
   (: push-event! (-> Prompt-Value Prompt-Attributes Void))
   (define (push-event! val attrs)
-    (emit (prompt-info op meta val attrs)))
+    (emit (prompt-result op meta val attrs)))
   (: fail (-> Nothing))
   (define (fail)
     (error 'replay "unexpected end of prompt values"))
