@@ -17,9 +17,23 @@
          DotGlobalConfig dot-global-config
          DotNodeConfig dot-node-config
          DotEdgeConfig dot-edge-config
-         current-dot-fontname current-dot-fontsize current-dot-dpi current-dot-rankdir
-         current-dot-node-config current-dot-edge-node-config current-dot-edge-config
-         current-dot-node-label-config current-dot-edge-node-label-config)
+         default-dot-node-config
+         default-dot-node-label-config
+         default-dot-edge-node-config
+         default-dot-edge-node-label-config
+         default-dot-edge-config)
+
+(: default-dot-fontname String)
+(define default-dot-fontname "times-roman")
+
+(: default-dot-fontsize Positive-Integer)
+(define default-dot-fontsize 14)
+
+(: default-dot-rankdir Rankdir)
+(define default-dot-rankdir 'TB)
+
+(: default-dot-dpi Positive-Integer)
+(define default-dot-dpi 96)
 
 (struct dot-node ([name : String]
                   [desc : (Option String)]
@@ -55,6 +69,82 @@
   (cond [(dot-visited-edge? n) 'visited]
         [else 'default]))
 
+(: default-dot-node-config (-> DotNode DotNodeStatus DotNodeConfig))
+(define default-dot-node-config
+  (lambda (_ [s : DotNodeStatus])
+    (case s
+      [(default) (dot-node-config #:shape "box" #:style '("filled" "rounded"))]
+      [(visited) (dot-node-config #:shape "box" #:style '("filled" "rounded")
+                                  #:fillcolor "gray")]
+      [(current) (dot-node-config #:shape "box" #:style '("filled" "rounded")
+                                  #:fillcolor "yellow")])))
+
+(: default-dot-edge-node-config (-> DotEdge DotEdgeStatus DotNodeConfig))
+(define default-dot-edge-node-config
+  (lambda (_e _s)
+    (dot-node-config #:shape "plaintext")))
+
+(: default-dot-edge-config (-> DotEdge DotEdgeStatus DotEdgeConfig))
+(define default-dot-edge-config
+  (lambda ([e : DotEdge] [s : DotEdgeStatus])
+    (let ([mode (dot-edge-mode e)])
+      (case mode
+        [(auto) (case s
+                  [(default) (dot-edge-config #:color "red")]
+                  [(visited) (dot-edge-config #:color "orange")])]
+        [(choose) (case s
+                    [(default) (dot-edge-config #:color "blue")]
+                    [(visited) (dot-edge-config #:color "cyan")])]
+        [(annotation) (dot-edge-config #:style '("dashed") #:color "black")]))))
+
+(: default-dot-node-label-config (-> DotNode DotNodeStatus (U (List 'text String)
+                                                              (Pairof 'html (Listof XExpr)))))
+(define default-dot-node-label-config
+  (lambda ([dn : DotNode] _)
+    (: center-row (-> (Listof XExpr) XExpr))
+    (define (center-row contents)
+      `(tr (td ((align "center")) ,@contents)))
+    (list 'html
+          `(table ((border "0") (cellborder "0") (cellspacing "0") (cellpadding "4"))
+                  ,(center-row (list `(b ,(dot-node-name dn))))
+                  ,@(cond [(dot-node-desc dn)
+                           => (lambda (d) (list (center-row (text->xexprs d))))]
+                          [else '()])
+                  ,@(cond [(dot-node-prompt dn)
+                           => (lambda (x)
+                                (list (center-row
+                                       `("prompt: " ,@(text->xexprs (show-sexp x))))))]
+                          [else '()])
+                  ,@(cond [(dot-node-trans dn)
+                           => (lambda (x)
+                                (list (center-row
+                                       `("trans: " ,@(text->xexprs (show-sexp x))))))]
+                          [else '()])))))
+
+(: default-dot-edge-node-label-config (-> DotEdge DotEdgeStatus (U (List 'text String)
+                                                                   (Pairof 'html (Listof XExpr)))))
+(define default-dot-edge-node-label-config
+  (lambda ([de : DotEdge] _)
+    (: center-row (-> (Listof XExpr) XExpr))
+    (define (center-row contents)
+      `(tr (td ((align "center")) ,@contents)))
+    (list 'html
+          `(table ((border "0") (cellborder "0") (cellspacing "0") (cellpadding "2"))
+                  ,(center-row (list `(b ,(dot-edge-name de))))
+                  ,@(cond [(dot-edge-desc de)
+                           => (lambda (d) (list (center-row (text->xexprs d))))]
+                          [else '()])
+                  ,@(cond [(dot-edge-when de)
+                           => (lambda (x)
+                                (list (center-row
+                                       `("when: " ,@(text->xexprs (show-sexp x))))))]
+                          [else '()])
+                  ,@(cond [(dot-edge-trans de)
+                           => (lambda (x)
+                                (list (center-row
+                                       `("trans: " ,@(text->xexprs (show-sexp x))))))]
+                          [else '()])))))
+
 (struct %dot-config ([global : DotGlobalConfig]
                      [node : (-> DotNode DotNodeStatus DotNodeConfig)]
                      [node-label : (-> DotNode DotNodeStatus (U (List 'text String)
@@ -81,11 +171,11 @@
                     #:edge-node-label [edge-node-label #f]
                     #:edge [edge #f])
   (%dot-config (or global (dot-global-config))
-               (or node (current-dot-node-config))
-               (or node-label (current-dot-node-label-config))
-               (or edge-node (current-dot-edge-node-config))
-               (or edge-node-label (current-dot-edge-node-label-config))
-               (or edge (current-dot-edge-config))))
+               (or node default-dot-node-config)
+               (or node-label default-dot-node-label-config)
+               (or edge-node default-dot-edge-node-config)
+               (or edge-node-label default-dot-edge-node-label-config)
+               (or edge default-dot-edge-config)))
 
 (define-type Rankdir (U 'TB 'LR 'BT 'RL))
 
@@ -104,22 +194,10 @@
                            #:fontsize [fontsize #f]
                            #:rankdir [rankdir #f]
                            #:dpi [dpi #f])
-  (global-config (or fontname (current-dot-fontname))
-                 (or fontsize (current-dot-fontsize))
-                 (or rankdir (current-dot-rankdir))
-                 (or dpi (current-dot-dpi))))
-
-(: current-dot-fontname (Parameterof String))
-(define current-dot-fontname (make-parameter "Times-Roman"))
-
-(: current-dot-fontsize (Parameterof Positive-Integer))
-(define current-dot-fontsize (make-parameter 14))
-
-(: current-dot-rankdir (Parameterof Rankdir))
-(define current-dot-rankdir (make-parameter 'TB))
-
-(: current-dot-dpi (Parameterof Positive-Integer))
-(define current-dot-dpi (make-parameter 96))
+  (global-config (or fontname default-dot-fontname)
+                 (or fontsize default-dot-fontsize)
+                 (or rankdir default-dot-rankdir)
+                 (or dpi default-dot-dpi)))
 
 (struct node-config ([shape : String]
                      [style : (Listof String)]
@@ -180,92 +258,12 @@
                    (or color "black")
                    (or minlen 1))))
 
-(: current-dot-node-config (Parameterof (-> DotNode DotNodeStatus DotNodeConfig)))
-(define current-dot-node-config
-  (make-parameter
-   (lambda (_ [s : DotNodeStatus])
-     (case s
-       [(default) (dot-node-config #:shape "box" #:style '("filled" "rounded"))]
-       [(visited) (dot-node-config #:shape "box" #:style '("filled" "rounded")
-                                   #:fillcolor "gray")]
-       [(current) (dot-node-config #:shape "box" #:style '("filled" "rounded")
-                                   #:fillcolor "yellow")]))))
-
-(: current-dot-edge-node-config (Parameterof (-> DotEdge DotEdgeStatus DotNodeConfig)))
-(define current-dot-edge-node-config
-  (make-parameter (lambda (_e _s)
-                    (dot-node-config #:shape "plaintext"))))
-
-(: current-dot-edge-config (Parameterof (-> DotEdge DotEdgeStatus DotEdgeConfig)))
-(define current-dot-edge-config
-  (make-parameter (lambda ([e : DotEdge] [s : DotEdgeStatus])
-                    (let ([mode (dot-edge-mode e)])
-                      (case mode
-                        [(auto) (case s
-                                  [(default) (dot-edge-config #:color "red")]
-                                  [(visited) (dot-edge-config #:color "orange")])]
-                        [(choose) (case s
-                                    [(default) (dot-edge-config #:color "blue")]
-                                    [(visited) (dot-edge-config #:color "cyan")])]
-                        [(annotation) (dot-edge-config #:style '("dashed") #:color "black")])))))
-
-
 (: text->xexprs (-> String (Listof XExpr)))
 (define (text->xexprs str)
   (let rec ([lines (regexp-split #rx"\n" str)])
     (cond [(null? lines) '()]
           [(null? (rest lines)) lines]
           [else (list* (first lines) '(br) (rec (rest lines)))])))
-
-(: current-dot-node-label-config (Parameter (-> DotNode DotNodeStatus (U (List 'text String)
-                                                                         (Pairof 'html (Listof XExpr))))))
-(define current-dot-node-label-config
-  (make-parameter
-   (lambda ([dn : DotNode] _)
-     (: center-row (-> (Listof XExpr) XExpr))
-     (define (center-row contents)
-       `(tr (td ((align "center")) ,@contents)))
-     (list 'html
-           `(table ((border "0") (cellborder "0") (cellspacing "0") (cellpadding "4"))
-                   ,(center-row (list `(b ,(dot-node-name dn))))
-                   ,@(cond [(dot-node-desc dn)
-                            => (lambda (d) (list (center-row (text->xexprs d))))]
-                           [else '()])
-                   ,@(cond [(dot-node-prompt dn)
-                            => (lambda (x)
-                                 (list (center-row
-                                        `("prompt: " ,@(text->xexprs (show-sexp x))))))]
-                           [else '()])
-                   ,@(cond [(dot-node-trans dn)
-                            => (lambda (x)
-                                 (list (center-row
-                                        `("trans: " ,@(text->xexprs (show-sexp x))))))]
-                           [else '()]))))))
-
-(: current-dot-edge-node-label-config (Parameter (-> DotEdge DotEdgeStatus (U (List 'text String)
-                                                                              (Pairof 'html (Listof XExpr))))))
-(define current-dot-edge-node-label-config
-  (make-parameter
-   (lambda ([de : DotEdge] _)
-     (: center-row (-> (Listof XExpr) XExpr))
-     (define (center-row contents)
-       `(tr (td ((align "center")) ,@contents)))
-     (list 'html
-           `(table ((border "0") (cellborder "0") (cellspacing "0") (cellpadding "2"))
-                   ,(center-row (list `(b ,(dot-edge-name de))))
-                   ,@(cond [(dot-edge-desc de)
-                            => (lambda (d) (list (center-row (text->xexprs d))))]
-                           [else '()])
-                   ,@(cond [(dot-edge-when de)
-                            => (lambda (x)
-                                 (list (center-row
-                                        `("when: " ,@(text->xexprs (show-sexp x))))))]
-                           [else '()])
-                   ,@(cond [(dot-edge-trans de)
-                            => (lambda (x)
-                                 (list (center-row
-                                        `("trans: " ,@(text->xexprs (show-sexp x))))))]
-                           [else '()]))))))
 
 (: show-sexp (-> Sexp String))
 (define (show-sexp x)

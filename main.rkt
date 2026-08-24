@@ -42,6 +42,5 @@
          DotGlobalConfig dot-global-config
          DotNodeConfig dot-node-config
          DotEdgeConfig dot-edge-config
-         current-dot-fontname current-dot-fontsize current-dot-dpi current-dot-rankdir
-         current-dot-node-config current-dot-edge-node-config current-dot-edge-config
-         current-dot-node-label-config current-dot-edge-node-label-config)
+         default-dot-node-config default-dot-edge-node-config default-dot-edge-config
+         default-dot-node-label-config default-dot-edge-node-label-config)
