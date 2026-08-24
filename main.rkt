@@ -13,7 +13,7 @@
 (require "prompt/checker.rkt")
 (require "visualizer/dot.rkt")
 
-(provide Code code
+(provide Code code make-code
          current-node-prompt
          Node AnyNode node node-graph-name node-name node-type node-tags any-node
          Edge AnyEdge Bridge edge bridge any-bridge any-edge edge-from edge-to
