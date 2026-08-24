@@ -197,20 +197,23 @@
                   (choose ("Insert Money") (1))
                   (choose ("Go to Vending Machine"))))
 
-  (parameterize ([current-checker-range-values (lambda ([meta : Prompt-Meta] _from _to)
-                                                 (if (memq 'how-much (prompt-meta-tags meta))
-                                                     'descending
-                                                     'ascending))])
-    (check-equal? (let loop : (Option Journal) ([depth : Natural 0])
-                    (find-counterexample m (negate (lambda ([n : Node-Meta] st)
-                                                     (and (terminal-node? n)
-                                                          (street? st)
-                                                          (= (street-wallet st) 150))))
-                                         #:bound depth
-                                         #:bounded (thunk (loop (add1 depth)))))
-                  '((choose ("Sit on Bench"))
-                    (choose ("Walk Away"))
-                    (auto ("Dispense Done (Just Zero)"))
-                    (choose ("Purchase Drink (150 Yen)"))
-                    (choose ("Insert Money") (150))
-                    (choose ("Go to Vending Machine"))))))
+  (check-equal? (let loop : (Option Journal) ([depth : Natural 0])
+                  (find-counterexample m (negate (lambda ([n : Node-Meta] st)
+                                                   (and (terminal-node? n)
+                                                        (street? st)
+                                                        (= (street-wallet st) 150))))
+                                       #:bound depth
+                                       #:bounded (thunk (loop (add1 depth)))
+                                       #:config (checker-config
+                                                 #:prompt (checker-prompt-config
+                                                           #:range-values
+                                                           (lambda ([meta : Prompt-Meta] [from : Integer] [to : Integer])
+                                                             (if (memq 'how-much (prompt-meta-tags meta))
+                                                                 'descending
+                                                                 (default-checker-prompt-range-values meta from to)))))))
+                '((choose ("Sit on Bench"))
+                  (choose ("Walk Away"))
+                  (auto ("Dispense Done (Just Zero)"))
+                  (choose ("Purchase Drink (150 Yen)"))
+                  (choose ("Insert Money") (150))
+                  (choose ("Go to Vending Machine")))))

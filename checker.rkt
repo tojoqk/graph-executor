@@ -12,6 +12,7 @@
 (require "effect/state.rkt")
 
 (provide find-counterexample find-deadlock find-false-terminal find-auto-conflict find-livelock
+         Checker-Config checker-config
          current-checker-trace-display)
 
 (: current-checker-trace-display (Parameterof (U 'show 'hide)))
@@ -29,60 +30,76 @@
      (List 'terminated)
      (List 'auto-conflicted (Pairof String (Listof String)))))
 
+(struct %checker-config ([prompt : Checker-Prompt-Config])
+  #:type-name Checker-Config)
+
+(: checker-config (-> [#:prompt Checker-Prompt-Config] Checker-Config))
+(define (checker-config #:prompt [prompt-config (checker-prompt-config)])
+  (%checker-config prompt-config))
+
 (: find-counterexample (All (S) (-> (Model S) (-> Node-Meta S Any)
                                     [#:journal Journal]
                                     [#:bound (Option Natural)]
                                     [#:bounded (-> (Option Journal))]
+                                    [#:config Checker-Config]
                                     (Option Journal))))
 (define (find-counterexample m invariant
                              #:journal [j '()]
                              #:bound [bound #f]
-                             #:bounded [bounded (const #f)])
+                             #:bounded [bounded (const #f)]
+                             #:config [config (checker-config)])
   (%find-counterexample m
                         (lambda (_ne [n : Node-Meta] [st : S])
                           (invariant n st))
                         #:journal j
                         #:bound bound
-                        #:bounded bounded))
+                        #:bounded bounded
+                        #:config config))
 
 (: find-deadlock (All (S) (-> (Model S) (-> Node-Meta Any)
                               [#:bound (Option Natural)]
                               [#:bounded (-> (Option Journal))]
+                              [#:config Checker-Config]
                               (Option Journal))))
-(define (find-deadlock m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)])
+(define (find-deadlock m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)] #:config [config (checker-config)])
   (%find-counterexample m
                         (lambda ([ne : (Next-Edge S)] [n : Node-Meta] _st)
                           (case (car ne)
                             [(terminated) (terminal-node? n)]
                             [else #t]))
                         #:bound bound
-                        #:bounded bounded))
+                        #:bounded bounded
+                        #:config config))
 
 (: find-false-terminal (All (S) (-> (Model S) (-> Node-Meta Any)
                                     [#:bound (Option Natural)]
                                     [#:bounded (-> (Option Journal))]
+                                    [#:config Checker-Config]
                                     (Option Journal))))
-(define (find-false-terminal m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)])
+(define (find-false-terminal m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)] #:config [config (checker-config)])
   (%find-counterexample m
                         (lambda ([ne : (Next-Edge S)] [n : Node-Meta] _st)
                           (case (car ne)
                             [(terminated) #t]
                             [else (not (terminal-node? n))]))
                         #:bound bound
-                        #:bounded bounded))
+                        #:bounded bounded
+                        #:config config))
 
 (: find-auto-conflict (All (S) (-> (Model S)
                                    [#:bound (Option Natural)]
                                    [#:bounded (-> (Option Journal))]
+                                   [#:config Checker-Config]
                                    (Option Journal))))
-(define (find-auto-conflict m #:bound [bound #f] #:bounded [bounded (const #f)])
+(define (find-auto-conflict m #:bound [bound #f] #:bounded [bounded (const #f)] #:config [config (checker-config)])
   (%find-counterexample m
                         (lambda ([ne : (Next-Edge S)] _n _st)
                           (case (car ne)
                             [(auto-conflicted) #f]
                             [else #t]))
                         #:bound bound
-                        #:bounded bounded))
+                        #:bounded bounded
+                        #:config config))
 
 (define pmt-meta (prompt-meta "choose"))
 
@@ -90,11 +107,13 @@
                                      [#:journal Journal]
                                      [#:bound (Option Natural)]
                                      [#:bounded (-> (Option Journal))]
+                                     #:config Checker-Config
                                      (Option Journal))))
 (define (%find-counterexample m invariant
                               #:journal [j '()]
                               #:bound [bound #f]
-                              #:bounded [bounded (const #f)])
+                              #:bounded [bounded (const #f)]
+                              #:config config)
   (define-values (call-with-bounded-state _bounded-get bounded-set)
     ((inst make-state Boolean (Pairof (Immutable-HashTable (Pairof Symbol S) Natural)
                                       (Option Journal)))))
@@ -141,7 +160,7 @@
                                  (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
                                (match-define (cons ps next-st)
                                  (call-with-prompt-value-emitter
-                                  (thunk (step st chosen-edge amb prompt-value-emit))))
+                                  (thunk (step st chosen-edge amb config prompt-value-emit))))
                                (seen-set (hash-set (seen-get) seen-key depth))
                                (loop (edge-to chosen-edge)
                                      next-st
@@ -159,12 +178,13 @@
 (: step (All (S) (-> S
                      (Edge S)
                      (-> (-> Prompt-Value) * Prompt-Value)
+                     Checker-Config
                      (-> (Pairof Prompt-Value Prompt-Attributes) Void)
                      S)))
-(define (step st e amb emit)
+(define (step st e amb config emit)
   (define (void-message val)
     (void))
-  (parameterize ([current-prompt (prompt/log amb emit)]
+  (parameterize ([current-prompt (prompt/log amb (%checker-config-prompt config) emit)]
                  [current-message void-message])
     ((node-trans (edge-to e))
      (begin0 ((edge-trans e) st)
@@ -173,15 +193,16 @@
            (printf "Current Node: ~a (Graph: ~a)\n" (node-name n) (node-graph-name n))))))))
 
 (: prompt/log (All (S) (-> (-> (-> Prompt-Value) * Prompt-Value)
+                           Checker-Prompt-Config
                            (-> (Pairof Prompt-Value Prompt-Attributes) Void)
                            Prompt-Implementation)))
-(define ((prompt/log amb emit) meta op)
-  (define-values (val attrs) ((checker-prompt amb) meta op))
+(define ((prompt/log amb config emit) meta op)
+  (define-values (val attrs) ((checker-prompt amb config) meta op))
   (emit (cons val attrs))
   (values val attrs))
 
-(: find-livelock (All (S) (-> (Model S) (Option Journal))))
-(define (find-livelock m)
+(: find-livelock (All (S) (-> (Model S) [#:config Checker-Config] (Option Journal))))
+(define (find-livelock m #:config [config (checker-config)])
   (define-values (call-with-reachable-state reachable-get reachable-set)
     ((inst make-state (Setof (Pairof Symbol S)) False)))
   (define-values (call-with-prompt-value-emitter prompt-value-emit)
@@ -203,7 +224,7 @@
            (when (set-member? breadcrumbs key)
              (when (current-checker-trace-display?)
                (displayln "--- Start find-terminal ---"))
-             (cond [(find-terminal gs n st (reachable-get))
+             (cond [(find-terminal config gs n st (reachable-get))
                     => (lambda ([next-reachable : (Setof (Pairof Symbol S))])
                          (reachable-set (set-union next-reachable breadcrumbs))
                          (when (current-checker-trace-display?)
@@ -222,7 +243,7 @@
                               (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
                             (match-define (cons ps next-st)
                               (call-with-prompt-value-emitter
-                               (thunk (step st chosen-edge amb prompt-value-emit))))
+                               (thunk (step st chosen-edge amb config prompt-value-emit))))
                             (loop (edge-to chosen-edge)
                                   next-st
                                   (cons (case ne-type
@@ -231,10 +252,11 @@
                                   (set-add breadcrumbs key))])))
         (thunk #f)))))))
 
-(: find-terminal (All (S) (-> (Listof (Graph S)) (Node S) S
+(: find-terminal (All (S) (-> Checker-Config
+                              (Listof (Graph S)) (Node S) S
                               (Setof (Pairof Symbol S))
                               (Option (Setof (Pairof Symbol S))))))
-(define (find-terminal gs n st reachable)
+(define (find-terminal config gs n st reachable)
   (define-values (call-with-seen-state seen-get seen-set)
     ((inst make-state (Setof (Pairof Symbol S)) False)))
   (define-values (call-with-amb amb amb-fail)
@@ -265,17 +287,18 @@
                               (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
                             (seen-set (set-add (seen-get) key))
                             (loop (edge-to chosen-edge)
-                                  (step/no-log st chosen-edge amb)
+                                  (step/no-log st chosen-edge amb config)
                                   (cons key breadcrumbs))])))
         (thunk #f)))))))
 
 (: step/no-log (All (S) (-> S
                             (Edge S)
                             (-> (-> Prompt-Value) * Prompt-Value)
+                            Checker-Config
                             S)))
-(define (step/no-log st e amb)
+(define (step/no-log st e amb config)
   (define (void-message _val) (void))
-  (parameterize ([current-prompt (checker-prompt amb)]
+  (parameterize ([current-prompt (checker-prompt amb (%checker-config-prompt config))]
                  [current-message void-message])
     ((node-trans (edge-to e))
      (begin0 ((edge-trans e) st)

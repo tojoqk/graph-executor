@@ -31,9 +31,13 @@
          console-run current-console-random-prompt-display current-console-trace-display
          find-counterexample find-deadlock find-false-terminal find-auto-conflict find-livelock
          current-checker-trace-display
-         current-checker-string-values
-         current-checker-integer-values current-checker-natural-values current-checker-positive-integer-values
-         current-checker-range-values current-checker-random-values
+         Checker-Config checker-config Checker-Prompt-Config checker-prompt-config
+         default-checker-prompt-string-values
+         default-checker-prompt-integer-values
+         default-checker-prompt-natural-values
+         default-checker-prompt-positive-integer-values
+         default-checker-prompt-range-values
+         default-checker-prompt-random-values
          DotNode dot-node-name dot-node-desc dot-node-type dot-node-prompt dot-node-trans
          DotEdge dot-edge-name dot-edge-desc dot-edge-from dot-edge-to dot-edge-when dot-edge-trans
          DotRenderer dot-renderer render-dot
