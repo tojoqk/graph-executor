@@ -3,6 +3,8 @@ graph-executor
 
 A Typed Racket library for modeling, executing, visualizing, and model-checking directed graphs.
 
+> ⚠️ **Experimental:** This library has not reached v1.0.0 yet. Breaking changes may occur in future updates. 
+
 ## Key Features
 
 - **Unified Model**: Define a model once to enable execution, visualization, and model checking.
