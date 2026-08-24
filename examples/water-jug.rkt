@@ -155,8 +155,8 @@
 
   (define m (make-model '(3 5 7) 1))
 
-  (: terminal-node? (-> (Node Jug-State) Boolean))
-  (define (terminal-node? x) (eq? (node-type x) 'terminal))
+  (: terminal-node? (-> Node-Meta Boolean))
+  (define (terminal-node? x) (eq? (node-meta-type x) 'terminal))
 
   (check-false (find-livelock m))
   (check-false (find-deadlock m terminal-node?))

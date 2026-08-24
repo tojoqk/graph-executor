@@ -6,6 +6,7 @@
          current-graph-used-ids current-node-prompt
          Node AnyNode make-node (rename-out [node* node])
          node-graph-id node-graph-name node-id node-name node-type node-tags node-desc node-trans node-trans-sexp node-prompt node-prompt-sexp node-attributes
+         Node-Meta node-node-meta node-meta-name node-meta-type node-meta-tags node-meta-desc
          any-node
          Edge AnyEdge Bridge EdgeMode make-edge make-bridge (rename-out [edge* edge] [bridge* bridge])
          edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-sexp edge-trans edge-trans-sexp edge-priority edge-attributes
@@ -48,18 +49,37 @@
                             (string-length edge-name)
                             edge-name))))
 
+(struct node-meta ([name : String]
+                   [type : Symbol]
+                   [tags : (Listof Symbol)]
+                   [desc : (Option String)])
+  #:type-name Node-Meta)
+
 (struct (S) node ([graph-id : Symbol]
                   [graph-name : String]
                   [id : Symbol]
-                  [name : String]
-                  [type : Symbol]
-                  [tags : (Listof Symbol)]
-                  [desc : (Option String)]
+                  [node-meta : Node-Meta]
                   [trans-code : (Code (-> S S))]
                   [prompt-code : (Code (-> S Prompt-Meta))]
                   [attributes : (Immutable-HashTable Symbol Any)])
   #:transparent
   #:type-name Node)
+
+(: node-name (All (S) (-> (Node S) String)))
+(define (node-name n)
+  (node-meta-name (node-node-meta n)))
+
+(: node-type (All (S) (-> (Node S) Symbol)))
+(define (node-type n)
+  (node-meta-type (node-node-meta n)))
+
+(: node-tags (All (S) (-> (Node S) (Listof Symbol))))
+(define (node-tags n)
+  (node-meta-tags (node-node-meta n)))
+
+(: node-desc (All (S) (-> (Node S) (Option String))))
+(define (node-desc n)
+  (node-meta-desc (node-node-meta n)))
 
 (: node-trans (All (S) (-> (Node S) (-> S S))))
 (define (node-trans n)
@@ -95,7 +115,8 @@
     (cond [(set-member? (current-graph-used-ids) node-id)
            (error "node: duplicate ID" node-id)]
           [else (current-graph-used-ids (set-add (current-graph-used-ids) node-id))])
-    (node graph-id graph-name node-id name type tags desc
+    (node graph-id graph-name node-id
+          (node-meta name type tags desc)
           (or tr (make-code #f identity))
           (cond [(not pmt) (make-code #f (lambda (_st)
                                            (let ([title-or-meta (current-node-prompt)])

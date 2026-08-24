@@ -169,9 +169,9 @@
   (require typed/rackunit)
   (require (submod ".." model))
 
-  (: terminal-node? (-> (Node Any) Any))
+  (: terminal-node? (-> Node-Meta Any))
   (define (terminal-node? n)
-    (symbol=? (node-type n) 'terminal))
+    (symbol=? (node-meta-type n) 'terminal))
 
   (define m (make-model))
   (check-false (find-livelock m))
@@ -183,7 +183,7 @@
                                               (and (v-state? st)
                                                    (negative? (v-state-wallet st)))))))
 
-  (check-equal? (find-counterexample m (negate (lambda ([n : (Node Any)] st)
+  (check-equal? (find-counterexample m (negate (lambda ([n : Node-Meta] st)
                                                  (and (terminal-node? n)
                                                       (street? st)
                                                       (= (street-wallet st) 150)))))
@@ -199,7 +199,7 @@
 
   (parameterize ([current-checker-range-values (lambda (_meta _from _to) 'descending)])
     (check-equal? (let loop : (Option Journal) ([depth : Natural 0])
-                    (find-counterexample m (negate (lambda ([n : (Node Any)] st)
+                    (find-counterexample m (negate (lambda ([n : Node-Meta] st)
                                                      (and (terminal-node? n)
                                                           (street? st)
                                                           (= (street-wallet st) 150))))

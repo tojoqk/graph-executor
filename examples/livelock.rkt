@@ -94,8 +94,8 @@
   (check-equal? (find-livelock tri-m) '((choose ("C->A")) (choose ("B->C")) (choose ("A->B"))))
 
   (define ρ-m (make-ρ-model))
-  (: ρ-terminal-node? (-> (Node Null) Boolean))
+  (: ρ-terminal-node? (-> Node-Meta Boolean))
   (define (ρ-terminal-node? n)
-    (symbol=? (node-type n) 'terminal))
+    (symbol=? (node-meta-type n) 'terminal))
   (check-equal? (find-livelock ρ-m) '((choose ("D->B")) (choose ("C->D")) (choose ("B->C")) (choose ("A->B"))))
   (check-false (find-deadlock ρ-m ρ-terminal-node?)))

@@ -29,7 +29,7 @@
      (List 'terminated)
      (List 'auto-conflicted (Pairof String (Listof String)))))
 
-(: find-counterexample (All (S) (-> (Model S) (-> (Node S) S Any)
+(: find-counterexample (All (S) (-> (Model S) (-> Node-Meta S Any)
                                     [#:journal Journal]
                                     [#:bound (Option Natural)]
                                     [#:bounded (-> (Option Journal))]
@@ -39,32 +39,32 @@
                              #:bound [bound #f]
                              #:bounded [bounded (const #f)])
   (%find-counterexample m
-                        (lambda (_ne [n : (Node S)] [st : S])
+                        (lambda (_ne [n : Node-Meta] [st : S])
                           (invariant n st))
                         #:journal j
                         #:bound bound
                         #:bounded bounded))
 
-(: find-deadlock (All (S) (-> (Model S) (-> (Node S) Any)
+(: find-deadlock (All (S) (-> (Model S) (-> Node-Meta Any)
                               [#:bound (Option Natural)]
                               [#:bounded (-> (Option Journal))]
                               (Option Journal))))
 (define (find-deadlock m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)])
   (%find-counterexample m
-                        (lambda ([ne : (Next-Edge S)] [n : (Node S)] _st)
+                        (lambda ([ne : (Next-Edge S)] [n : Node-Meta] _st)
                           (case (car ne)
                             [(terminated) (terminal-node? n)]
                             [else #t]))
                         #:bound bound
                         #:bounded bounded))
 
-(: find-false-terminal (All (S) (-> (Model S) (-> (Node S) Any)
+(: find-false-terminal (All (S) (-> (Model S) (-> Node-Meta Any)
                                     [#:bound (Option Natural)]
                                     [#:bounded (-> (Option Journal))]
                                     (Option Journal))))
 (define (find-false-terminal m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)])
   (%find-counterexample m
-                        (lambda ([ne : (Next-Edge S)] [n : (Node S)] _st)
+                        (lambda ([ne : (Next-Edge S)] [n : Node-Meta] _st)
                           (case (car ne)
                             [(terminated) #t]
                             [else (not (terminal-node? n))]))
@@ -86,7 +86,7 @@
 
 (define pmt-meta (prompt-meta "choose"))
 
-(: %find-counterexample (All (S) (-> (Model S) (-> (Next-Edge S) (Node S) S Any)
+(: %find-counterexample (All (S) (-> (Model S) (-> (Next-Edge S) Node-Meta S Any)
                                      [#:journal Journal]
                                      [#:bound (Option Natural)]
                                      [#:bounded (-> (Option Journal))]
@@ -127,7 +127,7 @@
                       (amb-fail))))
               (define ne (next-edges gs st n))
               (define ne-type (car ne))
-              (unless (invariant ne n st)
+              (unless (invariant ne (node-node-meta n) st)
                 (return j))
               (case ne-type
                 [(terminated auto-conflicted) (amb-fail)]

@@ -15,7 +15,8 @@
 
 (provide Code code make-code
          current-node-prompt
-         Node AnyNode node node-graph-name node-name node-type node-tags any-node
+         Node AnyNode node any-node
+         Node-Meta node-meta-name node-meta-type node-meta-tags node-meta-desc
          Edge AnyEdge Bridge edge bridge any-bridge any-edge edge-from edge-to
          Graph OpenGraph AnyGraph graph open-graph any-graph graph-name
          dot-bridge dot-edge
