@@ -14,7 +14,7 @@
 (define (vending-machine-graph g)
   (: insert-money (-> Vending-Machine-State Vending-Machine-State))
   (define (insert-money st)
-    (let ([amount (prompt "How much?" `(range 1 ,(v-state-wallet st)))])
+    (let ([amount (prompt "How much?" `(range 1 ,(v-state-wallet st)) '(how-much))])
       (struct-copy v-state st
                    [wallet (- (v-state-wallet st) amount)]
                    [inserted (+ (v-state-inserted st) amount)])))
@@ -197,7 +197,10 @@
                   (choose ("Insert Money") (1))
                   (choose ("Go to Vending Machine"))))
 
-  (parameterize ([current-checker-range-values (lambda (_meta _from _to) 'descending)])
+  (parameterize ([current-checker-range-values (lambda ([meta : Prompt-Meta] _from _to)
+                                                 (if (memq 'how-much (prompt-meta-tags meta))
+                                                     'descending
+                                                     'ascending))])
     (check-equal? (let loop : (Option Journal) ([depth : Natural 0])
                     (find-counterexample m (negate (lambda ([n : Node-Meta] st)
                                                      (and (terminal-node? n)
