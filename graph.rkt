@@ -6,7 +6,7 @@
          current-graph-used-ids current-node-prompt
          Node AnyNode make-node (rename-out [node* node])
          node-graph-id node-graph-name node-id node-name node-type node-tags node-desc node-trans node-trans-sexp node-prompt node-prompt-sexp node-attributes
-         Node-Meta node-node-meta node-meta-name node-meta-type node-meta-tags node-meta-desc
+         Node-Info node-node-info node-info-name node-info-type node-info-tags node-info-desc
          any-node
          Edge AnyEdge Bridge EdgeMode make-edge make-bridge (rename-out [edge* edge] [bridge* bridge])
          edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-sexp edge-trans edge-trans-sexp edge-priority edge-attributes
@@ -28,7 +28,7 @@
 (: current-graph-used-ids (Parameterof (Setof Symbol)))
 (define current-graph-used-ids (make-parameter ((inst set Symbol))))
 
-(: current-node-prompt (Parameterof (U String Prompt-Meta)))
+(: current-node-prompt (Parameterof (U String Prompt-Info)))
 (define current-node-prompt (make-parameter "Choose:"))
 
 (: make-graph-id (-> String Symbol))
@@ -49,37 +49,37 @@
                             (string-length edge-name)
                             edge-name))))
 
-(struct node-meta ([name : String]
+(struct node-info ([name : String]
                    [type : Symbol]
                    [tags : (Listof Symbol)]
                    [desc : (Option String)])
-  #:type-name Node-Meta)
+  #:type-name Node-Info)
 
 (struct (S) node ([graph-id : Symbol]
                   [graph-name : String]
                   [id : Symbol]
-                  [node-meta : Node-Meta]
+                  [node-info : Node-Info]
                   [trans-code : (Code (-> S S))]
-                  [prompt-code : (Code (-> S Prompt-Meta))]
+                  [prompt-code : (Code (-> S Prompt-Info))]
                   [attributes : (Immutable-HashTable Symbol Any)])
   #:transparent
   #:type-name Node)
 
 (: node-name (All (S) (-> (Node S) String)))
 (define (node-name n)
-  (node-meta-name (node-node-meta n)))
+  (node-info-name (node-node-info n)))
 
 (: node-type (All (S) (-> (Node S) Symbol)))
 (define (node-type n)
-  (node-meta-type (node-node-meta n)))
+  (node-info-type (node-node-info n)))
 
 (: node-tags (All (S) (-> (Node S) (Listof Symbol))))
 (define (node-tags n)
-  (node-meta-tags (node-node-meta n)))
+  (node-info-tags (node-node-info n)))
 
 (: node-desc (All (S) (-> (Node S) (Option String))))
 (define (node-desc n)
-  (node-meta-desc (node-node-meta n)))
+  (node-info-desc (node-node-info n)))
 
 (: node-trans (All (S) (-> (Node S) (-> S S))))
 (define (node-trans n)
@@ -89,7 +89,7 @@
 (define (node-trans-sexp n)
   (%code-sexp (node-trans-code n)))
 
-(: node-prompt (All (S) (-> (Node S) (-> S Prompt-Meta))))
+(: node-prompt (All (S) (-> (Node S) (-> S Prompt-Info))))
 (define (node-prompt n)
   (%code-value (node-prompt-code n)))
 
@@ -106,7 +106,7 @@
                       #:tags (Listof Symbol)
                       #:desc (Option String)
                       #:trans (Option (Code (-> S S)))
-                      #:prompt (Option (U String (Code (-> S (U String Prompt-Meta)))))
+                      #:prompt (Option (U String (Code (-> S (U String Prompt-Info)))))
                       #:attributes (Immutable-HashTable Symbol Any)
                       (Node S))))
 (define (make-node #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc #:trans tr #:prompt pmt #:attributes attrs)
@@ -116,20 +116,20 @@
            (error "node: duplicate ID" node-id)]
           [else (current-graph-used-ids (set-add (current-graph-used-ids) node-id))])
     (node graph-id graph-name node-id
-          (node-meta name type tags desc)
+          (node-info name type tags desc)
           (or tr (make-code #f identity))
           (cond [(not pmt) (make-code #f (lambda (_st)
-                                           (let ([title-or-meta (current-node-prompt)])
-                                             (if (string? title-or-meta)
-                                                 (prompt-meta title-or-meta)
-                                                 title-or-meta))))]
-                [(string? pmt) (make-code pmt (const (prompt-meta pmt)))]
+                                           (let ([title-or-info (current-node-prompt)])
+                                             (if (string? title-or-info)
+                                                 (prompt-info title-or-info)
+                                                 title-or-info))))]
+                [(string? pmt) (make-code pmt (const (prompt-info pmt)))]
                 [else (make-code (%code-sexp pmt)
                                  (lambda ([s : S])
-                                   (let ([title-or-meta ((%code-value pmt) s)])
-                                     (if (string? title-or-meta)
-                                         (prompt-meta title-or-meta)
-                                         title-or-meta))))])
+                                   (let ([title-or-info ((%code-value pmt) s)])
+                                     (if (string? title-or-info)
+                                         (prompt-info title-or-info)
+                                         title-or-info))))])
           attrs)))
 
 (: node* (-> String
@@ -139,7 +139,7 @@
                       [#:tags (Listof Symbol)]
                       [#:desc (Option String)]
                       [#:trans (Option (Code (-> S S)))]
-                      [#:prompt (Option (U String (Code (-> S (U String Prompt-Meta)))))]
+                      [#:prompt (Option (U String (Code (-> S (U String Prompt-Info)))))]
                       (Node S)))))
 (define ((node* graph-name) name #:type type #:tags [tags '()] #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f])
   (make-node #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc

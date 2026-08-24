@@ -16,7 +16,7 @@
 (provide Code code
          current-node-prompt
          Node AnyNode node node-graph-name any-node
-         Node-Meta node-meta-name node-meta-type node-meta-tags node-meta-desc
+         Node-Info node-info-name node-info-type node-info-tags node-info-desc
          Edge AnyEdge Bridge edge bridge any-bridge any-edge edge-from edge-to
          Graph OpenGraph AnyGraph graph open-graph any-graph graph-name
          dot-bridge dot-edge
@@ -26,7 +26,7 @@
          current-node? current-edge?
          Journal journal?
          History Record
-         prompt Prompt-Meta prompt-meta-tags
+         prompt Prompt-Info prompt-info-tags
          message
          console-run current-console-random-prompt-display current-console-trace-display
          find-counterexample find-deadlock find-false-terminal find-auto-conflict find-livelock

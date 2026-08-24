@@ -9,24 +9,24 @@
 (define current-console-random-prompt-display (make-parameter 'hide))
 
 (: console-prompt Prompt-Implementation)
-(define (console-prompt meta op)
+(define (console-prompt info op)
   (case (car op)
-    [(choose) (console-choose meta op)]
-    [(integer natural positive-integer) (console-input-number meta op)]
-    [(string) (console-string meta op)]
-    [(range) (console-range meta op)]
-    [(random) (console-random meta op)]))
+    [(choose) (console-choose info op)]
+    [(integer natural positive-integer) (console-input-number info op)]
+    [(string) (console-string info op)]
+    [(range) (console-range info op)]
+    [(random) (console-random info op)]))
 
-(: console-choose (-> Prompt-Meta (U (List 'choose Procedure (Listof Symbol))
+(: console-choose (-> Prompt-Info (U (List 'choose Procedure (Listof Symbol))
                                      (List 'choose (Listof Symbol)))
                       (Values Symbol Prompt-Attributes)))
-(define (console-choose meta op)
+(define (console-choose info op)
   (let ([choices (if (procedure? (second op))
                      (third op)
                      (second op))]
         [out (open-output-string)])
     (newline)
-    (fprintf out "* ~a\n" (prompt-meta-title meta))
+    (fprintf out "* ~a\n" (prompt-info-title info))
     (for ([choice choices]
           [i : Positive-Integer (in-naturals 1)])
       (fprintf out "  - [~a] ~a\n" i choice))
@@ -45,12 +45,12 @@
                           (retry)))]
                 [else (retry)]))))))
 
-(: console-input-number (case-> (-> Prompt-Meta (List 'integer) (Values Integer Prompt-Attributes))
-                                (-> Prompt-Meta (List 'natural) (Values Natural Prompt-Attributes))
-                                (-> Prompt-Meta (List 'positive-integer) (Values Positive-Integer Prompt-Attributes))))
-(define (console-input-number meta op)
+(: console-input-number (case-> (-> Prompt-Info (List 'integer) (Values Integer Prompt-Attributes))
+                                (-> Prompt-Info (List 'natural) (Values Natural Prompt-Attributes))
+                                (-> Prompt-Info (List 'positive-integer) (Values Positive-Integer Prompt-Attributes))))
+(define (console-input-number info op)
   (newline)
-  (printf "* ~a\n" (prompt-meta-title meta))
+  (printf "* ~a\n" (prompt-info-title info))
   (let retry ()
     (printf "? ")
     (let ([line (read-line)])
@@ -72,10 +72,10 @@
                          (retry))]))]
             [else (retry)]))))
 
-(: console-string (case-> (-> Prompt-Meta (List 'string) (Values String Prompt-Attributes))))
-(define (console-string meta op)
+(: console-string (case-> (-> Prompt-Info (List 'string) (Values String Prompt-Attributes))))
+(define (console-string info op)
   (newline)
-  (printf "* ~a\n" (prompt-meta-title meta))
+  (printf "* ~a\n" (prompt-info-title info))
   (let retry ()
     (printf "? ")
     (let ([value (read-line)])
@@ -84,12 +84,12 @@
           (retry)
           (values value '())))))
 
-(: console-range (case-> (-> Prompt-Meta (List 'range Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
-                         (-> Prompt-Meta (List 'range Natural Natural) (Values Natural Prompt-Attributes))
-                         (-> Prompt-Meta (List 'range Integer Integer) (Values Integer Prompt-Attributes))))
-(define (console-range meta op)
+(: console-range (case-> (-> Prompt-Info (List 'range Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
+                         (-> Prompt-Info (List 'range Natural Natural) (Values Natural Prompt-Attributes))
+                         (-> Prompt-Info (List 'range Integer Integer) (Values Integer Prompt-Attributes))))
+(define (console-range info op)
   (newline)
-  (printf "* ~a\n" (prompt-meta-title meta))
+  (printf "* ~a\n" (prompt-info-title info))
   (let ([from (second op)]
         [to : Integer (third op)])
     (let retry ()
@@ -104,12 +104,12 @@
                         (retry)))]
               [else (retry)])))))
 
-(: console-random (-> Prompt-Meta (List 'random Positive-Integer) (Values Natural Prompt-Attributes)))
-(define (console-random meta op)
+(: console-random (-> Prompt-Info (List 'random Positive-Integer) (Values Natural Prompt-Attributes)))
+(define (console-random info op)
   (let ([r (random (second op))])
     (values (case (current-console-random-prompt-display)
               [(show) (newline)
-                      (printf "* ~a\n" (prompt-meta-title meta))
+                      (printf "* ~a\n" (prompt-info-title info))
                       (printf "(random) > ~a\n" r)
                       r]
               [(hide) r])

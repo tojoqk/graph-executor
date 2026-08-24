@@ -2,7 +2,7 @@
 
 (provide Prompt Prompt-Type Prompt-Value Prompt-Op Prompt-Attributes current-prompt prompt
          Prompt-Result prompt-result Prompt-Implementation
-         prompt-result-value prompt-result-attributes prompt-result-meta
+         prompt-result-value prompt-result-attributes prompt-result-info
          Prompt-Result-Choose
          Prompt-Result-String
          Prompt-Result-Integer
@@ -10,15 +10,15 @@
          Prompt-Result-Positive-Integer
          Prompt-Result-Range
          Prompt-Result-Random
-         Prompt-Meta (rename-out [prompt-meta* prompt-meta]) prompt-meta-title prompt-meta-tags)
+         Prompt-Info (rename-out [prompt-info* prompt-info]) prompt-info-title prompt-info-tags)
 
-(struct prompt-meta ([title : String]
+(struct prompt-info ([title : String]
                      [tags : (Listof Symbol)])
-  #:type-name Prompt-Meta)
+  #:type-name Prompt-Info)
 
-(: prompt-meta* (-> String [#:tags (Listof Symbol)] Prompt-Meta))
-(define (prompt-meta* title #:tags [tags '()])
-  (prompt-meta title tags))
+(: prompt-info* (-> String [#:tags (Listof Symbol)] Prompt-Info))
+(define (prompt-info* title #:tags [tags '()])
+  (prompt-info title tags))
 
 (define-type (Prompt A)
   (case-> (->* (String (List 'choose (-> Any Boolean : #:+ A) (Listof (∩ A Symbol)))) ((Listof Symbol)) (∩ Symbol A))
@@ -52,9 +52,9 @@
 
 (: prompt (All (A) (Prompt A)))
 (define (prompt title op [tags '()])
-  (define meta (prompt-meta* title #:tags tags))
+  (define info (prompt-info* title #:tags tags))
   (cond [(current-prompt) => (lambda ([p : Prompt-Implementation])
-                               (define-values (value _attrs) (p meta op))
+                               (define-values (value _attrs) (p info op))
                                (case (car op)
                                  [(choose) (if (procedure? (cadr op))
                                                (assert value (cadr op))
@@ -68,17 +68,17 @@
         [else (error 'prompt "called outside of trans")]))
 
 (define-type Prompt-Implementation
-  (case-> (-> Prompt-Meta (U (List 'choose Procedure (Listof Symbol))
+  (case-> (-> Prompt-Info (U (List 'choose Procedure (Listof Symbol))
                              (List 'choose (Listof Symbol)))
               (Values Symbol Prompt-Attributes))
-          (-> Prompt-Meta (List 'string) (Values String Prompt-Attributes))
-          (-> Prompt-Meta (List 'integer) (Values Integer Prompt-Attributes))
-          (-> Prompt-Meta (List 'natural) (Values Natural Prompt-Attributes))
-          (-> Prompt-Meta (List 'positive-integer) (Values Positive-Integer Prompt-Attributes))
-          (-> Prompt-Meta (List 'range Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
-          (-> Prompt-Meta (List 'range Natural Natural) (Values Natural Prompt-Attributes))
-          (-> Prompt-Meta (List 'range Integer Integer) (Values Integer Prompt-Attributes))
-          (-> Prompt-Meta (List 'random Positive-Integer) (Values Natural Prompt-Attributes))))
+          (-> Prompt-Info (List 'string) (Values String Prompt-Attributes))
+          (-> Prompt-Info (List 'integer) (Values Integer Prompt-Attributes))
+          (-> Prompt-Info (List 'natural) (Values Natural Prompt-Attributes))
+          (-> Prompt-Info (List 'positive-integer) (Values Positive-Integer Prompt-Attributes))
+          (-> Prompt-Info (List 'range Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
+          (-> Prompt-Info (List 'range Natural Natural) (Values Natural Prompt-Attributes))
+          (-> Prompt-Info (List 'range Integer Integer) (Values Integer Prompt-Attributes))
+          (-> Prompt-Info (List 'random Positive-Integer) (Values Natural Prompt-Attributes))))
 
 (: prompt-result-value (case-> (-> Prompt-Result-Choose String)
                                (-> Prompt-Result-String String)
@@ -93,14 +93,14 @@
 (: prompt-result-attributes (-> Prompt-Result Prompt-Attributes))
 (define (prompt-result-attributes pi) (cdr (fourth pi)))
 
-(: prompt-result-meta (-> Prompt-Result Prompt-Meta))
-(define (prompt-result-meta pi) (third pi))
+(: prompt-result-info (-> Prompt-Result Prompt-Info))
+(define (prompt-result-info pi) (third pi))
 
-(define-type Prompt-Result (List 'prompt Prompt-Op Prompt-Meta (Pairof Prompt-Value Prompt-Attributes)))
+(define-type Prompt-Result (List 'prompt Prompt-Op Prompt-Info (Pairof Prompt-Value Prompt-Attributes)))
 
-(: prompt-result (-> Prompt-Op Prompt-Meta Prompt-Value Prompt-Attributes Prompt-Result))
-(define (prompt-result op meta value attrs)
-  (list 'prompt op meta (cons value attrs)))
+(: prompt-result (-> Prompt-Op Prompt-Info Prompt-Value Prompt-Attributes Prompt-Result))
+(define (prompt-result op info value attrs)
+  (list 'prompt op info (cons value attrs)))
 
 (define-type Prompt-Result-Choose (List 'prompt (U (List 'choose Procedure (Listof String))
                                                    (List 'choose (Listof String)))

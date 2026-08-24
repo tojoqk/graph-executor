@@ -169,9 +169,9 @@
   (require typed/rackunit)
   (require (submod ".." model))
 
-  (: terminal-node? (-> Node-Meta Any))
+  (: terminal-node? (-> Node-Info Any))
   (define (terminal-node? n)
-    (symbol=? (node-meta-type n) 'terminal))
+    (symbol=? (node-info-type n) 'terminal))
 
   (define m (make-model))
   (check-false (find-livelock m))
@@ -183,7 +183,7 @@
                                               (and (v-state? st)
                                                    (negative? (v-state-wallet st)))))))
 
-  (check-equal? (find-counterexample m (negate (lambda ([n : Node-Meta] st)
+  (check-equal? (find-counterexample m (negate (lambda ([n : Node-Info] st)
                                                  (and (terminal-node? n)
                                                       (street? st)
                                                       (= (street-wallet st) 150)))))
@@ -198,7 +198,7 @@
                   (choose ("Go to Vending Machine"))))
 
   (check-equal? (let loop : (Option Journal) ([depth : Natural 0])
-                  (find-counterexample m (negate (lambda ([n : Node-Meta] st)
+                  (find-counterexample m (negate (lambda ([n : Node-Info] st)
                                                    (and (terminal-node? n)
                                                         (street? st)
                                                         (= (street-wallet st) 150))))
@@ -207,10 +207,10 @@
                                        #:config (checker-config
                                                  #:prompt (checker-prompt-config
                                                            #:range-values
-                                                           (lambda ([meta : Prompt-Meta] [from : Integer] [to : Integer])
-                                                             (if (memq 'how-much (prompt-meta-tags meta))
+                                                           (lambda ([info : Prompt-Info] [from : Integer] [to : Integer])
+                                                             (if (memq 'how-much (prompt-info-tags info))
                                                                  'descending
-                                                                 (default-checker-prompt-range-values meta from to)))))))
+                                                                 (default-checker-prompt-range-values info from to)))))))
                 '((choose ("Sit on Bench"))
                   (choose ("Walk Away"))
                   (auto ("Dispense Done (Just Zero)"))

@@ -139,14 +139,14 @@
     [(transform) (list (first c) (fourth c))]
     [(restore) (list (first c) (fourth c))]))
 
-(: console-choose (case-> (-> Prompt-Meta (Pairof String (Listof String))
+(: console-choose (case-> (-> Prompt-Info (Pairof String (Listof String))
                               (U String Command))
-                          (-> Prompt-Meta Null
+                          (-> Prompt-Info Null
                               Command)))
-(define (console-choose meta choices)
+(define (console-choose info choices)
   (let ([out (open-output-string)])
     (newline)
-    (fprintf out "* ~a\n" (prompt-meta-title meta))
+    (fprintf out "* ~a\n" (prompt-info-title info))
     (unless (null? choices)
       (for ([choice choices]
             [i : Positive-Integer (in-naturals 1)])

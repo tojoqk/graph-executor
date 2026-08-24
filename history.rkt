@@ -8,14 +8,14 @@
 (provide Node-Record Edge-Record Auto-Edge-Record Choose-Edge-Record
          node-record auto-edge-record choose-edge-record
          History Record
-         record-events record-node record-edge record-meta record-choices record-attributes
+         record-events record-node record-edge record-info record-choices record-attributes
          history->journal)
 
 (define-type Event (U Message-Result Prompt-Result))
 (define-type (Node-Record S) (List 'node (Listof Event) (Node S)))
 (define-type (Edge-Record S) (U (Auto-Edge-Record S) (Choose-Edge-Record S)))
 (define-type (Auto-Edge-Record S) (List 'auto (Listof Event) (Edge S)))
-(define-type (Choose-Edge-Record S) (List 'choose (Listof Event) (Edge S) Prompt-Meta (Pairof (Edge S) (Listof (Edge S))) Prompt-Attributes))
+(define-type (Choose-Edge-Record S) (List 'choose (Listof Event) (Edge S) Prompt-Info (Pairof (Edge S) (Listof (Edge S))) Prompt-Attributes))
 
 (: node-record (All (S) (-> (Listof Event) (Node S) (Node-Record S))))
 (define (node-record es n)
@@ -25,9 +25,9 @@
 (define (auto-edge-record es e)
   (list 'auto es e))
 
-(: choose-edge-record (All (S) (-> (Listof Event) (Edge S) Prompt-Meta (Pairof (Edge S) (Listof (Edge S))) Prompt-Attributes (Choose-Edge-Record S))))
-(define (choose-edge-record es e meta edges attrs)
-  (list 'choose es e meta edges attrs))
+(: choose-edge-record (All (S) (-> (Listof Event) (Edge S) Prompt-Info (Pairof (Edge S) (Listof (Edge S))) Prompt-Attributes (Choose-Edge-Record S))))
+(define (choose-edge-record es e info edges attrs)
+  (list 'choose es e info edges attrs))
 
 (: record-events (All (S) (-> (U (Node-Record S) (Auto-Edge-Record S) (Choose-Edge-Record S)) (Listof Event))))
 (define (record-events r) (second r))
@@ -38,8 +38,8 @@
 (: record-edge (All (S) (-> (U (Auto-Edge-Record S) (Choose-Edge-Record S)) (Edge S))))
 (define (record-edge r) (third r))
 
-(: record-meta (All (S) (-> (Choose-Edge-Record S) Prompt-Meta)))
-(define (record-meta r) (fourth r))
+(: record-info (All (S) (-> (Choose-Edge-Record S) Prompt-Info)))
+(define (record-info r) (fourth r))
 
 (: record-choices (All (S) (-> (Choose-Edge-Record S) (Pairof (Edge S) (Listof (Edge S))))))
 (define (record-choices r) (fifth r))

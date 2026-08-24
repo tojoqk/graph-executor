@@ -37,7 +37,7 @@
 (define (checker-config #:prompt [prompt-config (checker-prompt-config)])
   (%checker-config prompt-config))
 
-(: find-counterexample (All (S) (-> (Model S) (-> Node-Meta S Any)
+(: find-counterexample (All (S) (-> (Model S) (-> Node-Info S Any)
                                     [#:journal Journal]
                                     [#:bound (Option Natural)]
                                     [#:bounded (-> (Option Journal))]
@@ -49,21 +49,21 @@
                              #:bounded [bounded (const #f)]
                              #:config [config (checker-config)])
   (%find-counterexample m
-                        (lambda (_ne [n : Node-Meta] [st : S])
+                        (lambda (_ne [n : Node-Info] [st : S])
                           (invariant n st))
                         #:journal j
                         #:bound bound
                         #:bounded bounded
                         #:config config))
 
-(: find-deadlock (All (S) (-> (Model S) (-> Node-Meta Any)
+(: find-deadlock (All (S) (-> (Model S) (-> Node-Info Any)
                               [#:bound (Option Natural)]
                               [#:bounded (-> (Option Journal))]
                               [#:config Checker-Config]
                               (Option Journal))))
 (define (find-deadlock m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)] #:config [config (checker-config)])
   (%find-counterexample m
-                        (lambda ([ne : (Next-Edge S)] [n : Node-Meta] _st)
+                        (lambda ([ne : (Next-Edge S)] [n : Node-Info] _st)
                           (case (car ne)
                             [(terminated) (terminal-node? n)]
                             [else #t]))
@@ -71,14 +71,14 @@
                         #:bounded bounded
                         #:config config))
 
-(: find-false-terminal (All (S) (-> (Model S) (-> Node-Meta Any)
+(: find-false-terminal (All (S) (-> (Model S) (-> Node-Info Any)
                                     [#:bound (Option Natural)]
                                     [#:bounded (-> (Option Journal))]
                                     [#:config Checker-Config]
                                     (Option Journal))))
 (define (find-false-terminal m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)] #:config [config (checker-config)])
   (%find-counterexample m
-                        (lambda ([ne : (Next-Edge S)] [n : Node-Meta] _st)
+                        (lambda ([ne : (Next-Edge S)] [n : Node-Info] _st)
                           (case (car ne)
                             [(terminated) #t]
                             [else (not (terminal-node? n))]))
@@ -101,9 +101,9 @@
                         #:bounded bounded
                         #:config config))
 
-(define pmt-meta (prompt-meta "choose"))
+(define pmt-info (prompt-info "choose"))
 
-(: %find-counterexample (All (S) (-> (Model S) (-> (Next-Edge S) Node-Meta S Any)
+(: %find-counterexample (All (S) (-> (Model S) (-> (Next-Edge S) Node-Info S Any)
                                      [#:journal Journal]
                                      [#:bound (Option Natural)]
                                      [#:bounded (-> (Option Journal))]
@@ -146,7 +146,7 @@
                       (amb-fail))))
               (define ne (next-edges gs st n))
               (define ne-type (car ne))
-              (unless (invariant ne (node-node-meta n) st)
+              (unless (invariant ne (node-node-info n) st)
                 (return j))
               (case ne-type
                 [(terminated auto-conflicted) (amb-fail)]
@@ -196,8 +196,8 @@
                            Checker-Prompt-Config
                            (-> (Pairof Prompt-Value Prompt-Attributes) Void)
                            Prompt-Implementation)))
-(define ((prompt/log amb config emit) meta op)
-  (define-values (val attrs) ((checker-prompt amb config) meta op))
+(define ((prompt/log amb config emit) info op)
+  (define-values (val attrs) ((checker-prompt amb config) info op))
   (emit (cons val attrs))
   (values val attrs))
 

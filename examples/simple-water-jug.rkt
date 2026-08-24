@@ -145,8 +145,8 @@
 
   (define m (make-model 3 5 4))
 
-  (: terminal-node? (-> Node-Meta Boolean))
-  (define (terminal-node? x) (eq? (node-meta-type x) 'terminal))
+  (: terminal-node? (-> Node-Info Boolean))
+  (define (terminal-node? x) (eq? (node-info-type x) 'terminal))
 
   (check-false (find-livelock m))
   (check-false (find-deadlock m terminal-node?))
