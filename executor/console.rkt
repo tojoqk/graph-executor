@@ -13,7 +13,8 @@
 (provide console-run console-choose console-command-dispatch
          Console-Command
          Console-Config console-config
-         weight-edge-option)
+         weight-edge-option
+         default-console-commands default-console-chooser)
 
 (struct weight-edge-option edge-option ([weight : Positive-Integer]))
 

@@ -22,6 +22,7 @@
          replay
          Console-Command
          Console-Config console-config weight-edge-option
+         default-console-commands default-console-chooser
          Journal journal? Journal-Entry
          History Record
          prompt Prompt-Info prompt-info-tags
