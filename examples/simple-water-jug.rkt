@@ -134,7 +134,7 @@
    #:args ()
    (define m (make-model 3 5 4))
    (case (unbox mode)
-     [(dot) (render-dot (dot-renderer m))]
+     [(dot) (render-dot m)]
      [(console)
       (parameterize ([current-console-commands (list (list 'quit 'q "Quit"))]
                      [current-console-trace-display 'hide])

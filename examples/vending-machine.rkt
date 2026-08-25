@@ -162,7 +162,7 @@
    #:args ()
    (define m (make-model))
    (case (unbox mode)
-     [(dot) (render-dot (dot-renderer m))]
+     [(dot) (render-dot m)]
      [(console) (writeln (console-run m))])))
 
 (module+ test

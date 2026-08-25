@@ -142,9 +142,8 @@
    #:args ()
    (define m (make-model '(3 5 7) 1))
    (case (unbox mode)
-     [(dot) (render-dot (dot-renderer m)
-                        #:config (dot-config #:global
-                                             (dot-global-config #:rankdir 'LR)))]
+     [(dot) (render-dot m #:config (dot-config #:global
+                                               (dot-global-config #:rankdir 'LR)))]
      [(console)
       (parameterize ([current-console-commands (list (list 'quit 'q "Quit"))]
                      [current-console-trace-display 'hide])

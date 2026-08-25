@@ -10,7 +10,7 @@
 
 (provide DotNode dot-node-name dot-node-desc dot-node-type dot-node-tags dot-node-prompt dot-node-trans
          DotEdge dot-edge-name dot-edge-desc dot-edge-from dot-edge-to dot-edge-when dot-edge-trans
-         DotRenderer dot-renderer render-dot
+         render-dot
          DotConfig dot-config
          DotNodeStatus DotEdgeStatus
          DotGlobalConfig dot-global-config
@@ -288,16 +288,10 @@
 (struct %dot-renderer ([proc : (-> Output-Port DotConfig Void)])
   #:type-name DotRenderer)
 
-(: render-dot (-> DotRenderer [#:port Output-Port] [#:config DotConfig] Void))
-(define (render-dot r #:port [port (current-output-port)] #:config [config (dot-config)])
-  ((%dot-renderer-proc r) port config))
-
-(: dot-renderer (All (S) (-> (Model S) [#:journal Journal] DotRenderer)))
-(define (dot-renderer m #:journal [j '()])
+(: render-dot (All (S) (-> (Model S)  [#:journal Journal] [#:port Output-Port] [#:config DotConfig] Void)))
+(define (render-dot m #:journal [j '()] #:port [port (current-output-port)] #:config [config (dot-config)])
   (define-values (_n _s h) (replay m j))
-  (%dot-renderer
-   (lambda ([port : Output-Port] [config : DotConfig])
-     (%render-dot (model-graphs m) (model-node m) #:config config #:history h #:port port))))
+  (%render-dot (model-graphs m) (model-node m) #:config config #:history h #:port port))
 
 (: %render-dot (All (S) (-> (Listof (Graph S)) (Node S)
                             #:config DotConfig
