@@ -121,8 +121,7 @@
     (node graph-id graph-name node-id
           (node-info name type tags desc)
           (or tr (make-code #f identity))
-          (cond [(not pmt) (make-code #f (lambda (_st)
-                                           (current-node-prompt)))]
+          (cond [(not pmt) (make-code #f (const (current-node-prompt)))]
                 [(string? pmt) (make-code pmt (const pmt))]
                 [else (make-code (%code-sexp pmt)
                                  (lambda ([s : S])

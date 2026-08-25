@@ -13,7 +13,6 @@
 (require "visualizer/dot.rkt")
 
 (provide Code code
-         current-node-prompt
          Node AnyNode node node-graph-name any-node
          Node-Info node-info-name node-info-type node-info-tags node-info-desc
          Edge AnyEdge Bridge edge bridge any-bridge any-edge edge-from edge-to
