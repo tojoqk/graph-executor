@@ -20,7 +20,8 @@
          Graph OpenGraph AnyGraph graph open-graph any-graph graph-name
          Model model
          replay
-         Console-Command current-console-commands
+         Console-Command
+         Console-Config console-config
          current-node? current-edge?
          Journal journal?
          History Record

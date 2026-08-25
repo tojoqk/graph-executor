@@ -13,21 +13,30 @@
 (provide console-run console-choose console-command-dispatch
          current-console-random-prompt-display
          current-console-trace-display current-console-trace-display?
-         Console-Command current-console-commands)
+         Console-Command
+         Console-Config console-config)
 
 (define-type Console-Command (U (List 'transform Symbol String (-> Journal Journal))
                                 (List 'action Symbol String (-> Journal Void))
                                 (List 'restore Symbol String (-> (Option Journal)))
                                 (List 'quit Symbol String)))
 
-(: current-console-commands (Parameterof (Listof Console-Command)))
-(define current-console-commands (make-parameter
-                                  (list (list 'transform 'u "Undo" journal-undo)
-                                        (list 'quit 'q "Quit"))))
+(: default-console-commands (Listof Console-Command))
+(define default-console-commands (list (list 'transform 'u "Undo" journal-undo)
+                                       (list 'quit 'q "Quit")))
 
-(: current-console-has-quit-command? (-> Boolean))
-(define (current-console-has-quit-command?)
-  (and (memf (lambda ([c : Console-Command]) (eq? 'quit (first c))) (current-console-commands))
+(struct %console-config ([commands : (Listof Console-Command)])
+  #:type-name Console-Config)
+
+(: console-config (-> [#:commands (Listof Console-Command)]
+                      Console-Config))
+(define (console-config #:commands [commands default-console-commands])
+  (%console-config commands))
+
+(: console-config-has-quit-command? (-> Console-Config Boolean))
+(define (console-config-has-quit-command? config)
+  (and (memf (lambda ([c : Console-Command]) (eq? 'quit (first c)))
+             (%console-config-commands config))
        #t))
 
 (: current-console-trace-display (Parameterof (U 'show 'hide)))
@@ -39,8 +48,8 @@
     [(show) #t]
     [(hide) #f]))
 
-(: console-run (All (S) (-> (Model S) [#:journal Journal] Journal)))
-(define (console-run m #:journal [j '()])
+(: console-run (All (S) (-> (Model S) [#:journal Journal] [#:config Console-Config] Journal)))
+(define (console-run m #:journal [j '()] #:config [config (console-config)])
   (define gs (model-graphs m))
   (define-values (n st _) (replay m j))
   (define-values (call-with-emitter emit)
@@ -60,8 +69,8 @@
                 (newline)
                 (displayln ">> Terminated"))])
            (define choose-pmt ((node-prompt n) st))
-           (if (current-console-has-quit-command?)
-               (command-dispatch n st j (console-choose choose-pmt '()))
+           (if (console-config-has-quit-command? config)
+               (command-dispatch n st j (console-choose config choose-pmt '()))
                (values n st j))]
           [(auto)
            (let* ([chosen-edge (auto-choose ne)])
@@ -75,7 +84,7 @@
                    (cons (auto-journal-entry (edge-name chosen-edge) ps) j)))]
           [(choose)
            (define choose-pmt ((node-prompt n) st))
-           (let ([cmd (console-choose choose-pmt (map (inst edge-name S) (second ne)))])
+           (let ([cmd (console-choose config choose-pmt (map (inst edge-name S) (second ne)))])
              (cond [(string? cmd)
                     (define chosen-edge (find-edge (second ne) cmd))
                     (match-define (cons ps next-st)
@@ -139,11 +148,13 @@
     [(transform) (list (first c) (fourth c))]
     [(restore) (list (first c) (fourth c))]))
 
-(: console-choose (case-> (-> Prompt-Info (Pairof String (Listof String))
+(: console-choose (case-> (-> Console-Config
+                              Prompt-Info (Pairof String (Listof String))
                               (U String Command))
-                          (-> Prompt-Info Null
+                          (-> Console-Config
+                              Prompt-Info Null
                               Command)))
-(define (console-choose info choices)
+(define (console-choose config info choices)
   (let ([out (open-output-string)])
     (newline)
     (fprintf out "* ~a\n" (prompt-info-title info))
@@ -155,7 +166,7 @@
                    => (lambda ([target : String])
                         (fprintf out "- [~a] ~a: ~a\n" i (car choice) (cadr choice)))])
             (fprintf out "  - [~a] ~a\n" i choice))))
-    (for ([cmd (current-console-commands)])
+    (for ([cmd (%console-config-commands config)])
       (when cmd (fprintf out "  - [~a] ~a\n" (second cmd) (third cmd))))
     (let ([text (get-output-string out)])
       (display text)
@@ -172,6 +183,6 @@
                           (retry)))]
                 [(findf (lambda ([cmd : Console-Command])
                           (string=? (symbol->string (second cmd)) (string-trim line)))
-                        (current-console-commands))
+                        (%console-config-commands config))
                  => console-command->command]
                 [else (retry)]))))))
