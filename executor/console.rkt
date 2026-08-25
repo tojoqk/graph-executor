@@ -23,16 +23,22 @@
 (define default-console-commands (list (list 'transform 'u "Undo" journal-undo)
                                        (list 'quit 'q "Quit")))
 
+(: default-console-chooser (-> Node-Info (U 'choose 'random)))
+(define default-console-chooser (lambda (_) 'choose))
+
 (struct %console-config ([commands : (Listof Console-Command)]
-                         [trace-display : (U 'show 'hide)])
+                         [trace-display : (U 'show 'hide)]
+                         [chooser : (-> Node-Info (U 'choose 'random))])
   #:type-name Console-Config)
 
 (: console-config (-> [#:commands (Listof Console-Command)]
                       [#:trace-display (U 'show 'hide)]
+                      [#:chooser (-> Node-Info (U 'choose 'random))]
                       Console-Config))
 (define (console-config #:commands [commands default-console-commands]
-                        #:trace-display [trace-display 'show])
-  (%console-config commands trace-display))
+                        #:trace-display [trace-display 'show]
+                        #:chooser [chooser default-console-chooser])
+  (%console-config commands trace-display chooser))
 
 (: console-config-has-quit-command? (-> Console-Config Boolean))
 (define (console-config-has-quit-command? config)
@@ -67,8 +73,10 @@
                 (newline)
                 (displayln ">> Terminated"))])
            (define choose-pmt ((node-prompt n) st))
-           (if (console-config-has-quit-command? config)
-               (command-dispatch n st j (console-choose config choose-pmt '()))
+           (if (and (eq? ((%console-config-chooser config) (node-node-info n)) 'choose)
+                    (console-config-has-quit-command? config))
+               (command-dispatch n st j
+                                 (console-choose 'choose config choose-pmt '()))
                (values n st j))]
           [(auto)
            (let* ([chosen-edge (auto-choose ne)])
@@ -82,9 +90,9 @@
                    (cons (auto-journal-entry (edge-name chosen-edge) ps) j)))]
           [(choose)
            (define choose-pmt ((node-prompt n) st))
-           (let ([cmd (console-choose config choose-pmt (map (inst edge-name S) (second ne)))])
-             (cond [(string? cmd)
-                    (define chosen-edge (find-edge (second ne) cmd))
+           (let ([cmd (console-choose ((%console-config-chooser config) (node-node-info n)) config choose-pmt (second ne))])
+             (cond [(edge? cmd)
+                    (define chosen-edge cmd)
                     (match-define (cons ps next-st)
                       (call-with-emitter
                        (thunk (console-step config st chosen-edge emit))))
@@ -146,24 +154,20 @@
     [(transform) (list (first c) (fourth c))]
     [(restore) (list (first c) (fourth c))]))
 
-(: console-choose (case-> (-> Console-Config
-                              Prompt-Info (Pairof String (Listof String))
-                              (U String Command))
-                          (-> Console-Config
-                              Prompt-Info Null
-                              Command)))
-(define (console-choose config info choices)
+(: console-choose/choose (All (S) (case-> (-> Console-Config
+                                              Prompt-Info (Pairof (Edge S) (Listof (Edge S)))
+                                              (U (Edge S) Command))
+                                          (-> Console-Config
+                                              Prompt-Info Null
+                                              Command))))
+(define (console-choose/choose config info choices)
   (let ([out (open-output-string)])
     (newline)
     (fprintf out "* ~a\n" (prompt-info-title info))
     (unless (null? choices)
       (for ([choice choices]
             [i : Positive-Integer (in-naturals 1)])
-        (if (pair? choice)
-            (cond [(car choice)
-                   => (lambda ([target : String])
-                        (fprintf out "- [~a] ~a: ~a\n" i (car choice) (cadr choice)))])
-            (fprintf out "  - [~a] ~a\n" i choice))))
+        (fprintf out "  - [~a] ~a\n" i (edge-name choice))))
     (for ([cmd (%console-config-commands config)])
       (when cmd (fprintf out "  - [~a] ~a\n" (second cmd) (third cmd))))
     (let ([text (get-output-string out)])
@@ -184,3 +188,14 @@
                         (%console-config-commands config))
                  => console-command->command]
                 [else (retry)]))))))
+
+(: console-choose/random (All (S) (-> (Pairof (Edge S) (Listof (Edge S))) (Edge S))))
+(define (console-choose/random choices)
+  (list-ref choices (random (length choices))))
+
+(: console-choose (All (S) (case-> (-> (U 'choose 'random) Console-Config Prompt-Info (Pairof (Edge S) (Listof (Edge S))) (U (Edge S) Command))
+                                   (-> 'choose Console-Config Prompt-Info Null Command))))
+(define (console-choose chooser config info choices)
+  (case chooser
+    [(choose) (console-choose/choose config info choices)]
+    [(random) (console-choose/random choices)]))

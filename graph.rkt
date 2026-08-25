@@ -9,7 +9,7 @@
          Node-Option (struct-out node-option)
          Node-Info node-node-info node-info-name node-info-type node-info-tags node-info-desc
          any-node
-         Edge AnyEdge Bridge EdgeMode (rename-out [edge* edge] [bridge* bridge])
+         Edge AnyEdge Bridge EdgeMode edge? (rename-out [edge* edge] [bridge* bridge])
          edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-sexp edge-trans edge-trans-sexp edge-priority edge-edge-options
          Edge-Option (struct-out edge-option)
          any-bridge any-edge
