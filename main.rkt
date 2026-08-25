@@ -29,7 +29,6 @@
          message
          console-run
          find-counterexample find-deadlock find-false-terminal find-auto-conflict find-livelock
-         current-checker-trace-display
          Checker-Config checker-config Checker-Prompt-Config checker-prompt-config
          default-checker-prompt-string-values
          default-checker-prompt-integer-values

@@ -12,15 +12,11 @@
 (require "effect/state.rkt")
 
 (provide find-counterexample find-deadlock find-false-terminal find-auto-conflict find-livelock
-         Checker-Config checker-config
-         current-checker-trace-display)
+         Checker-Config checker-config)
 
-(: current-checker-trace-display (Parameterof (U 'show 'hide)))
-(define current-checker-trace-display (make-parameter 'hide))
-
-(: current-checker-trace-display? (-> Boolean))
-(define (current-checker-trace-display?)
-  (case (current-checker-trace-display)
+(: checker-config-trace-display? (-> Checker-Config Boolean))
+(define (checker-config-trace-display? config)
+  (case (%checker-config-trace-display config)
     [(show) #t]
     [(hide) #f]))
 
@@ -30,12 +26,16 @@
      (List 'terminated)
      (List 'auto-conflicted (Pairof String (Listof String)))))
 
-(struct %checker-config ([prompt : Checker-Prompt-Config])
+(struct %checker-config ([prompt : Checker-Prompt-Config]
+                         [trace-display : (U 'show 'hide)])
   #:type-name Checker-Config)
 
-(: checker-config (-> [#:prompt Checker-Prompt-Config] Checker-Config))
-(define (checker-config #:prompt [prompt-config (checker-prompt-config)])
-  (%checker-config prompt-config))
+(: checker-config (-> [#:prompt Checker-Prompt-Config]
+                      [#:trace-display (U 'show 'hide)]
+                      Checker-Config))
+(define (checker-config #:prompt [prompt-config (checker-prompt-config)]
+                        #:trace-display [trace-display 'hide])
+  (%checker-config prompt-config trace-display))
 
 (: find-counterexample (All (S) (-> (Model S) (-> Node-Info S Any)
                                     [#:journal Journal]
@@ -156,7 +156,7 @@
                                (define name
                                  (choose amb (map (inst edge-name S) (second ne))))
                                (define chosen-edge (find-edge (second ne) name))
-                               (when (current-checker-trace-display?)
+                               (when (checker-config-trace-display? config)
                                  (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
                                (match-define (cons ps next-st)
                                  (call-with-prompt-value-emitter
@@ -188,7 +188,7 @@
                  [current-message void-message])
     ((node-trans (edge-to e))
      (begin0 ((edge-trans e) st)
-       (when (current-checker-trace-display?)
+       (when (checker-config-trace-display? config)
          (let ([n (edge-to e)])
            (printf "Current Node: ~a (Graph: ~a)\n" (node-name n) (node-graph-name n))))))))
 
@@ -222,12 +222,12 @@
            (when (set-member? (reachable-get) key)
              (amb-fail))
            (when (set-member? breadcrumbs key)
-             (when (current-checker-trace-display?)
+             (when (checker-config-trace-display? config)
                (displayln "--- Start find-terminal ---"))
              (cond [(find-terminal config gs n st (reachable-get))
                     => (lambda ([next-reachable : (Setof (Pairof Symbol S))])
                          (reachable-set (set-union next-reachable breadcrumbs))
-                         (when (current-checker-trace-display?)
+                         (when (checker-config-trace-display? config)
                            (displayln "--- End find-terminal ---"))
                          (amb-fail))]
                    [else (return j)]))
@@ -239,7 +239,7 @@
              [(auto choose) (define name
                               (choose amb (map (inst edge-name S) (second ne))))
                             (define chosen-edge (find-edge (second ne) name))
-                            (when (current-checker-trace-display?)
+                            (when (checker-config-trace-display? config)
                               (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
                             (match-define (cons ps next-st)
                               (call-with-prompt-value-emitter
@@ -283,7 +283,7 @@
              [(auto choose) (define name
                               (choose amb (map (inst edge-name S) (second ne))))
                             (define chosen-edge (find-edge (second ne) name))
-                            (when (current-checker-trace-display?)
+                            (when (checker-config-trace-display? config)
                               (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
                             (seen-set (set-add (seen-get) key))
                             (loop (edge-to chosen-edge)
@@ -302,7 +302,7 @@
                  [current-message void-message])
     ((node-trans (edge-to e))
      (begin0 ((edge-trans e) st)
-       (when (current-checker-trace-display?)
+       (when (checker-config-trace-display? config)
          (let ([n (edge-to e)])
            (printf "Current Node: ~a (Graph: ~a)\n" (node-name n) (node-graph-name n))))))))
 
