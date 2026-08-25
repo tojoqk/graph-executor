@@ -324,6 +324,7 @@
                   [#:when (Option (Code (-> S Any)))]
                   [#:trans (Option (Code (-> S S)))]
                   [#:priority (Option Integer)]
+                  [#:options (Listof Edge-Option)]
                   (Edge S))))
 (define (edge* name
                #:mode [mode #f]
