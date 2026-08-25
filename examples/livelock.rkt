@@ -18,7 +18,7 @@
 (: triangle-graph (-> String (Values (Graph Null) (Node Null))))
 (define (triangle-graph graph-name)
   (define g-node (inst (node graph-name) Null 'node))
-  (define g-edge (inst dot-edge Null))
+  (define g-edge (inst edge Null))
   (define g-graph (inst graph Null))
 
   (define a (g-node "A" #:type 'node))
@@ -35,7 +35,7 @@
 (: ρ-graph (-> String (Values (Graph Null) (Node Null))))
 (define (ρ-graph graph-name)
   (define g-node (inst (node graph-name) Null (U 'node 'terminal)))
-  (define g-edge (inst dot-edge Null))
+  (define g-edge (inst edge Null))
   (define g-graph (inst graph Null))
 
   (define a (g-node "A" #:type 'node))
