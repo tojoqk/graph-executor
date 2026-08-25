@@ -136,9 +136,9 @@
    (case (unbox mode)
      [(dot) (render-dot m)]
      [(console)
-      (parameterize ([current-console-trace-display 'hide])
-        (writeln (console-run m #:config (console-config
-                                          #:commands (list (list 'quit 'q "Quit"))))))])))
+      (writeln (console-run m #:config (console-config
+                                        #:commands (list (list 'quit 'q "Quit"))
+                                        #:trace-display 'hide)))])))
 
 (module+ test
   (require typed/rackunit (submod ".." model))

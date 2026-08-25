@@ -12,7 +12,6 @@
 
 (provide console-run console-choose console-command-dispatch
          current-console-random-prompt-display
-         current-console-trace-display current-console-trace-display?
          Console-Command
          Console-Config console-config)
 
@@ -25,13 +24,16 @@
 (define default-console-commands (list (list 'transform 'u "Undo" journal-undo)
                                        (list 'quit 'q "Quit")))
 
-(struct %console-config ([commands : (Listof Console-Command)])
+(struct %console-config ([commands : (Listof Console-Command)]
+                         [trace-display : (U 'show 'hide)])
   #:type-name Console-Config)
 
 (: console-config (-> [#:commands (Listof Console-Command)]
+                      [#:trace-display (U 'show 'hide)]
                       Console-Config))
-(define (console-config #:commands [commands default-console-commands])
-  (%console-config commands))
+(define (console-config #:commands [commands default-console-commands]
+                        #:trace-display [trace-display 'show])
+  (%console-config commands trace-display))
 
 (: console-config-has-quit-command? (-> Console-Config Boolean))
 (define (console-config-has-quit-command? config)
@@ -39,12 +41,9 @@
              (%console-config-commands config))
        #t))
 
-(: current-console-trace-display (Parameterof (U 'show 'hide)))
-(define current-console-trace-display (make-parameter 'show))
-
-(: current-console-trace-display? (-> Boolean))
-(define (current-console-trace-display?)
-  (case (current-console-trace-display)
+(: console-config-trace-display? (-> Console-Config Boolean))
+(define (console-config-trace-display? config)
+  (case (%console-config-trace-display config)
     [(show) #t]
     [(hide) #f]))
 
@@ -65,7 +64,7 @@
               (newline)
               (printf ">> Auto conflicted: ~s" (cdr ne))]
              [(terminated)
-              (when (current-console-trace-display?)
+              (when (console-config-trace-display? config)
                 (newline)
                 (displayln ">> Terminated"))])
            (define choose-pmt ((node-prompt n) st))
@@ -74,11 +73,11 @@
                (values n st j))]
           [(auto)
            (let* ([chosen-edge (auto-choose ne)])
-             (when (current-console-trace-display?)
+             (when (console-config-trace-display? config)
                (displayln (format ">> [Auto] ~a" (edge-name chosen-edge))))
              (match-define (cons ps next-st)
                (call-with-emitter
-                (thunk (console-step st chosen-edge emit))))
+                (thunk (console-step config st chosen-edge emit))))
              (loop (edge-to chosen-edge)
                    next-st
                    (cons (auto-journal-entry (edge-name chosen-edge) ps) j)))]
@@ -89,7 +88,7 @@
                     (define chosen-edge (find-edge (second ne) cmd))
                     (match-define (cons ps next-st)
                       (call-with-emitter
-                       (thunk (console-step st chosen-edge emit))))
+                       (thunk (console-step config st chosen-edge emit))))
                     (loop (edge-to chosen-edge)
                           next-st
                           (cons (choose-journal-entry (edge-name chosen-edge) '() ps) j))]
@@ -117,8 +116,8 @@
                                  [else j])))
                (loop rs-n rs-st (history->journal rs-h))]))
 
-(: console-step (All (S) (-> S (Edge S) (-> (Pairof Prompt-Value Prompt-Attributes) Void) S)))
-(define (console-step st e emit)
+(: console-step (All (S) (-> Console-Config S (Edge S) (-> (Pairof Prompt-Value Prompt-Attributes) Void) S)))
+(define (console-step config st e emit)
   (define (console-message val)
     (newline)
     (displayln val))
@@ -128,7 +127,7 @@
      (parameterize ([current-prompt (console-prompt/log emit)]
                     [current-message console-message])
        (begin0 ((edge-trans e) st)
-         (when (current-console-trace-display?)
+         (when (console-config-trace-display? config)
            (let ([n (edge-to e)])
              (printf "--- Current Node: ~a (Graph: ~a) ---\n" (node-name n) (node-graph-name n))
              (cond [(node-desc n) => displayln]))))))))

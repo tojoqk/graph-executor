@@ -27,7 +27,7 @@
          History Record
          prompt Prompt-Info prompt-info-tags
          message
-         console-run current-console-random-prompt-display current-console-trace-display
+         console-run current-console-random-prompt-display
          find-counterexample find-deadlock find-false-terminal find-auto-conflict find-livelock
          current-checker-trace-display
          Checker-Config checker-config Checker-Prompt-Config checker-prompt-config

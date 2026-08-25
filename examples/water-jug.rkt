@@ -145,9 +145,9 @@
      [(dot) (render-dot m #:config (dot-config #:global
                                                (dot-global-config #:rankdir 'LR)))]
      [(console)
-      (parameterize ([current-console-trace-display 'hide])
-        (writeln (console-run m #:config (console-config
-                                          #:commands (list (list 'quit 'q "Quit"))))))])))
+      (writeln (console-run m #:config (console-config
+                                        #:commands (list (list 'quit 'q "Quit"))
+                                        #:trace-display 'hide)))])))
 
 (module+ test
   (require typed/rackunit (submod ".." model))
