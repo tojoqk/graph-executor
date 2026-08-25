@@ -22,7 +22,6 @@
          replay
          Console-Command
          Console-Config console-config
-         current-node? current-edge?
          Journal journal?
          History Record
          prompt Prompt-Info prompt-info-tags

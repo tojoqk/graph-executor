@@ -11,8 +11,6 @@
 
 (provide replay auto-choose
          find-graph next-edges
-         current-node-id current-node?
-         current-edge-id current-edge?
          find-edge
          Command)
 
@@ -20,22 +18,6 @@
                         (List 'action (-> Journal Void))
                         (List 'restore (-> (Option Journal)))
                         (List 'quit)))
-
-(: current-node-id (Parameterof (Option Symbol)))
-(define current-node-id (make-parameter #f))
-
-(: current-node? (All (S) (-> (Node S) Boolean)))
-(define (current-node? n)
-  (cond [(current-node-id) => (curry symbol=? (node-id n))]
-        [else #f]))
-
-(: current-edge-id (Parameterof (Option Symbol)))
-(define current-edge-id (make-parameter #f))
-
-(: current-edge? (All (S) (-> (Edge S) Boolean)))
-(define (current-edge? e)
-  (cond [(current-edge-id) => (curry symbol=? (edge-id e))]
-        [else #f]))
 
 (define-type Event (U Prompt-Result Message-Result))
 (define-type Pmt (Pairof Prompt-Value Prompt-Attributes))
