@@ -166,7 +166,7 @@ This single file shows how to:
   (require racket/cmdline
            (submod ".." model))
 
-  (: mode (Boxof (U 'dot 'console)))
+  (: mode (Boxof (U 'dot 'console 'random)))
   (define mode (box 'dot))
 
   (define program-name "water-jug")
@@ -175,6 +175,7 @@ This single file shows how to:
    #:once-any
    [("--dot") "Generate dot" (set-box! mode 'dot)]
    [("--console") "Run console" (set-box! mode 'console)]
+   [("--random") "Run random" (set-box! mode 'random)]
    #:args ()
    (define m (make-model 3 5 4))
    (case (unbox mode)
@@ -182,7 +183,14 @@ This single file shows how to:
      [(console)
       (writeln (console-run m #:config (console-config
                                         #:commands (list (list 'quit 'q "Quit"))
-                                        #:trace-display 'hide)))])))
+                                        #:trace-display 'hide)))]
+     [(random)
+      (define j (console-run m #:config (console-config
+                                         #:chooser (lambda (_) 'random)
+                                         #:trace-display 'hide)))
+      (displayln "---------")
+      (printf "Solved in ~a steps!\n"
+              (count (lambda ([e : Journal-Entry]) (eq? (car e) 'choose)) j))])))
 
 (module+ test
   (require typed/rackunit (submod ".." model))

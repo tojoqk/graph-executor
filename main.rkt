@@ -22,7 +22,7 @@
          replay
          Console-Command
          Console-Config console-config
-         Journal journal?
+         Journal journal? Journal-Entry
          History Record
          prompt Prompt-Info prompt-info-tags
          message
