@@ -21,7 +21,7 @@
          Model model
          replay
          Console-Command
-         Console-Config console-config
+         Console-Config console-config weight-edge-option
          Journal journal? Journal-Entry
          History Record
          prompt Prompt-Info prompt-info-tags
