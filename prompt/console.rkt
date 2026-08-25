@@ -2,11 +2,7 @@
 
 (require "../prompt.rkt")
 
-(provide console-prompt
-         current-console-random-prompt-display)
-
-(: current-console-random-prompt-display (Parameterof (U 'show 'hide)))
-(define current-console-random-prompt-display (make-parameter 'hide))
+(provide console-prompt)
 
 (: console-prompt Prompt-Implementation)
 (define (console-prompt info op)
@@ -106,11 +102,4 @@
 
 (: console-random (-> Prompt-Info (List 'random Positive-Integer) (Values Natural Prompt-Attributes)))
 (define (console-random info op)
-  (let ([r (random (second op))])
-    (values (case (current-console-random-prompt-display)
-              [(show) (newline)
-                      (printf "* ~a\n" (prompt-info-title info))
-                      (printf "(random) > ~a\n" r)
-                      r]
-              [(hide) r])
-            '())))
+  (values (random (second op)) '()))
