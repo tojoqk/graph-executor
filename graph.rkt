@@ -1,7 +1,5 @@
 #lang typed/racket
 
-(require "prompt.rkt")
-
 (provide Code code make-code
          current-graph-used-ids current-node-prompt
          Node AnyNode make-node (rename-out [node* node])
@@ -30,7 +28,7 @@
 (: current-graph-used-ids (Parameterof (Setof Symbol)))
 (define current-graph-used-ids (make-parameter ((inst set Symbol))))
 
-(: current-node-prompt (Parameterof (U String Prompt-Info)))
+(: current-node-prompt (Parameterof String))
 (define current-node-prompt (make-parameter "Choose:"))
 
 (: make-graph-id (-> String Symbol))
@@ -65,7 +63,7 @@
                   [id : Symbol]
                   [node-info : Node-Info]
                   [trans-code : (Code (-> S S))]
-                  [prompt-code : (Code (-> S Prompt-Info))]
+                  [prompt-code : (Code (-> S String))]
                   [node-options : (Listof Node-Option)])
   #:transparent
   #:type-name Node)
@@ -94,7 +92,7 @@
 (define (node-trans-sexp n)
   (%code-sexp (node-trans-code n)))
 
-(: node-prompt (All (S) (-> (Node S) (-> S Prompt-Info))))
+(: node-prompt (All (S) (-> (Node S) (-> S String))))
 (define (node-prompt n)
   (%code-value (node-prompt-code n)))
 
@@ -111,7 +109,7 @@
                       #:tags (Listof Symbol)
                       #:desc (Option String)
                       #:trans (Option (Code (-> S S)))
-                      #:prompt (Option (U String (Code (-> S (U String Prompt-Info)))))
+                      #:prompt (Option (U String (Code (-> S String))))
                       #:options (Listof Node-Option)
                       (Node S))))
 (define (make-node #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc #:trans tr #:prompt pmt #:options opts)
@@ -124,17 +122,11 @@
           (node-info name type tags desc)
           (or tr (make-code #f identity))
           (cond [(not pmt) (make-code #f (lambda (_st)
-                                           (let ([title-or-info (current-node-prompt)])
-                                             (if (string? title-or-info)
-                                                 (prompt-info title-or-info)
-                                                 title-or-info))))]
-                [(string? pmt) (make-code pmt (const (prompt-info pmt)))]
+                                           (current-node-prompt)))]
+                [(string? pmt) (make-code pmt (const pmt))]
                 [else (make-code (%code-sexp pmt)
                                  (lambda ([s : S])
-                                   (let ([title-or-info ((%code-value pmt) s)])
-                                     (if (string? title-or-info)
-                                         (prompt-info title-or-info)
-                                         title-or-info))))])
+                                   ((%code-value pmt) s)))])
           opts)))
 
 (: node* (-> String
@@ -144,7 +136,7 @@
                       [#:tags (Listof Symbol)]
                       [#:desc (Option String)]
                       [#:trans (Option (Code (-> S S)))]
-                      [#:prompt (Option (U String (Code (-> S (U String Prompt-Info)))))]
+                      [#:prompt (Option (U String (Code (-> S String))))]
                       [#:options (Listof Node-Option)]
                       (Node S)))))
 (define ((node* graph-name) name #:type type #:tags [tags '()] #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f] #:options [options '()])

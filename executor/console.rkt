@@ -159,15 +159,15 @@
     [(restore) (list (first c) (fourth c))]))
 
 (: console-choose/choose (All (S) (case-> (-> Console-Config
-                                              Prompt-Info (Pairof (Edge S) (Listof (Edge S)))
+                                              String (Pairof (Edge S) (Listof (Edge S)))
                                               (U (Edge S) Command))
                                           (-> Console-Config
-                                              Prompt-Info Null
+                                              String Null
                                               Command))))
-(define (console-choose/choose config info choices)
+(define (console-choose/choose config pmt choices)
   (let ([out (open-output-string)])
     (newline)
-    (fprintf out "* ~a\n" (prompt-info-title info))
+    (fprintf out "* ~a\n" pmt)
     (unless (null? choices)
       (for ([choice choices]
             [i : Positive-Integer (in-naturals 1)])
@@ -213,9 +213,9 @@
               [(null? rst) (error 'console-choose/random "unreachble")]
               [else (loop rst (- r (edge-weight fst)))])))))
 
-(: console-choose (All (S) (case-> (-> (U 'choose 'random) Console-Config Prompt-Info (Pairof (Edge S) (Listof (Edge S))) (U (Edge S) Command))
-                                   (-> 'choose Console-Config Prompt-Info Null Command))))
-(define (console-choose chooser config info choices)
+(: console-choose (All (S) (case-> (-> (U 'choose 'random) Console-Config String (Pairof (Edge S) (Listof (Edge S))) (U (Edge S) Command))
+                                   (-> 'choose Console-Config String Null Command))))
+(define (console-choose chooser config pmt choices)
   (case chooser
-    [(choose) (console-choose/choose config info choices)]
+    [(choose) (console-choose/choose config pmt choices)]
     [(random) (console-choose/random choices)]))
