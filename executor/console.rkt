@@ -12,7 +12,10 @@
 
 (provide console-run console-choose console-command-dispatch
          Console-Command
-         Console-Config console-config)
+         Console-Config console-config
+         weight-edge-option)
+
+(struct weight-edge-option edge-option ([weight : Positive-Integer]))
 
 (define-type Console-Command (U (List 'transform Symbol String (-> Journal Journal))
                                 (List 'action Symbol String (-> Journal Void))
@@ -189,9 +192,25 @@
                  => console-command->command]
                 [else (retry)]))))))
 
+(: edge-weight (All (S) (-> (Edge S) Positive-Integer)))
+(define (edge-weight e)
+  (cond [(findf weight-edge-option? (edge-edge-options e))
+         => (lambda (opt)
+              (assert opt weight-edge-option?)
+              (weight-edge-option-weight opt))]
+        [else 1]))
+
 (: console-choose/random (All (S) (-> (Pairof (Edge S) (Listof (Edge S))) (Edge S))))
 (define (console-choose/random choices)
-  (list-ref choices (random (length choices))))
+  (let* ([s (for/sum : Integer ([e choices]) (edge-weight e))]
+         [r (random s)])
+    (let loop ([choices choices]
+               [r r])
+      (let ([fst (car choices)]
+            [rst (cdr choices)])
+        (cond [(< r (edge-weight fst)) fst]
+              [(null? rst) (error 'console-choose/random "unreachble")]
+              [else (loop rst (- r (edge-weight fst)))])))))
 
 (: console-choose (All (S) (case-> (-> (U 'choose 'random) Console-Config Prompt-Info (Pairof (Edge S) (Listof (Edge S))) (U (Edge S) Command))
                                    (-> 'choose Console-Config Prompt-Info Null Command))))
