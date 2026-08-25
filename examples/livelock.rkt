@@ -5,7 +5,7 @@
 (: id-graph (-> String (Values (Graph Null) (Node Null))))
 (define (id-graph graph-name)
   (define g-node (inst (node graph-name) Null 'node))
-  (define g-edge (inst dot-edge Null))
+  (define g-edge (inst edge Null))
   (define g-graph (inst graph Null))
 
   (define n (g-node "Node" #:type 'node))

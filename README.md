@@ -130,7 +130,7 @@ This single file shows how to:
             right-cap (jug-state-right st) right-cap))
 
   (define j-node (inst (node g) Jug-State (U 'puzzle 'check 'terminal)))
-  (define j-edge (inst dot-edge Jug-State))
+  (define j-edge (inst edge Jug-State))
   (define j-graph (inst graph Jug-State))
 
   (define playing (j-node "Playing" #:type 'puzzle #:prompt (code prompt-playing)))

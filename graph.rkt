@@ -5,11 +5,13 @@
 (provide Code code make-code
          current-graph-used-ids current-node-prompt
          Node AnyNode make-node (rename-out [node* node])
-         node-graph-id node-graph-name node-id node-name node-type node-tags node-desc node-trans node-trans-sexp node-prompt node-prompt-sexp node-attributes
+         node-graph-id node-graph-name node-id node-name node-type node-tags node-desc node-trans node-trans-sexp node-prompt node-prompt-sexp node-node-options
+         Node-Option (struct-out node-option)
          Node-Info node-node-info node-info-name node-info-type node-info-tags node-info-desc
          any-node
-         Edge AnyEdge Bridge EdgeMode make-edge make-bridge (rename-out [edge* edge] [bridge* bridge])
-         edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-sexp edge-trans edge-trans-sexp edge-priority edge-attributes
+         Edge AnyEdge Bridge EdgeMode (rename-out [edge* edge] [bridge* bridge])
+         edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-sexp edge-trans edge-trans-sexp edge-priority edge-edge-options
+         Edge-Option (struct-out edge-option)
          any-bridge any-edge
          Graph AnyGraph OpenGraph (rename-out [graph* graph]) (rename-out [open-graph* open-graph])
          graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges
@@ -55,13 +57,16 @@
                    [desc : (Option String)])
   #:type-name Node-Info)
 
+(struct node-option ()
+  #:type-name Node-Option)
+
 (struct (S) node ([graph-id : Symbol]
                   [graph-name : String]
                   [id : Symbol]
                   [node-info : Node-Info]
                   [trans-code : (Code (-> S S))]
                   [prompt-code : (Code (-> S Prompt-Info))]
-                  [attributes : (Immutable-HashTable Symbol Any)])
+                  [node-options : (Listof Node-Option)])
   #:transparent
   #:type-name Node)
 
@@ -107,9 +112,9 @@
                       #:desc (Option String)
                       #:trans (Option (Code (-> S S)))
                       #:prompt (Option (U String (Code (-> S (U String Prompt-Info)))))
-                      #:attributes (Immutable-HashTable Symbol Any)
+                      #:options (Listof Node-Option)
                       (Node S))))
-(define (make-node #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc #:trans tr #:prompt pmt #:attributes attrs)
+(define (make-node #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc #:trans tr #:prompt pmt #:options opts)
   (let ([graph-id (make-graph-id graph-name)]
         [node-id (make-node-id graph-name name)])
     (cond [(set-member? (current-graph-used-ids) node-id)
@@ -130,7 +135,7 @@
                                      (if (string? title-or-info)
                                          (prompt-info title-or-info)
                                          title-or-info))))])
-          attrs)))
+          opts)))
 
 (: node* (-> String
              (All (S T)
@@ -140,12 +145,13 @@
                       [#:desc (Option String)]
                       [#:trans (Option (Code (-> S S)))]
                       [#:prompt (Option (U String (Code (-> S (U String Prompt-Info)))))]
+                      [#:options (Listof Node-Option)]
                       (Node S)))))
-(define ((node* graph-name) name #:type type #:tags [tags '()] #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f])
+(define ((node* graph-name) name #:type type #:tags [tags '()] #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f] #:options [options '()])
   (make-node #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc
              #:trans tr
              #:prompt pmt
-             #:attributes ((inst hash Symbol Any))))
+             #:options options))
 
 (: any-node (All (S) (-> (-> Any Any : #:+ S) (-> (Node S) AnyNode))))
 (define ((any-node p?) n)
@@ -157,6 +163,9 @@
 
 (define-type EdgeMode (U 'auto 'choose 'annotation))
 
+(struct edge-option ()
+  #:type-name Edge-Option)
+
 (struct (S) edge ([id : Symbol]
                   [name : String]
                   [mode : EdgeMode]
@@ -167,7 +176,7 @@
                   [when-code : (Code (-> S Any))]
                   [trans-code : (Code (-> S S))]
                   [priority : Integer]
-                  [attributes : (Immutable-HashTable Symbol Any)])
+                  [edge-options : (Listof Edge-Option)])
   #:transparent
   #:type-name Edge)
 
@@ -198,7 +207,7 @@
                     [when-code : (Code (-> S Any))]
                     [trans-code : (Code (-> S Any))]
                     [priority : Integer]
-                    [attributes : (Immutable-HashTable Symbol Any)])
+                    [edge-options : (Listof Edge-Option)])
   #:transparent
   #:type-name Bridge)
 
@@ -231,7 +240,7 @@
                                        #:when (Option (Code (-> S Any)))
                                        #:trans (Code (-> S S))
                                        #:priority (Option Integer)
-                                       #:attributes (Immutable-HashTable Symbol Any)
+                                       #:options (Listof Edge-Option)
                                        (Edge S))
                                    (-> 'bridge
                                        #:name String
@@ -243,7 +252,7 @@
                                        #:when (Option (Code (-> S Any)))
                                        #:trans (Code (-> S Any))
                                        #:priority (Option Integer)
-                                       #:attributes (Immutable-HashTable Symbol Any)
+                                       #:options (Listof Edge-Option)
                                        (Bridge S)))))
 (define (make-generic-edge* type
                             #:name name
@@ -255,7 +264,7 @@
                             #:when when
                             #:trans tr
                             #:priority priority
-                            #:attributes attrs)
+                            #:options opts)
   (let ([edge-id (make-edge-id name from)])
     (cond [(set-member? (current-graph-used-ids) edge-id)
            (error "edge, bridge: duplicate ID" edge-id)]
@@ -269,41 +278,7 @@
      (or when (make-code #f (const #t)))
      tr
      (or priority 0)
-     attrs)))
-
-(: make-bridge (All (S)
-                    (-> #:name String
-                        #:mode (Option EdgeMode)
-                        #:half?  Boolean
-                        #:from (Node S)
-                        #:to (Node Any)
-                        #:desc (Option String)
-                        #:when (Option (Code (-> S Any)))
-                        #:trans (Code (-> S Any))
-                        #:priority (Option Integer)
-                        #:attributes (Immutable-HashTable Symbol Any)
-                        (Bridge S))))
-(define (make-bridge #:name name
-                     #:mode mode
-                     #:half? half?
-                     #:from from
-                     #:to to
-                     #:desc desc
-                     #:when when
-                     #:trans tr
-                     #:priority priority
-                     #:attributes attrs)
-  ((inst make-generic-edge* S) 'bridge
-                               #:name name
-                               #:mode mode
-                               #:half? half?
-                               #:from from
-                               #:to to
-                               #:desc desc
-                               #:when when
-                               #:trans tr
-                               #:priority priority
-                               #:attributes attrs))
+     opts)))
 
 (: bridge* (All (S)
                 (-> String
@@ -315,6 +290,7 @@
                     [#:when (Option (Code (-> S Any)))]
                     #:trans (Code (-> S Any))
                     [#:priority (Option Integer)]
+                    [#:options (Listof Edge-Option)]
                     (Bridge S))))
 (define (bridge* name
                  #:mode [mode #f]
@@ -324,41 +300,9 @@
                  #:desc [desc #f]
                  #:when [when #f]
                  #:trans tr
-                 #:priority [priority #f])
-  ((inst make-bridge S) #:name name
-                        #:mode mode
-                        #:half? half?
-                        #:from from
-                        #:to to
-                        #:desc desc
-                        #:when when
-                        #:trans (or tr (inst identity S))
-                        #:priority priority
-                        #:attributes ((inst hash Symbol Any))))
-
-(: make-edge (All (S)
-                  (-> #:name String
-                      #:mode (Option EdgeMode)
-                      #:half? Boolean
-                      #:from (Node S)
-                      #:to (Node S)
-                      #:desc (Option String)
-                      #:when (Option (Code (-> S Any)))
-                      #:trans (Option (Code (-> S S)))
-                      #:priority (Option Integer)
-                      #:attributes (Immutable-HashTable Symbol Any)
-                      (Edge S))))
-(define (make-edge #:name name
-                   #:mode mode
-                   #:half? half?
-                   #:from from
-                   #:to to
-                   #:desc desc
-                   #:when when
-                   #:trans tr
-                   #:priority priority
-                   #:attributes attrs)
-  ((inst make-generic-edge* S) 'edge
+                 #:priority [priority #f]
+                 #:options [opts '()])
+  ((inst make-generic-edge* S) 'bridge
                                #:name name
                                #:mode mode
                                #:half? half?
@@ -366,9 +310,9 @@
                                #:to to
                                #:desc desc
                                #:when when
-                               #:trans (or tr (make-code #f (inst identity S)))
+                               #:trans (or tr (inst identity S))
                                #:priority priority
-                               #:attributes attrs))
+                               #:options opts))
 
 (: edge* (All (S)
               (-> String
@@ -389,17 +333,19 @@
                #:desc [desc #f]
                #:when [when #f]
                #:trans [tr #f]
-               #:priority [priority #f])
-  ((inst make-edge S) #:name name
-                      #:mode mode
-                      #:half? half?
-                      #:from from
-                      #:to to
-                      #:desc desc
-                      #:when when
-                      #:trans (or tr (make-code #f (inst identity S)))
-                      #:priority priority
-                      #:attributes ((inst hash Symbol Any))))
+               #:priority [priority #f]
+               #:options [opts '()])
+  ((inst make-generic-edge* S) 'edge
+                               #:name name
+                               #:mode mode
+                               #:half? half?
+                               #:from from
+                               #:to to
+                               #:desc desc
+                               #:when when
+                               #:trans (or tr (make-code #f (inst identity S)))
+                               #:priority priority
+                               #:options opts))
 
 (: any-bridge (All (S) (-> (-> Any Any : #:+ S)
                            (-> (Bridge S) (Edge Any)))))
@@ -414,7 +360,7 @@
         (make-code (bridge-when-sexp b) (lambda (x) ((bridge-when b) (assert x p?))))
         (make-code (bridge-trans-sexp b) (lambda (x) ((bridge-trans b) (assert x p?))))
         (bridge-priority b)
-        (bridge-attributes b)))
+        (bridge-edge-options b)))
 
 (: any-edge (All (S) (-> (-> Any Any : #:+ S)
                          (-> (Edge S)

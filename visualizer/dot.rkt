@@ -2,7 +2,6 @@
 
 (require "../graph.rkt")
 (require "../model.rkt")
-(require "../graph/dot.rkt")
 (require "../executor.rkt")
 (require (except-in "../private/visualizer.rkt" find-graph))
 (require "../journal.rkt")
@@ -21,7 +20,22 @@
          default-dot-node-label-config
          default-dot-edge-node-config
          default-dot-edge-node-label-config
-         default-dot-edge-config)
+         default-dot-edge-config
+         Dot-Edge-Option dot-edge-option)
+
+(struct %dot-edge-option edge-option ([minlen : Natural])
+  #:type-name Dot-Edge-Option)
+
+(: edge-dot-minlen (All (S) (-> (Edge S) Natural)))
+(define (edge-dot-minlen e)
+  (let ([opts (filter %dot-edge-option? (edge-edge-options e))])
+    (if (null? opts)
+        1
+        (%dot-edge-option-minlen (car opts)))))
+
+(: dot-edge-option (-> [#:minlen Natural] Dot-Edge-Option))
+(define (dot-edge-option #:minlen [minlen 1])
+  (%dot-edge-option minlen))
 
 (: default-dot-fontname String)
 (define default-dot-fontname "times-roman")

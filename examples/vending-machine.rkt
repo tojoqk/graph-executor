@@ -44,7 +44,7 @@
 
   (define v-node (inst (node g) Vending-Machine-State (U 'start 'normal)))
   (define v-edge (inst edge Vending-Machine-State))
-  (define v-bridge (inst dot-bridge Vending-Machine-State))
+  (define v-bridge (inst bridge Vending-Machine-State))
   (define v-graph (inst open-graph Vending-Machine-State))
 
   (define idle       (v-node "Idle (Accepting Coins)" #:type 'start))
@@ -79,7 +79,7 @@
       (list
        (v-bridge "Walk Away" #:from idle #:to output
                  #:trans output-edge
-                 #:dot-minlen 3))))
+                 #:options (list (dot-edge-option #:minlen 3))))))
    idle))
 
 (struct street ([wallet : Integer])

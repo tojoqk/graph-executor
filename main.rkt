@@ -1,7 +1,6 @@
 #lang typed/racket
 
 (require "graph.rkt")
-(require "graph/dot.rkt")
 (require "model.rkt")
 (require "executor.rkt")
 (require "prompt.rkt")
@@ -19,7 +18,6 @@
          Node-Info node-info-name node-info-type node-info-tags node-info-desc
          Edge AnyEdge Bridge edge bridge any-bridge any-edge edge-from edge-to
          Graph OpenGraph AnyGraph graph open-graph any-graph graph-name
-         dot-bridge dot-edge
          Model model
          replay
          Console-Command current-console-commands
@@ -47,4 +45,5 @@
          DotNodeConfig dot-node-config
          DotEdgeConfig dot-edge-config
          default-dot-node-config default-dot-edge-node-config default-dot-edge-config
-         default-dot-node-label-config default-dot-edge-node-label-config)
+         default-dot-node-label-config default-dot-edge-node-label-config
+         Dot-Edge-Option dot-edge-option)
