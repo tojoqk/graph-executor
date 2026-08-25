@@ -11,7 +11,6 @@
 (require "../effect/emitter.rkt")
 
 (provide console-run console-choose console-command-dispatch
-         current-console-random-prompt-display
          Console-Command
          Console-Config console-config)
 
