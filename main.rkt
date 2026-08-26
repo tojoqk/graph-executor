@@ -11,7 +11,9 @@
 (require "prompt/checker.rkt")
 (require "visualizer/dot.rkt")
 
-(provide Code code
+(provide Code code Code-Expr make-code
+         Code-Sexp code-sexp code-sexp? code-sexp-sexp
+         Code-Text code-text code-text? code-text-text
          Node node node-graph-name any-node
          Node-Info node-info-name node-info-type node-info-tags node-info-desc
          Edge Bridge edge bridge

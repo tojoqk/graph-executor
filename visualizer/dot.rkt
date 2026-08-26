@@ -53,22 +53,22 @@
                   [desc : (Option String)]
                   [type : Symbol]
                   [tags : (Listof Symbol)]
-                  [prompt : (Option Sexp)]
-                  [trans : (Option Sexp)])
+                  [prompt : (Option Code-Expr)]
+                  [trans : (Option Code-Expr)])
   #:transparent
   #:type-name DotNode)
 
 (: node->dot-node (All (S) (-> (Node S) DotNode)))
 (define (node->dot-node n)
-  (dot-node (node-name n) (node-desc n) (node-type n) (node-tags n) (node-prompt-sexp n) (node-trans-sexp n)))
+  (dot-node (node-name n) (node-desc n) (node-type n) (node-tags n) (node-prompt-code-expr n) (node-trans-code-expr n)))
 
-(struct dot-edge ([name : String] [desc : (Option String)] [mode : EdgeMode] [from : Symbol] [to : Symbol] [when : (Option Sexp)] [trans : (Option Sexp)])
+(struct dot-edge ([name : String] [desc : (Option String)] [mode : EdgeMode] [from : Symbol] [to : Symbol] [when : (Option Code-Expr)] [trans : (Option Code-Expr)])
   #:transparent
   #:type-name DotEdge)
 
 (: edge->dot-edge (All (S) (-> (Edge S) DotEdge)))
 (define (edge->dot-edge e)
-  (dot-edge (edge-name e) (edge-desc e) (edge-mode e) (node-type (edge-from e)) (node-type (edge-to e)) (edge-when-sexp e) (edge-trans-sexp e)))
+  (dot-edge (edge-name e) (edge-desc e) (edge-mode e) (node-type (edge-from e)) (node-type (edge-to e)) (edge-when-code-expr e) (edge-trans-code-expr e)))
 
 (define-type DotNodeStatus (U 'default 'visited 'current))
 (: dot-node-status (All (S) (-> (Node S) DotNodeStatus)))
@@ -127,12 +127,12 @@
                   ,@(cond [(dot-node-prompt dn)
                            => (lambda (x)
                                 (list (center-row
-                                       `("prompt: " ,@(text->xexprs (show-sexp x))))))]
+                                       `("prompt: " ,@(text->xexprs (show-code-expr x))))))]
                           [else '()])
                   ,@(cond [(dot-node-trans dn)
                            => (lambda (x)
                                 (list (center-row
-                                       `("trans: " ,@(text->xexprs (show-sexp x))))))]
+                                       `("trans: " ,@(text->xexprs (show-code-expr x))))))]
                           [else '()])))))
 
 (: default-dot-edge-node-label-config (-> DotEdge DotEdgeStatus (U (List 'text String)
@@ -151,12 +151,12 @@
                   ,@(cond [(dot-edge-when de)
                            => (lambda (x)
                                 (list (center-row
-                                       `("when: " ,@(text->xexprs (show-sexp x))))))]
+                                       `("when: " ,@(text->xexprs (show-code-expr x))))))]
                           [else '()])
                   ,@(cond [(dot-edge-trans de)
                            => (lambda (x)
                                 (list (center-row
-                                       `("trans: " ,@(text->xexprs (show-sexp x))))))]
+                                       `("trans: " ,@(text->xexprs (show-code-expr x))))))]
                           [else '()])))))
 
 (struct %dot-config ([global : DotGlobalConfig]
@@ -279,11 +279,14 @@
           [(null? (rest lines)) lines]
           [else (list* (first lines) '(br) (rec (rest lines)))])))
 
-(: show-sexp (-> Sexp String))
-(define (show-sexp x)
-  (let ([out (open-output-string)])
-    (print x out 1)
-    (get-output-string out)))
+(: show-code-expr (-> Code-Expr String))
+(define (show-code-expr ce)
+  (cond [(code-sexp? ce)
+         (let* ([x (code-sexp-sexp ce)]
+                [out (open-output-string)])
+           (print x out 1)
+           (get-output-string out))]
+        [(code-text? ce) (code-text-text ce)]))
 
 (: render-dot (All (S) (-> (Model S)  [#:journal Journal] [#:port Output-Port] [#:config DotConfig] Void)))
 (define (render-dot m #:journal [j '()] #:port [port (current-output-port)] #:config [config (dot-config)])
