@@ -285,9 +285,6 @@
     (print x out 1)
     (get-output-string out)))
 
-(struct %dot-renderer ([proc : (-> Output-Port DotConfig Void)])
-  #:type-name DotRenderer)
-
 (: render-dot (All (S) (-> (Model S)  [#:journal Journal] [#:port Output-Port] [#:config DotConfig] Void)))
 (define (render-dot m #:journal [j '()] #:port [port (current-output-port)] #:config [config (dot-config)])
   (define-values (_n _s h) (replay m j))
