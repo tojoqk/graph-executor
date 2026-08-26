@@ -74,7 +74,7 @@ fun jug_graph(g, left_cap, right_cap, target):
     make_edge("Clear!",  ~mode: #'auto, ~from: check_clear, ~to: cleared, ~when: code(is_cleared))
   ]
 
-  values(make_graph(g, ~edges: edges), playing)
+  values(make_graph(g, ~edges), playing)
 
 fun make_model(left_cap, right_cap, target):
   def proc = fun ():
