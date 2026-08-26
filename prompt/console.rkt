@@ -10,7 +10,7 @@
     [(choose) (console-choose info op)]
     [(integer natural positive-integer) (console-input-number info op)]
     [(string) (console-string info op)]
-    [(range) (console-range info op)]
+    [(between) (console-between info op)]
     [(random) (console-random info op)]))
 
 (: console-choose (-> Prompt-Info (U (List 'choose Procedure (Listof Symbol))
@@ -80,10 +80,10 @@
           (retry)
           (values value '())))))
 
-(: console-range (case-> (-> Prompt-Info (List 'range Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
-                         (-> Prompt-Info (List 'range Natural Natural) (Values Natural Prompt-Attributes))
-                         (-> Prompt-Info (List 'range Integer Integer) (Values Integer Prompt-Attributes))))
-(define (console-range info op)
+(: console-between (case-> (-> Prompt-Info (List 'between Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
+                         (-> Prompt-Info (List 'between Natural Natural) (Values Natural Prompt-Attributes))
+                         (-> Prompt-Info (List 'between Integer Integer) (Values Integer Prompt-Attributes))))
+(define (console-between info op)
   (newline)
   (printf "* ~a\n" (prompt-info-title info))
   (let ([from (second op)]

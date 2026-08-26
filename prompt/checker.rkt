@@ -8,7 +8,7 @@
          default-checker-prompt-integer-values
          default-checker-prompt-natural-values
          default-checker-prompt-positive-integer-values
-         default-checker-prompt-range-values
+         default-checker-prompt-between-values
          default-checker-prompt-random-values)
 
 (: default-checker-prompt-string-values (-> Prompt-Info (Pairof String (Listof String))))
@@ -31,10 +31,10 @@
   (lambda (_info)
     (error 'prompt "checker does not support positive-integer prompt by default. Please configure `positive-integer-values` of `checker-prompt-config`.")))
 
-(: default-checker-prompt-range-values (-> Prompt-Info Integer Integer (U (Pairof Integer (Listof Integer))
+(: default-checker-prompt-between-values (-> Prompt-Info Integer Integer (U (Pairof Integer (Listof Integer))
                                                                           'ascending
                                                                           'descending)))
-(define default-checker-prompt-range-values (lambda (_m _from _to) 'ascending))
+(define default-checker-prompt-between-values (lambda (_m _from _to) 'ascending))
 
 (: default-checker-prompt-random-values (-> Prompt-Info Positive-Integer (U (Pairof Natural (Listof Natural))
                                                                             'ascending
@@ -54,7 +54,7 @@
                                 [integer-values : (-> Prompt-Info (Pairof Integer (Listof Integer)))]
                                 [natural-values : (-> Prompt-Info (Pairof Natural (Listof Natural)))]
                                 [positive-integer-values : (-> Prompt-Info (Pairof Positive-Integer (Listof Positive-Integer)))]
-                                [range-values : (-> Prompt-Info Integer Integer (U (Pairof Integer (Listof Integer))
+                                [between-values : (-> Prompt-Info Integer Integer (U (Pairof Integer (Listof Integer))
                                                                                    'ascending
                                                                                    'descending))]
                                 [random-values : (-> Prompt-Info Positive-Integer (U (Pairof Natural (Listof Natural))
@@ -66,7 +66,7 @@
                              [#:integer-values (Option (-> Prompt-Info (Pairof Integer (Listof Integer))))]
                              [#:natural-values (Option (-> Prompt-Info (Pairof Natural (Listof Natural))))]
                              [#:positive-integer-values (Option (-> Prompt-Info (Pairof Positive-Integer (Listof Positive-Integer))))]
-                             [#:range-values (Option (-> Prompt-Info Integer Integer (U (Pairof Integer (Listof Integer))
+                             [#:between-values (Option (-> Prompt-Info Integer Integer (U (Pairof Integer (Listof Integer))
                                                                                         'ascending
                                                                                         'descending)))]
                              [#:random-values (-> Prompt-Info Positive-Integer (U (Pairof Natural (Listof Natural))
@@ -77,13 +77,13 @@
                                #:integer-values [integer-values #f]
                                #:natural-values [natural-values #f]
                                #:positive-integer-values [positive-integer-values #f]
-                               #:range-values [range-values #f]
+                               #:between-values [between-values #f]
                                #:random-values [random-values #f])
   (%checker-prompt-config (or string-values default-checker-prompt-string-values)
                           (or integer-values default-checker-prompt-integer-values)
                           (or natural-values default-checker-prompt-natural-values)
                           (or positive-integer-values default-checker-prompt-positive-integer-values)
-                          (or range-values default-checker-prompt-range-values)
+                          (or between-values default-checker-prompt-between-values)
                           (or random-values default-checker-prompt-random-values)))
 
 
@@ -97,7 +97,7 @@
     [(natural) (values (list->amb amb natural? ((%checker-prompt-config-natural-values config) info)) '())]
     [(positive-integer) (values (list->amb amb exact-positive-integer? ((%checker-prompt-config-positive-integer-values config) info)) '())]
     [(string) (values (list->amb amb string? ((%checker-prompt-config-string-values config) info)) '())]
-    [(range) (checker-range amb config info op)]
+    [(between) (checker-between amb config info op)]
     [(random) (checker-random amb config info op)]))
 
 (: checker-choose (-> (-> (-> Prompt-Value) * Prompt-Value)
@@ -115,21 +115,21 @@
                            (thunk (loop (cdr choices))))))])
     (values (assert value symbol?) '())))
 
-(: checker-range (case-> (-> (-> (-> Prompt-Value) * Prompt-Value) Checker-Prompt-Config
+(: checker-between (case-> (-> (-> (-> Prompt-Value) * Prompt-Value) Checker-Prompt-Config
                              Prompt-Info
-                             (List 'range Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
+                             (List 'between Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
                          (-> (-> (-> Prompt-Value) * Prompt-Value) Checker-Prompt-Config
                              Prompt-Info
-                             (List 'range Natural Natural) (Values Natural Prompt-Attributes))
+                             (List 'between Natural Natural) (Values Natural Prompt-Attributes))
                          (-> (-> (-> Prompt-Value) * Prompt-Value) Checker-Prompt-Config
                              Prompt-Info
-                             (List 'range Integer Integer) (Values Integer Prompt-Attributes))))
-(define (checker-range amb config info op)
+                             (List 'between Integer Integer) (Values Integer Prompt-Attributes))))
+(define (checker-between amb config info op)
   (let ([from (second op)]
         [to : Integer (third op)])
     (unless (<= from to)
-      (error 'prompt "invalid range ~a...~a" from to))
-    (values (let ([vals ((%checker-prompt-config-range-values config) info from to)])
+      (error 'prompt "invalid between ~a...~a" from to))
+    (values (let ([vals ((%checker-prompt-config-between-values config) info from to)])
               (if (pair? vals)
                   (let ([n (list->amb amb exact-integer? vals)])
                     (unless (and (<= from n) (<= n to))
@@ -150,7 +150,7 @@
                     (if (and (exact? value) (integer? value)
                              (<= from value) (<= value to))
                         value
-                        (error 'prompt "invalid range value ~a" value)))))
+                        (error 'prompt "invalid between value ~a" value)))))
             '())))
 
 (: checker-random (-> (-> (-> Prompt-Value) * Prompt-Value) Checker-Prompt-Config Prompt-Info (List 'random Positive-Integer) (Values Natural Prompt-Attributes)))

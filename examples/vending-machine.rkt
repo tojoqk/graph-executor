@@ -14,7 +14,7 @@
 (define (vending-machine-graph g)
   (: insert-money (-> Vending-Machine-State Vending-Machine-State))
   (define (insert-money st)
-    (let ([amount (prompt "How much?" `(range 1 ,(v-state-wallet st)) '(how-much))])
+    (let ([amount (prompt "How much?" `(between 1 ,(v-state-wallet st)) '(how-much))])
       (struct-copy v-state st
                    [wallet (- (v-state-wallet st) amount)]
                    [inserted (+ (v-state-inserted st) amount)])))
@@ -206,11 +206,11 @@
                                        #:bounded (thunk (loop (add1 depth)))
                                        #:config (checker-config
                                                  #:prompt (checker-prompt-config
-                                                           #:range-values
+                                                           #:between-values
                                                            (lambda ([info : Prompt-Info] [from : Integer] [to : Integer])
                                                              (if (memq 'how-much (prompt-info-tags info))
                                                                  'descending
-                                                                 (default-checker-prompt-range-values info from to)))))))
+                                                                 (default-checker-prompt-between-values info from to)))))))
                 '((choose ("Sit on Bench"))
                   (choose ("Walk Away"))
                   (auto ("Dispense Done (Just Zero)"))

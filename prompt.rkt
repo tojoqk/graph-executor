@@ -8,7 +8,7 @@
          Prompt-Result-Integer
          Prompt-Result-Natural
          Prompt-Result-Positive-Integer
-         Prompt-Result-Range
+         Prompt-Result-Between
          Prompt-Result-Random
          Prompt-Info (rename-out [prompt-info* prompt-info]) prompt-info-title prompt-info-tags)
 
@@ -27,23 +27,23 @@
           (->* (String (List 'integer)) ((Listof Symbol)) Integer)
           (->* (String (List 'natural)) ((Listof Symbol)) Natural)
           (->* (String (List 'positive-integer)) ((Listof Symbol)) Positive-Integer)
-          (->* (String (List 'range Positive-Integer Positive-Integer)) ((Listof Symbol)) Positive-Integer)
-          (->* (String (List 'range Natural Natural)) ((Listof Symbol)) Natural)
-          (->* (String (List 'range Integer Integer)) ((Listof Symbol)) Integer)
+          (->* (String (List 'between Positive-Integer Positive-Integer)) ((Listof Symbol)) Positive-Integer)
+          (->* (String (List 'between Natural Natural)) ((Listof Symbol)) Natural)
+          (->* (String (List 'between Integer Integer)) ((Listof Symbol)) Integer)
           (->* (String (List 'random Positive-Integer)) ((Listof Symbol)) Natural)))
 
 (define-type Prompt-Attributes (Listof (Pairof Symbol (U String Symbol Integer))))
 
-(define-type Prompt-Type (U 'choose 'string 'integer 'natural 'positive-integer 'range 'random))
+(define-type Prompt-Type (U 'choose 'string 'integer 'natural 'positive-integer 'between 'random))
 (define-type Prompt-Op (U (List 'choose Procedure (Listof Symbol))
                           (List 'choose (Listof Symbol))
                           (List 'string)
                           (List 'integer)
                           (List 'natural)
                           (List 'positive-integer)
-                          (List 'range Positive-Integer Positive-Integer)
-                          (List 'range Natural Natural)
-                          (List 'range Integer Integer)
+                          (List 'between Positive-Integer Positive-Integer)
+                          (List 'between Natural Natural)
+                          (List 'between Integer Integer)
                           (List 'random Positive-Integer)))
 (define-type Prompt-Value (U Symbol String Integer))
 
@@ -59,11 +59,11 @@
                                  [(choose) (if (procedure? (cadr op))
                                                (assert value (cadr op))
                                                value)]
-                                 [(range)
+                                 [(between)
                                   (let ([from (second op)] [to (third op)])
                                     (if (and (<= from value) (<= value to))
                                         value
-                                        (error 'prompt "range implementation error")))]
+                                        (error 'prompt "between implementation error")))]
                                  [else value]))]
         [else (error 'prompt "called outside of trans")]))
 
@@ -75,9 +75,9 @@
           (-> Prompt-Info (List 'integer) (Values Integer Prompt-Attributes))
           (-> Prompt-Info (List 'natural) (Values Natural Prompt-Attributes))
           (-> Prompt-Info (List 'positive-integer) (Values Positive-Integer Prompt-Attributes))
-          (-> Prompt-Info (List 'range Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
-          (-> Prompt-Info (List 'range Natural Natural) (Values Natural Prompt-Attributes))
-          (-> Prompt-Info (List 'range Integer Integer) (Values Integer Prompt-Attributes))
+          (-> Prompt-Info (List 'between Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
+          (-> Prompt-Info (List 'between Natural Natural) (Values Natural Prompt-Attributes))
+          (-> Prompt-Info (List 'between Integer Integer) (Values Integer Prompt-Attributes))
           (-> Prompt-Info (List 'random Positive-Integer) (Values Natural Prompt-Attributes))))
 
 (: prompt-result-value (case-> (-> Prompt-Result-Choose String)
@@ -85,7 +85,7 @@
                                (-> Prompt-Result-Integer Integer)
                                (-> Prompt-Result-Natural Natural)
                                (-> Prompt-Result-Positive-Integer Positive-Integer)
-                               (-> Prompt-Result-Range Integer)
+                               (-> Prompt-Result-Between Integer)
                                (-> Prompt-Result-Random Natural)
                                (-> Prompt-Result Prompt-Value)))
 (define (prompt-result-value pi) (car (fourth pi)))
@@ -110,7 +110,7 @@
 (define-type Prompt-Result-Integer (List 'prompt (List 'integer) String (Pairof Integer Prompt-Attributes)))
 (define-type Prompt-Result-Natural (List 'prompt (List 'natural) String (Pairof Natural Prompt-Attributes)))
 (define-type Prompt-Result-Positive-Integer (List 'prompt (List 'positive-integer) String (Pairof Positive-Integer Prompt-Attributes)))
-(define-type Prompt-Result-Range  (U (List 'prompt (List 'range Natural Natural) String (Pairof Natural Prompt-Attributes))
-                                     (List 'prompt (List 'range Positive-Integer Positive-Integer) String (Pairof Positive-Integer Prompt-Attributes))
-                                     (List 'prompt (List 'range Integer Integer) String (Pairof Integer Prompt-Attributes))))
+(define-type Prompt-Result-Between  (U (List 'prompt (List 'between Natural Natural) String (Pairof Natural Prompt-Attributes))
+                                     (List 'prompt (List 'between Positive-Integer Positive-Integer) String (Pairof Positive-Integer Prompt-Attributes))
+                                     (List 'prompt (List 'between Integer Integer) String (Pairof Integer Prompt-Attributes))))
 (define-type Prompt-Result-Random (List 'prompt (List 'random Positive-Integer) String (Pairof Natural Prompt-Attributes)))

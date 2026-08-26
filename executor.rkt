@@ -187,12 +187,12 @@
       [(positive-integer) (assert (assert val exact?) positive-integer?)
                           (push-event! val attrs)
                           (values val attrs)]
-      [(range) (assert val exact?)
+      [(between) (assert val exact?)
                (assert val integer?)
                (let ([min (second op)] [max : Integer (third op)])
                  (cond [(and (<= min val) (<= val max)) (push-event! val attrs)
                                                         (values val attrs)]
-                       [else (error 'replay "range error" val)]))]
+                       [else (error 'replay "between error" val)]))]
       [(random) (assert val natural?)
                 (push-event! val attrs)
                 (values val attrs)])))
