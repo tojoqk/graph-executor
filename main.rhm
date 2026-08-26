@@ -11,10 +11,13 @@ expr.macro 'code($e)':
   'main.#{make-code}(main.#{code-text}($(e.to_source_string())), $e)'
 
 fun model(proc, ~default_node_prompt = "Choose:"):
-  main.model(proc, ~#{default-node-prompt}: default_node_prompt)
+  let f = fun():
+    let values(gs, n, st) = proc()
+    values(PairList(&gs), n, st)
+  main.model(f, ~#{default-node-prompt}: default_node_prompt)
 
 fun make_edge(name, ~mode = #false, ~is_half = #false, ~from, ~to, ~desc = #false, ~when: w = #false, ~trans = #false, ~priority = #false, ~options = []):
-  main.#{make-edge}(name, ~mode, ~#{half?}: is_half, ~from, ~to, ~desc, ~when: w, ~trans, ~priority, ~options)
+  main.#{make-edge}(name, ~mode, ~#{half?}: is_half, ~from, ~to, ~desc, ~when: w, ~trans, ~priority, ~options: PairList(&options))
 
 fun checker_config(~prompt = checker_prompt_config(), ~trace_display = #'hide):
   main.#{checker-config}(~prompt, ~#{trace-display}: trace_display)
@@ -35,10 +38,12 @@ fun checker_prompt_config(~string_values = main.#{default-checker-prompt-string-
 fun console_config(~commands = main.#{default-console-commands},
                    ~trace_display = #'show,
                    ~chooser = main.#{default-console-chooser}):
-  main.#{console-config}(~commands, ~#{trace-display}: trace_display, ~chooser)
+  main.#{console-config}(~commands: PairList(&commands.map(fun (x): PairList(&x))),
+                         ~#{trace-display}: trace_display,
+                         ~chooser)
 
 fun make_graph(name, ~parent_name = #false, ~desc = #false, ~edges):
-  main.#{make-graph}(name, ~#{parent-name}: parent_name, ~desc, ~edges)
+  main.#{make-graph}(name, ~#{parent-name}: parent_name, ~desc, ~edges: PairList(&edges))
 
 fun dot_config(~global = #false, ~node = #false, ~node_label = #false, ~edge_node = #false, ~edge_node_label = #false, ~edge = #false):
   main.#{dot-config}(~global, ~node, ~#{node-label}: node_label, ~#{edge-node}: edge_node, ~#{edge-node-label}: edge_node_label, ~edge)
