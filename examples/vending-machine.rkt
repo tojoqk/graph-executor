@@ -8,7 +8,7 @@
   #:transparent)
 
 (: vending-machine-graph (-> String
-                             (Values (-> AnyNode (Code (-> Vending-Machine-State Any))
+                             (Values (-> (Node Any) (Code (-> Vending-Machine-State Any))
                                          (OpenGraph Vending-Machine-State))
                                      (Node Vending-Machine-State))))
 (define (vending-machine-graph g)
@@ -88,7 +88,7 @@
 
 (: street-graph (-> String
                     (Values
-                     (-> AnyNode (Code (-> Street-State Any)) (OpenGraph Street-State))
+                     (-> (Node Any) (Code (-> Street-State Any)) (OpenGraph Street-State))
                      (Node Street-State))))
 (define (street-graph g)
   (define s-node (inst (node g) Street-State (U 'street 'terminal)))
@@ -120,7 +120,7 @@
 (define (street-graph->vending-machine-graph x)
   (v-state (street-wallet x) 0))
 
-(: wire (-> (Values (Listof AnyGraph) AnyNode)))
+(: wire (-> (Values (Listof (Graph Any)) (Node Any))))
 (define (wire)
   (define v-any-graph (any-graph v-state?))
   (define t-any-graph (any-graph street?))

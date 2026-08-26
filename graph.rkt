@@ -2,16 +2,16 @@
 
 (provide Code code make-code
          current-graph-used-ids current-node-prompt
-         Node AnyNode make-node (rename-out [node* node])
+         Node make-node (rename-out [node* node])
          node-graph-id node-graph-name node-id node-name node-type node-tags node-desc node-trans node-trans-sexp node-prompt node-prompt-sexp node-node-options
          Node-Option (struct-out node-option)
          Node-Info node-node-info node-info-name node-info-type node-info-tags node-info-desc
          any-node
-         Edge AnyEdge Bridge EdgeMode edge? (rename-out [edge* edge] [bridge* bridge])
+         Edge Bridge EdgeMode edge? (rename-out [edge* edge] [bridge* bridge])
          edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-sexp edge-trans edge-trans-sexp edge-priority edge-edge-options
          Edge-Option (struct-out edge-option)
          any-bridge any-edge
-         Graph AnyGraph OpenGraph (rename-out [graph* graph]) (rename-out [open-graph* open-graph])
+         Graph OpenGraph (rename-out [graph* graph]) (rename-out [open-graph* open-graph])
          graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges
          any-graph)
 
@@ -100,8 +100,6 @@
 (define (node-prompt-sexp n)
   (%code-sexp (node-prompt-code n)))
 
-(define-type AnyNode (Node Any))
-
 (: make-node (All (S)
                   (-> #:graph-name String
                       #:name String
@@ -144,7 +142,7 @@
              #:prompt pmt
              #:options options))
 
-(: any-node (All (S) (-> (-> Any Any : #:+ S) (-> (Node S) AnyNode))))
+(: any-node (All (S) (-> (-> Any Any : #:+ S) (-> (Node S) (Node Any)))))
 (define ((any-node p?) n)
   (struct-copy node n
                [trans-code (make-code (node-trans-sexp n)
@@ -217,8 +215,6 @@
 (: bridge-when-sexp (All (S) (-> (Bridge S) Sexp)))
 (define (bridge-when-sexp e)
   (%code-sexp (bridge-when-code e)))
-
-(define-type AnyEdge (Edge Any))
 
 (: make-generic-edge* (All (S)
                            (case-> (-> 'edge
@@ -356,7 +352,7 @@
 
 (: any-edge (All (S) (-> (-> Any Any : #:+ S)
                          (-> (Edge S)
-                             AnyEdge))))
+                             (Edge Any)))))
 (define ((any-edge p?) e)
   (struct-copy edge e
                [from ((any-node p?) (edge-from e))]
@@ -374,8 +370,6 @@
                    [edges : (Listof (Edge S))])
   #:transparent
   #:type-name Graph)
-
-(define-type AnyGraph (Graph Any))
 
 (: graph* (All (S) (-> String
                        [#:parent-name (Option String)]
@@ -419,7 +413,7 @@
               (or bridges '())))
 
 (: any-graph (All (S) (-> (-> Any Any : #:+ S)
-                          (-> (U (Graph S) (OpenGraph S)) AnyGraph))))
+                          (-> (U (Graph S) (OpenGraph S)) (Graph Any)))))
 (define ((any-graph p?) g)
   (if (open-graph? g)
       (struct-copy graph (open-graph-graph g)

@@ -5,7 +5,6 @@
 (require "executor.rkt")
 (require "prompt.rkt")
 (require "message.rkt")
-(require "history.rkt")
 (require "journal.rkt")
 (require "executor/console.rkt")
 (require "checker.rkt")
@@ -13,17 +12,15 @@
 (require "visualizer/dot.rkt")
 
 (provide Code code
-         Node AnyNode node node-graph-name any-node
+         Node node node-graph-name any-node
          Node-Info node-info-name node-info-type node-info-tags node-info-desc
-         Edge AnyEdge Bridge edge bridge any-bridge any-edge edge-from edge-to
-         Graph OpenGraph AnyGraph graph open-graph any-graph graph-name
+         Edge Bridge edge bridge
+         Graph OpenGraph graph open-graph any-graph graph-name
          Model model
-         replay
          Console-Command
          Console-Config console-config weight-edge-option
          default-console-commands default-console-chooser
          Journal journal? Journal-Entry
-         History Record
          prompt Prompt-Info prompt-info-tags
          message
          console-run
