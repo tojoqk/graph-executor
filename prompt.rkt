@@ -1,6 +1,6 @@
 #lang typed/racket
 
-(provide Prompt Prompt-Type Prompt-Value Prompt-Op Prompt-Attributes current-prompt prompt
+(provide Prompt Prompt-Type Prompt-Value Prompt-Op Prompt-Attributes current-prompt prompt prompt/untyped
          Prompt-Result prompt-result Prompt-Implementation
          prompt-result-value prompt-result-attributes prompt-result-info
          Prompt-Result-Choose
@@ -66,6 +66,19 @@
                                         (error 'prompt "between implementation error")))]
                                  [else value]))]
         [else (error 'prompt "called outside of trans")]))
+
+(: prompt/untyped (All (A) (-> String Prompt-Op (Listof Symbol) Prompt-Value)))
+(define (prompt/untyped title op [tags '()])
+  (case (car op)
+    [(string) (prompt title op tags)]
+    [(integer) (prompt title op tags)]
+    [(natural) (prompt title op tags)]
+    [(positive-integer) (prompt title op tags)]
+    [(between) (prompt title op tags)]
+    [(random) (prompt title op tags)]
+    [(choose) (if (procedure? (second op))
+                  (error 'prompt/untyped "choose with a predicate is not supported in untyped context; use '(choose (<symbol> ...)) instead")
+                  (prompt title op tags))]))
 
 (define-type Prompt-Implementation
   (case-> (-> Prompt-Info (U (List 'choose Procedure (Listof Symbol))
