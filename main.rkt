@@ -14,10 +14,10 @@
 (provide Code code Code-Expr make-code
          Code-Sexp code-sexp code-sexp? code-sexp-sexp
          Code-Text code-text code-text? code-text-text
-         Node node node-graph-name any-node
+         Node node-maker node-graph-name any-node
          Node-Info node-info-name node-info-type node-info-tags node-info-desc
-         Edge Bridge edge bridge
-         Graph OpenGraph graph open-graph any-graph graph-name
+         Edge Bridge make-edge make-bridge
+         Graph OpenGraph make-graph make-open-graph any-graph graph-name
          Model model
          apply-journal
          Console-Command

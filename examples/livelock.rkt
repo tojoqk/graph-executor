@@ -4,53 +4,53 @@
 
 (: id-graph (-> String (Values (Graph Null) (Node Null))))
 (define (id-graph graph-name)
-  (define g-node (inst (node graph-name) Null 'node))
-  (define g-edge (inst edge Null))
-  (define g-graph (inst graph Null))
+  (define node (inst (node-maker graph-name) Null 'node))
+  (define edge (inst make-edge Null))
+  (define graph (inst make-graph Null))
 
-  (define n (g-node "Node" #:type 'node))
+  (define n (node "Node" #:type 'node))
 
   (values
-   (g-graph graph-name
-            #:edges (list (g-edge "Id" #:from n #:to n)))
+   (graph graph-name
+          #:edges (list (edge "Id" #:from n #:to n)))
    n))
 
 (: triangle-graph (-> String (Values (Graph Null) (Node Null))))
 (define (triangle-graph graph-name)
-  (define g-node (inst (node graph-name) Null 'node))
-  (define g-edge (inst edge Null))
-  (define g-graph (inst graph Null))
+  (define node (inst (node-maker graph-name) Null 'node))
+  (define edge (inst make-edge Null))
+  (define graph (inst make-graph Null))
 
-  (define a (g-node "A" #:type 'node))
-  (define b (g-node "B" #:type 'node))
-  (define c (g-node "C" #:type 'node))
+  (define a (node "A" #:type 'node))
+  (define b (node "B" #:type 'node))
+  (define c (node "C" #:type 'node))
 
   (values
-   (g-graph graph-name
-            #:edges (list (g-edge "A->B" #:from a #:to b)
-                          (g-edge "B->C" #:from b #:to c)
-                          (g-edge "C->A" #:from c #:to a)))
+   (graph graph-name
+          #:edges (list (edge "A->B" #:from a #:to b)
+                        (edge "B->C" #:from b #:to c)
+                        (edge "C->A" #:from c #:to a)))
    a))
 
 (: ρ-graph (-> String (Values (Graph Null) (Node Null))))
 (define (ρ-graph graph-name)
-  (define g-node (inst (node graph-name) Null (U 'node 'terminal)))
-  (define g-edge (inst edge Null))
-  (define g-graph (inst graph Null))
+  (define node (inst (node-maker graph-name) Null (U 'node 'terminal)))
+  (define edge (inst make-edge Null))
+  (define graph (inst make-graph Null))
 
-  (define a (g-node "A" #:type 'node))
-  (define b (g-node "B" #:type 'node))
-  (define c (g-node "C" #:type 'node))
-  (define d (g-node "D" #:type 'node))
-  (define e (g-node "E" #:type 'terminal))
+  (define a (node "A" #:type 'node))
+  (define b (node "B" #:type 'node))
+  (define c (node "C" #:type 'node))
+  (define d (node "D" #:type 'node))
+  (define e (node "E" #:type 'terminal))
 
   (values
-   (g-graph graph-name
-            #:edges (list (g-edge "A->B" #:from a #:to b)
-                          (g-edge "A->E" #:from a #:to e)
-                          (g-edge "B->C" #:from b #:to c)
-                          (g-edge "C->D" #:from c #:to d)
-                          (g-edge "D->B" #:from d #:to b)))
+   (graph graph-name
+          #:edges (list (edge "A->B" #:from a #:to b)
+                        (edge "A->E" #:from a #:to e)
+                        (edge "B->C" #:from b #:to c)
+                        (edge "C->D" #:from c #:to d)
+                        (edge "D->B" #:from d #:to b)))
    a))
 
 

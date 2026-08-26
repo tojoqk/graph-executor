@@ -76,45 +76,45 @@
                               caps)
                          "\n")))
 
-  (define j-node (inst (node g) Jug-State (U 'puzzle 'check 'terminal)))
-  (define j-edge (inst edge Jug-State))
-  (define j-graph (inst graph Jug-State))
+  (define node (inst (node-maker g) Jug-State (U 'puzzle 'check 'terminal)))
+  (define edge (inst make-edge Jug-State))
+  (define graph (inst make-graph Jug-State))
 
   (cond [(dup caps) => (lambda ([dup-cap : Positive-Integer])
                          (error 'jug-graph "must not be same caps (~a, ~a)" dup-cap dup-cap))])
 
-  (define playing (j-node "Playing" #:type 'puzzle #:prompt (code prompt-playing)))
-  (define check   (j-node "Check Clear" #:type 'check))
-  (define cleared (j-node "Cleared!" #:type 'terminal #:trans (code show-cleared)))
+  (define playing (node "Playing" #:type 'puzzle #:prompt (code prompt-playing)))
+  (define check   (node "Check Clear" #:type 'check))
+  (define cleared (node "Cleared!" #:type 'terminal #:trans (code show-cleared)))
 
   (values
-   (j-graph g
-            #:edges
-            `(,@(for/list : (Listof (Edge Jug-State))
-                          ([cap (in-list caps)])
-                  (j-edge (format "Fill ~aG" cap)
-                          #:from playing
-                          #:to check
-                          #:when (code (can-fill? cap))
-                          #:trans (code (fill cap))))
-              ,@(for/list : (Listof (Edge Jug-State))
-                          ([cap (in-list caps)])
-                  (j-edge (format "Empty ~aG" cap)
-                          #:from playing
-                          #:to check
-                          #:when (code (can-empty? cap))
-                          #:trans (code (empty cap))))
-              ,@(for*/list : (Listof (Edge Jug-State))
-                           ([cap1 (in-list caps)]
-                            [cap2 (in-list caps)]
-                            #:unless (= cap1 cap2))
-                  (j-edge (format "Pour ~aG -> ~aG" cap1 cap2)
-                          #:from playing
-                          #:to check
-                          #:when (code (can-pour? cap1 cap2))
-                          #:trans (code (pour cap1 cap2))))
-              ,(j-edge "Not yet" #:mode 'auto #:from check #:to playing #:when (code (negate is-cleared?)))
-              ,(j-edge "Clear!" #:mode 'auto #:from check #:to cleared #:when (code is-cleared?))))
+   (graph g
+          #:edges
+          `(,@(for/list : (Listof (Edge Jug-State))
+                        ([cap (in-list caps)])
+                (edge (format "Fill ~aG" cap)
+                      #:from playing
+                      #:to check
+                      #:when (code (can-fill? cap))
+                      #:trans (code (fill cap))))
+            ,@(for/list : (Listof (Edge Jug-State))
+                        ([cap (in-list caps)])
+                (edge (format "Empty ~aG" cap)
+                      #:from playing
+                      #:to check
+                      #:when (code (can-empty? cap))
+                      #:trans (code (empty cap))))
+            ,@(for*/list : (Listof (Edge Jug-State))
+                         ([cap1 (in-list caps)]
+                          [cap2 (in-list caps)]
+                          #:unless (= cap1 cap2))
+                (edge (format "Pour ~aG -> ~aG" cap1 cap2)
+                      #:from playing
+                      #:to check
+                      #:when (code (can-pour? cap1 cap2))
+                      #:trans (code (pour cap1 cap2))))
+            ,(edge "Not yet" #:mode 'auto #:from check #:to playing #:when (code (negate is-cleared?)))
+            ,(edge "Clear!" #:mode 'auto #:from check #:to cleared #:when (code is-cleared?))))
    playing))
 
 (module+ model

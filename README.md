@@ -129,28 +129,28 @@ This single file shows how to:
             left-cap (jug-state-left st) left-cap
             right-cap (jug-state-right st) right-cap))
 
-  (define j-node (inst (node g) Jug-State (U 'puzzle 'check 'terminal)))
-  (define j-edge (inst edge Jug-State))
-  (define j-graph (inst graph Jug-State))
+  (define node (inst (node-maker g) Jug-State (U 'puzzle 'check 'terminal)))
+  (define edge (inst make-edge Jug-State))
+  (define graph (inst make-graph Jug-State))
 
-  (define playing (j-node "Playing" #:type 'puzzle #:prompt (code prompt-playing)))
-  (define check   (j-node "Check Clear" #:type 'check))
-  (define cleared (j-node "Cleared!" #:type 'terminal #:trans (code show-cleared)))
+  (define playing (node "Playing" #:type 'puzzle #:prompt (code prompt-playing)))
+  (define check   (node "Check Clear" #:type 'check))
+  (define cleared (node "Cleared!" #:type 'terminal #:trans (code show-cleared)))
 
   (values
-   (j-graph g
-            #:edges
-            (list
-             (j-edge (format "Fill ~aG" left-cap) #:from playing #:to check #:when (code can-fill-left?) #:trans (code fill-left))
-             (j-edge (format "Fill ~aG" right-cap) #:from playing #:to check #:when (code can-fill-right?) #:trans (code fill-right))
+   (graph g
+          #:edges
+          (list
+           (edge (format "Fill ~aG" left-cap) #:from playing #:to check #:when (code can-fill-left?) #:trans (code fill-left))
+           (edge (format "Fill ~aG" right-cap) #:from playing #:to check #:when (code can-fill-right?) #:trans (code fill-right))
+           
+           (edge (format "Empty ~aG" left-cap) #:from playing #:to check #:when (code can-empty-left?) #:trans (code empty-left))
+           (edge (format "Empty ~aG" right-cap) #:from playing #:to check #:when (code can-empty-right?) #:trans (code empty-right))
 
-             (j-edge (format "Empty ~aG" left-cap) #:from playing #:to check #:when (code can-empty-left?) #:trans (code empty-left))
-             (j-edge (format "Empty ~aG" right-cap) #:from playing #:to check #:when (code can-empty-right?) #:trans (code empty-right))
-
-             (j-edge (format "Pour ~aG -> ~aG" left-cap right-cap) #:from playing #:to check #:when (code can-pour-left-to-right?) #:trans (code pour-left-to-right))
-             (j-edge (format "Pour ~aG -> ~aG" right-cap left-cap) #:from playing #:to check #:when (code can-pour-right-to-left?) #:trans (code pour-right-to-left))
-             (j-edge "Not yet" #:mode 'auto #:from check #:to playing #:when (code (negate is-cleared?)))
-             (j-edge "Clear!" #:mode 'auto #:from check #:to cleared #:when (code is-cleared?))))
+           (edge (format "Pour ~aG -> ~aG" left-cap right-cap) #:from playing #:to check #:when (code can-pour-left-to-right?) #:trans (code pour-left-to-right))
+           (edge (format "Pour ~aG -> ~aG" right-cap left-cap) #:from playing #:to check #:when (code can-pour-right-to-left?) #:trans (code pour-right-to-left))
+           (edge "Not yet" #:mode 'auto #:from check #:to playing #:when (code (negate is-cleared?)))
+           (edge "Clear!" #:mode 'auto #:from check #:to cleared #:when (code is-cleared?))))
    playing))
 
 (module+ model

@@ -4,16 +4,16 @@
          Code-Sexp code-sexp code-sexp? code-sexp-sexp
          Code-Text code-text code-text? code-text-text
          current-graph-used-ids current-node-prompt
-         Node make-node (rename-out [node* node])
+         Node node-maker
          node-graph-id node-graph-name node-id node-name node-type node-tags node-desc node-trans node-trans-code-expr node-prompt node-prompt-code-expr node-node-options
          Node-Option (struct-out node-option)
          Node-Info node-node-info node-info-name node-info-type node-info-tags node-info-desc
          any-node
-         Edge Bridge EdgeMode edge? (rename-out [edge* edge] [bridge* bridge])
+         Edge Bridge EdgeMode edge? make-edge make-bridge
          edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-code-expr edge-trans edge-trans-code-expr edge-priority edge-edge-options
          Edge-Option (struct-out edge-option)
          any-bridge any-edge
-         Graph OpenGraph (rename-out [graph* graph]) (rename-out [open-graph* open-graph])
+         Graph OpenGraph make-graph make-open-graph
          graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges
          any-graph)
 
@@ -115,7 +115,7 @@
 (define (node-prompt-code-expr n)
   (%code-code-expr (node-prompt-code n)))
 
-(: make-node (All (S)
+(: %make-node (All (S)
                   (-> #:graph-name String
                       #:name String
                       #:type Symbol
@@ -125,7 +125,7 @@
                       #:prompt (Option (U String (Code (-> S String))))
                       #:options (Listof Node-Option)
                       (Node S))))
-(define (make-node #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc #:trans tr #:prompt pmt #:options opts)
+(define (%make-node #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc #:trans tr #:prompt pmt #:options opts)
   (let ([graph-id (make-graph-id graph-name)]
         [node-id (make-node-id graph-name name)])
     (cond [(set-member? (current-graph-used-ids) node-id)
@@ -141,21 +141,21 @@
                                ((%code-value pmt) s)))])
           opts)))
 
-(: node* (-> String
-             (All (S T)
-                  (-> String
-                      #:type (∩ T Symbol)
-                      [#:tags (Listof Symbol)]
-                      [#:desc (Option String)]
-                      [#:trans (Option (Code (-> S S)))]
-                      [#:prompt (Option (U String (Code (-> S String))))]
-                      [#:options (Listof Node-Option)]
-                      (Node S)))))
-(define ((node* graph-name) name #:type type #:tags [tags '()] #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f] #:options [options '()])
-  (make-node #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc
-             #:trans tr
-             #:prompt pmt
-             #:options options))
+(: node-maker (-> String
+                  (All (S T)
+                       (-> String
+                           #:type (∩ T Symbol)
+                           [#:tags (Listof Symbol)]
+                           [#:desc (Option String)]
+                           [#:trans (Option (Code (-> S S)))]
+                           [#:prompt (Option (U String (Code (-> S String))))]
+                           [#:options (Listof Node-Option)]
+                           (Node S)))))
+(define ((node-maker graph-name) name #:type type #:tags [tags '()] #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f] #:options [options '()])
+  (%make-node #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc
+              #:trans tr
+              #:prompt pmt
+              #:options options))
 
 (: any-node (All (S) (-> (-> Any Any : #:+ S) (-> (Node S) (Node Any)))))
 (define ((any-node p?) n)
@@ -282,28 +282,28 @@
      (or priority 0)
      opts)))
 
-(: bridge* (All (S)
-                (-> String
-                    [#:mode (Option EdgeMode)]
-                    [#:half Boolean]
-                    #:from (Node S)
-                    #:to (Node Any)
-                    [#:desc (Option String)]
-                    [#:when (Option (Code (-> S Any)))]
-                    #:trans (Code (-> S Any))
-                    [#:priority (Option Integer)]
-                    [#:options (Listof Edge-Option)]
-                    (Bridge S))))
-(define (bridge* name
-                 #:mode [mode #f]
-                 #:half [half? #f]
-                 #:from from
-                 #:to to
-                 #:desc [desc #f]
-                 #:when [when #f]
-                 #:trans tr
-                 #:priority [priority #f]
-                 #:options [opts '()])
+(: make-bridge (All (S)
+                    (-> String
+                        [#:mode (Option EdgeMode)]
+                        [#:half Boolean]
+                        #:from (Node S)
+                        #:to (Node Any)
+                        [#:desc (Option String)]
+                        [#:when (Option (Code (-> S Any)))]
+                        #:trans (Code (-> S Any))
+                        [#:priority (Option Integer)]
+                        [#:options (Listof Edge-Option)]
+                        (Bridge S))))
+(define (make-bridge name
+                     #:mode [mode #f]
+                     #:half [half? #f]
+                     #:from from
+                     #:to to
+                     #:desc [desc #f]
+                     #:when [when #f]
+                     #:trans tr
+                     #:priority [priority #f]
+                     #:options [opts '()])
   ((inst make-generic-edge* S) 'bridge
                                #:name name
                                #:mode mode
@@ -316,28 +316,28 @@
                                #:priority priority
                                #:options opts))
 
-(: edge* (All (S)
-              (-> String
-                  [#:mode (Option EdgeMode)]
-                  [#:half? Boolean]
-                  #:from (Node S)
-                  #:to (Node S)
-                  [#:desc (Option String)]
-                  [#:when (Option (Code (-> S Any)))]
-                  [#:trans (Option (Code (-> S S)))]
-                  [#:priority (Option Integer)]
-                  [#:options (Listof Edge-Option)]
-                  (Edge S))))
-(define (edge* name
-               #:mode [mode #f]
-               #:half? [half? #f]
-               #:from from
-               #:to to
-               #:desc [desc #f]
-               #:when [when #f]
-               #:trans [tr #f]
-               #:priority [priority #f]
-               #:options [opts '()])
+(: make-edge (All (S)
+                  (-> String
+                      [#:mode (Option EdgeMode)]
+                      [#:half? Boolean]
+                      #:from (Node S)
+                      #:to (Node S)
+                      [#:desc (Option String)]
+                      [#:when (Option (Code (-> S Any)))]
+                      [#:trans (Option (Code (-> S S)))]
+                      [#:priority (Option Integer)]
+                      [#:options (Listof Edge-Option)]
+                      (Edge S))))
+(define (make-edge name
+                   #:mode [mode #f]
+                   #:half? [half? #f]
+                   #:from from
+                   #:to to
+                   #:desc [desc #f]
+                   #:when [when #f]
+                   #:trans [tr #f]
+                   #:priority [priority #f]
+                   #:options [opts '()])
   ((inst make-generic-edge* S) 'edge
                                #:name name
                                #:mode mode
@@ -386,12 +386,12 @@
   #:transparent
   #:type-name Graph)
 
-(: graph* (All (S) (-> String
-                       [#:parent-name (Option String)]
-                       [#:desc (Option String)]
-                       [#:edges (Option (Listof (Edge S)))]
-                       (Graph S))))
-(define (graph* name
+(: make-graph (All (S) (-> String
+                           [#:parent-name (Option String)]
+                           [#:desc (Option String)]
+                           [#:edges (Option (Listof (Edge S)))]
+                           (Graph S))))
+(define (make-graph name
                 #:parent-name [parent-name #f]
                 #:desc [desc #f]
                 #:edges [edges #f])
@@ -409,22 +409,22 @@
   #:transparent
   #:type-name OpenGraph)
 
-(: open-graph* (All (S)
-                    (-> String
-                        [#:parent-name (Option String)]
-                        [#:desc (Option String)]
-                        [#:edges (Option (Listof (Edge S)))]
-                        [#:bridges (Option (Listof (Bridge S)))]
-                        (OpenGraph S))))
-(define (open-graph* name
-                     #:parent-name [parent-name #f]
-                     #:desc [desc #f]
-                     #:edges [edges #f]
-                     #:bridges [bridges #f])
-  (open-graph ((inst graph* S) name
-                               #:parent-name parent-name
-                               #:desc desc
-                               #:edges edges)
+(: make-open-graph (All (S)
+                        (-> String
+                            [#:parent-name (Option String)]
+                            [#:desc (Option String)]
+                            [#:edges (Option (Listof (Edge S)))]
+                            [#:bridges (Option (Listof (Bridge S)))]
+                            (OpenGraph S))))
+(define (make-open-graph name
+                         #:parent-name [parent-name #f]
+                         #:desc [desc #f]
+                         #:edges [edges #f]
+                         #:bridges [bridges #f])
+  (open-graph ((inst make-graph S) name
+                                   #:parent-name parent-name
+                                   #:desc desc
+                                   #:edges edges)
               (or bridges '())))
 
 (: any-graph (All (S) (-> (-> Any Any : #:+ S)

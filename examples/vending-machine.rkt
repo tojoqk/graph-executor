@@ -42,44 +42,44 @@
   (define (inserted? st)
     (< 0 (v-state-inserted st)))
 
-  (define v-node (inst (node g) Vending-Machine-State (U 'start 'normal)))
-  (define v-edge (inst edge Vending-Machine-State))
-  (define v-bridge (inst bridge Vending-Machine-State))
-  (define v-graph (inst open-graph Vending-Machine-State))
+  (define node (inst (node-maker g) Vending-Machine-State (U 'start 'normal)))
+  (define edge (inst make-edge Vending-Machine-State))
+  (define bridge (inst make-bridge Vending-Machine-State))
+  (define graph (inst make-open-graph Vending-Machine-State))
 
-  (define idle       (v-node "Idle (Accepting Coins)" #:type 'start))
-  (define has-coins  (v-node "Selecting Item"         #:type 'normal))
-  (define dispensing (v-node "Dispensing Item"        #:type 'normal))
-  (define ret-change (v-node "Returning Change"       #:type 'normal))
+  (define idle       (node "Idle (Accepting Coins)" #:type 'start))
+  (define has-coins  (node "Selecting Item"         #:type 'normal))
+  (define dispensing (node "Dispensing Item"        #:type 'normal))
+  (define ret-change (node "Returning Change"       #:type 'normal))
 
   (values
    (lambda (output output-edge)
-     (v-graph
+     (graph
       g
       #:edges
       (list
-       (v-edge "Insert Money" #:from idle #:to has-coins
-               #:when (code (can-insert? 1))
-               #:trans (code insert-money))
-       (v-edge "Insert More" #:from has-coins #:to has-coins
-               #:when (code (can-insert? 1))
-               #:trans (code insert-money))
-       (v-edge "Purchase Drink (150 Yen)" #:from has-coins #:to dispensing
-               #:when (code (price-met? 150))
-               #:trans (code (purchase 150)))
-       (v-edge "Dispense Done (Remaining Inserted)" #:mode 'auto #:from dispensing #:to has-coins
-               #:when (code inserted?))
-       (v-edge "Dispense Done (Just Zero)" #:mode 'auto #:from dispensing #:to idle
-               #:when (code (negate inserted?)))
-       (v-edge "Press Return Lever" #:from has-coins #:to ret-change
-               #:when (code inserted?)
-               #:trans (code reset-money))
-       (v-edge "Change Dispatched" #:mode 'auto #:from ret-change #:to idle))
+       (edge "Insert Money" #:from idle #:to has-coins
+             #:when (code (can-insert? 1))
+             #:trans (code insert-money))
+       (edge "Insert More" #:from has-coins #:to has-coins
+             #:when (code (can-insert? 1))
+             #:trans (code insert-money))
+       (edge "Purchase Drink (150 Yen)" #:from has-coins #:to dispensing
+             #:when (code (price-met? 150))
+             #:trans (code (purchase 150)))
+       (edge "Dispense Done (Remaining Inserted)" #:mode 'auto #:from dispensing #:to has-coins
+             #:when (code inserted?))
+       (edge "Dispense Done (Just Zero)" #:mode 'auto #:from dispensing #:to idle
+             #:when (code (negate inserted?)))
+       (edge "Press Return Lever" #:from has-coins #:to ret-change
+             #:when (code inserted?)
+             #:trans (code reset-money))
+       (edge "Change Dispatched" #:mode 'auto #:from ret-change #:to idle))
       #:bridges
       (list
-       (v-bridge "Walk Away" #:from idle #:to output
-                 #:trans output-edge
-                 #:options (list (dot-edge-option #:minlen 3))))))
+       (bridge "Walk Away" #:from idle #:to output
+               #:trans output-edge
+               #:options (list (dot-edge-option #:minlen 3))))))
    idle))
 
 (struct street ([wallet : Integer])
@@ -91,25 +91,25 @@
                      (-> (Node Any) (Code (-> Street-State Any)) (OpenGraph Street-State))
                      (Node Street-State))))
 (define (street-graph g)
-  (define s-node (inst (node g) Street-State (U 'street 'terminal)))
-  (define s-graph (inst open-graph Street-State))
-  (define s-edge (inst edge Street-State))
-  (define s-bridge (inst bridge Street-State))
+  (define node (inst (node-maker g) Street-State (U 'street 'terminal)))
+  (define graph (inst make-open-graph Street-State))
+  (define edge (inst make-edge Street-State))
+  (define bridge (inst make-bridge Street-State))
 
-  (define on-street (s-node "Street Entry" #:type 'street))
-  (define bench (s-node "Bench (Rest)" #:type 'terminal))
+  (define on-street (node "Street Entry" #:type 'street))
+  (define bench (node "Bench (Rest)" #:type 'terminal))
 
   (values
    (lambda (output output-edge)
-     (s-graph g
-              #:edges
-              (list
-               (s-edge "Sit on Bench" #:mode 'choose #:from on-street #:to bench
-                       #:priority -1))
-              #:bridges
-              (list
-               (s-bridge "Go to Vending Machine" #:from on-street #:to output
-                         #:trans output-edge))))
+     (graph g
+            #:edges
+            (list
+             (edge "Sit on Bench" #:mode 'choose #:from on-street #:to bench
+                   #:priority -1))
+            #:bridges
+            (list
+             (bridge "Go to Vending Machine" #:from on-street #:to output
+                     #:trans output-edge))))
    on-street))
 
 (: vending-machine-graph->street-graph (-> Vending-Machine-State Street-State))
