@@ -11,8 +11,8 @@ expr.macro 'code($e)':
   'main.#{make-code}(main.#{code-text}($(e.to_source_string())), $e)'
 
 fun model(proc, ~default_node_prompt = "Choose:"):
-  let f = fun():
-    let values(gs, n, st) = proc()
+  def f = fun():
+    def values(gs, n, st) = proc()
     values(PairList(&gs), n, st)
   main.model(f, ~#{default-node-prompt}: default_node_prompt)
 
