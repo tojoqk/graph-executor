@@ -9,7 +9,8 @@
 (require "effect/consumer.rkt")
 (require "effect/emitter.rkt")
 
-(provide replay auto-choose
+(provide replay apply-journal
+         auto-choose
          find-graph next-edges
          find-edge
          Command)
@@ -71,6 +72,11 @@
                      [else (error 'replay "edge not found")]))]
             [(terminated) (error 'replay "unexpected termination")]
             [(auto-conflicted) (error 'replay "unexpected auto-conflicted error: ~s" (second ne))])))))
+
+(: apply-journal (All (S) (-> (Model S) Journal (Values Node-Info S))))
+(define (apply-journal m j)
+  (define-values (n st _h) (replay m j))
+  (values (node-node-info n) st))
 
 (: find-graph (All (S) (-> (Listof (Graph S)) Symbol (Graph S))))
 (define (find-graph gs g-id)

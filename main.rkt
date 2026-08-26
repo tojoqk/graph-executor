@@ -17,6 +17,7 @@
          Edge Bridge edge bridge
          Graph OpenGraph graph open-graph any-graph graph-name
          Model model
+         apply-journal
          Console-Command
          Console-Config console-config weight-edge-option
          default-console-commands default-console-chooser
