@@ -27,7 +27,7 @@
          prompt Prompt-Info prompt-info-tags
          message
          console-run
-         find-counterexample find-deadlock find-false-terminal find-auto-conflict find-livelock
+         find-counterexample find-witness find-deadlock find-false-terminal find-auto-conflict find-livelock
          Checker-Config checker-config Checker-Prompt-Config checker-prompt-config
          default-checker-prompt-string-values
          default-checker-prompt-integer-values

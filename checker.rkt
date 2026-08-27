@@ -11,7 +11,7 @@
 (require "effect/emitter.rkt")
 (require "effect/state.rkt")
 
-(provide find-counterexample find-deadlock find-false-terminal find-auto-conflict find-livelock
+(provide find-counterexample find-witness find-deadlock find-false-terminal find-auto-conflict find-livelock
          Checker-Config checker-config)
 
 (: checker-config-trace-display? (-> Checker-Config Boolean))
@@ -51,6 +51,25 @@
   (%find-counterexample m
                         (lambda (_ne [n : Node-Info] [st : S])
                           (invariant n st))
+                        #:journal j
+                        #:bound bound
+                        #:bounded bounded
+                        #:config config))
+
+(: find-witness (All (S) (-> (Model S) (-> Node-Info S Any)
+                             [#:journal Journal]
+                             [#:bound (Option Natural)]
+                             [#:bounded (-> (Option Journal))]
+                             [#:config Checker-Config]
+                             (Option Journal))))
+(define (find-witness m predicate
+                      #:journal [j '()]
+                      #:bound [bound #f]
+                      #:bounded [bounded (const #f)]
+                      #:config [config (checker-config)])
+  (%find-counterexample m
+                        (negate (lambda (_ne [n : Node-Info] [st : S])
+                                  (predicate n st)))
                         #:journal j
                         #:bound bound
                         #:bounded bounded
