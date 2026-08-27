@@ -127,7 +127,7 @@
           `(table ((border "0") (cellborder "0") (cellspacing "0") (cellpadding "4"))
                   ,(center-row (list `(b ,(dot-node-name dn))))
                   ,@(cond [(dot-node-desc dn)
-                           => (lambda (d) (list (center-row (text->xexprs d))))]
+                           => (lambda (d) (list (left-row (text->xexprs d))))]
                           [else '()])
                   ,@(cond [(dot-node-trans dn)
                            => (lambda (x)
