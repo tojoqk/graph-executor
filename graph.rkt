@@ -285,7 +285,7 @@
 (: make-bridge (All (S)
                     (-> String
                         [#:mode (Option EdgeMode)]
-                        [#:half Boolean]
+                        [#:half? Boolean]
                         #:from (Node S)
                         #:to (Node Any)
                         [#:desc (Option String)]
@@ -296,7 +296,7 @@
                         (Bridge S))))
 (define (make-bridge name
                      #:mode [mode #f]
-                     #:half [half? #f]
+                     #:half? [half? #f]
                      #:from from
                      #:to to
                      #:desc [desc #f]
