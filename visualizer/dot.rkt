@@ -298,7 +298,10 @@
                 [out (open-output-string)])
            (pretty-print x out 1)
            (get-output-string out))]
-        [(code-text? ce) (code-text-text ce)]))
+        [(code-text? ce)
+         (let ([out (open-output-string)])
+           (displayln (code-text-text ce) out)
+           (get-output-string out))]))
 
 (: render-dot (All (S) (-> (Model S)  [#:journal Journal] [#:port Output-Port] [#:config DotConfig] Void)))
 (define (render-dot m #:journal [j '()] #:port [port (current-output-port)] #:config [config (dot-config)])
