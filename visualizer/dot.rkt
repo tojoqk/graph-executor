@@ -129,14 +129,6 @@
                   ,@(cond [(dot-node-desc dn)
                            => (lambda (d) (list (center-row (text->xexprs d))))]
                           [else '()])
-                  ,@(cond [(dot-node-prompt dn)
-                           => (lambda (x)
-                                (list (left-row
-                                       `((b "prompt:")
-                                         (br ((align "left")))
-                                         (font ((point-size "4")) (br ((align "left"))))
-                                         ,@(text->xexprs (show-code-expr x))))))]
-                          [else '()])
                   ,@(cond [(dot-node-trans dn)
                            => (lambda (x)
                                 (list (left-row
