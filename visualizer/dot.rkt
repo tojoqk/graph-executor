@@ -120,6 +120,9 @@
     (: center-row (-> (Listof XExpr) XExpr))
     (define (center-row contents)
       `(tr (td ((align "center")) ,@contents)))
+    (: left-row (-> (Listof XExpr) XExpr))
+    (define (left-row contents)
+      `(tr (td ((align "left")) ,@contents)))
     (list 'html
           `(table ((border "0") (cellborder "0") (cellspacing "0") (cellpadding "4"))
                   ,(center-row (list `(b ,(dot-node-name dn))))
@@ -128,13 +131,19 @@
                           [else '()])
                   ,@(cond [(dot-node-prompt dn)
                            => (lambda (x)
-                                (list (center-row
-                                       `("prompt: " ,@(text->xexprs (show-code-expr x))))))]
+                                (list (left-row
+                                       `((b "prompt:")
+                                         (br ((align "left")))
+                                         (font ((point-size "4")) (br ((align "left"))))
+                                         ,@(text->xexprs (show-code-expr x))))))]
                           [else '()])
                   ,@(cond [(dot-node-trans dn)
                            => (lambda (x)
-                                (list (center-row
-                                       `("trans: " ,@(text->xexprs (show-code-expr x))))))]
+                                (list (left-row
+                                       `((b "trans:")
+                                         (br ((align "left")))
+                                         (font ((point-size "4")) (br ((align "left"))))
+                                         ,@(text->xexprs (show-code-expr x))))))]
                           [else '()])))))
 
 (: default-dot-edge-node-label-config (-> DotEdge DotEdgeStatus (U (List 'text String)
@@ -144,21 +153,30 @@
     (: center-row (-> (Listof XExpr) XExpr))
     (define (center-row contents)
       `(tr (td ((align "center")) ,@contents)))
+    (: left-row (-> (Listof XExpr) XExpr))
+    (define (left-row contents)
+      `(tr (td ((align "left")) ,@contents)))
     (list 'html
-          `(table ((border "0") (cellborder "0") (cellspacing "0") (cellpadding "2"))
+          `(table ((border "0") (cellborder "0") (cellspacing "0") (cellpadding "1"))
                   ,(center-row (list `(b ,(dot-edge-name de))))
                   ,@(cond [(dot-edge-desc de)
-                           => (lambda (d) (list (center-row (text->xexprs d))))]
+                           => (lambda (d) (list (left-row (text->xexprs d))))]
                           [else '()])
                   ,@(cond [(dot-edge-when de)
                            => (lambda (x)
-                                (list (center-row
-                                       `("when: " ,@(text->xexprs (show-code-expr x))))))]
+                                (list (left-row
+                                       `((b "when:")
+                                         (br ((align "left")))
+                                         (font ((point-size "4")) (br ((align "left"))))
+                                         ,@(text->xexprs (show-code-expr x))))))]
                           [else '()])
                   ,@(cond [(dot-edge-trans de)
                            => (lambda (x)
-                                (list (center-row
-                                       `("trans: " ,@(text->xexprs (show-code-expr x))))))]
+                                (list (left-row
+                                       `((b "trans:")
+                                         (br ((align "left")))
+                                         (font ((point-size "4")) (br ((align "left"))))
+                                         ,@(text->xexprs (show-code-expr x))))))]
                           [else '()])))))
 
 (struct %dot-config ([global : DotGlobalConfig]
@@ -279,14 +297,17 @@
   (let rec ([lines (regexp-split #rx"\n" str)])
     (cond [(null? lines) '()]
           [(null? (rest lines)) lines]
-          [else (list* (first lines) '(br) (rec (rest lines)))])))
+          [else (list* (first lines)
+                       '(br ((align "left")))
+                       '(font ((point-size "4")) (br ((align "left"))))
+                       (rec (rest lines)))])))
 
 (: show-code-expr (-> Code-Expr String))
 (define (show-code-expr ce)
   (cond [(code-sexp? ce)
          (let* ([x (code-sexp-sexp ce)]
                 [out (open-output-string)])
-           (print x out 1)
+           (pretty-print x out 1)
            (get-output-string out))]
         [(code-text? ce) (code-text-text ce)]))
 
