@@ -10,7 +10,7 @@
          Node-Info node-node-info node-info-name node-info-type node-info-tags node-info-desc
          any-node
          Edge Bridge EdgeMode edge? make-edge make-bridge
-         edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-code-expr edge-trans edge-trans-code-expr edge-priority edge-edge-options
+         edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-code-expr edge-trans edge-trans-code-expr edge-before-code-expr edge-after-code-expr edge-priority edge-edge-options
          Edge-Option (struct-out edge-option)
          any-bridge any-edge
          Graph OpenGraph make-graph make-open-graph
@@ -179,6 +179,8 @@
                   [desc : (Option String)]
                   [when-code : (Code (-> S Any))]
                   [trans-code : (Code (-> S S))]
+                  [before-code-expr : (Option Code-Expr)]
+                  [after-code-expr : (Option Code-Expr)]
                   [priority : Integer]
                   [edge-options : (Listof Edge-Option)])
   #:transparent
@@ -210,6 +212,8 @@
                     [desc : (Option String)]
                     [when-code : (Code (-> S Any))]
                     [trans-code : (Code (-> S Any))]
+                    [before-code-expr : (Option Code-Expr)]
+                    [after-code-expr : (Option Code-Expr)]
                     [priority : Integer]
                     [edge-options : (Listof Edge-Option)])
   #:transparent
@@ -241,6 +245,8 @@
                                        #:desc (Option String)
                                        #:when (Option (Code (-> S Any)))
                                        #:trans (Code (-> S S))
+                                       #:before (Option (Code (-> S Any)))
+                                       #:after (Option (Code (-> S Any)))
                                        #:priority (Option Integer)
                                        #:options (Listof Edge-Option)
                                        (Edge S))
@@ -253,6 +259,8 @@
                                        #:desc (Option String)
                                        #:when (Option (Code (-> S Any)))
                                        #:trans (Code (-> S Any))
+                                       #:before (Option (Code (-> S Any)))
+                                       #:after (Option (Code (-> Any Any)))
                                        #:priority (Option Integer)
                                        #:options (Listof Edge-Option)
                                        (Bridge S)))))
@@ -265,6 +273,8 @@
                             #:desc desc
                             #:when when
                             #:trans tr
+                            #:before before
+                            #:after after
                             #:priority priority
                             #:options opts)
   (let ([edge-id (make-edge-id name from)])
@@ -278,7 +288,31 @@
      from to
      desc
      (or when (%code #f (const #t)))
-     tr
+     (cond [before (cond [after (let ([before-proc (%code-value before)]
+                                      [after-proc (%code-value after)]
+                                      [trans-proc (%code-value tr)])
+                                  (%code (%code-code-expr tr)
+                                         (lambda ([st : S])
+                                           (before-proc st)
+                                           (let ([new-st (trans-proc st)])
+                                             (after-proc new-st)
+                                             new-st))))]
+                         [else (%code (%code-code-expr tr)
+                                      (let ([before-proc (%code-value before)]
+                                            [trans-proc (%code-value tr)])
+                                        (lambda ([st : S])
+                                          (before-proc st)
+                                          (trans-proc st))))])]
+           [after (%code (%code-code-expr tr)
+                         (let ([after-proc (%code-value after)]
+                               [trans-proc (%code-value tr)])
+                           (lambda ([st : S])
+                             (let ([new-st (trans-proc st)])
+                               (after-proc new-st)
+                               new-st))))]
+           [else tr])
+     (and before (%code-code-expr before))
+     (and after (%code-code-expr after))
      (or priority 0)
      opts)))
 
@@ -291,6 +325,8 @@
                         [#:desc (Option String)]
                         [#:when (Option (Code (-> S Any)))]
                         #:trans (Code (-> S Any))
+                        [#:before (Option (Code (-> S Any)))]
+                        [#:after (Option (Code (-> Any Any)))]
                         [#:priority (Option Integer)]
                         [#:options (Listof Edge-Option)]
                         (Bridge S))))
@@ -302,6 +338,8 @@
                      #:desc [desc #f]
                      #:when [when #f]
                      #:trans tr
+                     #:before [before #f]
+                     #:after [after #f]
                      #:priority [priority #f]
                      #:options [opts '()])
   ((inst make-generic-edge* S) 'bridge
@@ -313,6 +351,8 @@
                                #:desc desc
                                #:when when
                                #:trans (or tr (inst identity S))
+                               #:before before
+                               #:after after
                                #:priority priority
                                #:options opts))
 
@@ -325,6 +365,8 @@
                       [#:desc (Option String)]
                       [#:when (Option (Code (-> S Any)))]
                       [#:trans (Option (Code (-> S S)))]
+                      [#:before (Option (Code (-> S Any)))]
+                      [#:after (Option (Code (-> S Any)))]
                       [#:priority (Option Integer)]
                       [#:options (Listof Edge-Option)]
                       (Edge S))))
@@ -336,6 +378,8 @@
                    #:desc [desc #f]
                    #:when [when #f]
                    #:trans [tr #f]
+                   #:before [before #f]
+                   #:after [after #f]
                    #:priority [priority #f]
                    #:options [opts '()])
   ((inst make-generic-edge* S) 'edge
@@ -347,6 +391,8 @@
                                #:desc desc
                                #:when when
                                #:trans (or tr (%code #f (inst identity S)))
+                               #:before before
+                               #:after after
                                #:priority priority
                                #:options opts))
 
@@ -362,6 +408,8 @@
         (bridge-desc b)
         (%code (bridge-when-code-expr b) (lambda (x) ((bridge-when b) (assert x p?))))
         (%code (bridge-trans-code-expr b) (lambda (x) ((bridge-trans b) (assert x p?))))
+        (bridge-before-code-expr b)
+        (bridge-after-code-expr b)
         (bridge-priority b)
         (bridge-edge-options b)))
 

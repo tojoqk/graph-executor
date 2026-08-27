@@ -62,13 +62,13 @@
 (define (node->dot-node n)
   (dot-node (node-name n) (node-desc n) (node-type n) (node-tags n) (node-prompt-code-expr n) (node-trans-code-expr n)))
 
-(struct dot-edge ([name : String] [desc : (Option String)] [mode : EdgeMode] [from : Symbol] [to : Symbol] [when : (Option Code-Expr)] [trans : (Option Code-Expr)])
+(struct dot-edge ([name : String] [desc : (Option String)] [mode : EdgeMode] [from : Symbol] [to : Symbol] [when : (Option Code-Expr)] [trans : (Option Code-Expr)] [before : (Option Code-Expr)] [after : (Option Code-Expr)])
   #:transparent
   #:type-name DotEdge)
 
 (: edge->dot-edge (All (S) (-> (Edge S) DotEdge)))
 (define (edge->dot-edge e)
-  (dot-edge (edge-name e) (edge-desc e) (edge-mode e) (node-type (edge-from e)) (node-type (edge-to e)) (edge-when-code-expr e) (edge-trans-code-expr e)))
+  (dot-edge (edge-name e) (edge-desc e) (edge-mode e) (node-type (edge-from e)) (node-type (edge-to e)) (edge-when-code-expr e) (edge-trans-code-expr e) (edge-before-code-expr e) (edge-after-code-expr e)))
 
 (define-type DotNodeStatus (U 'default 'visited 'current))
 (: dot-node-status (All (S) (-> (Node S) DotNodeStatus)))
