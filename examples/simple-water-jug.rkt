@@ -12,71 +12,15 @@
   (when (= left-cap right-cap)
     (error 'jug-graph "must not be same caps (~a, ~a)" left-cap right-cap))
 
-  (: show-cleared (-> Jug-State Jug-State))
-  (define (show-cleared st)
-    (message (format "Congratulations! You made exactly ~a gallons!" target))
-    st)
+  (: pour-left-to-right/message (-> Jug-State Any))
+  (define (pour-left-to-right/message st)
+    (let ([amount (min (jug-state-left st) (- right-cap (jug-state-right st)))])
+      (message (format "Poured ~a gallons from ~aG to ~aG." amount left-cap right-cap))))
 
-  (: fill-left (-> Jug-State Jug-State))
-  (define (fill-left st)
-    (message (format "Filled the ~a-gallon jug." left-cap))
-    (struct-copy jug-state st [left left-cap]))
-
-  (: fill-right (-> Jug-State Jug-State))
-  (define (fill-right st)
-    (message (format "Filled the ~a-gallon jug." right-cap))
-    (struct-copy jug-state st [right right-cap]))
-
-  (: empty-left (-> Jug-State Jug-State))
-  (define (empty-left st)
-    (message (format "Emptied the ~a-gallon jug." left-cap))
-    (struct-copy jug-state st [left 0]))
-
-  (: empty-right (-> Jug-State Jug-State))
-  (define (empty-right st)
-    (message (format "Emptied the ~a-gallon jug." right-cap))
-    (struct-copy jug-state st [right 0]))
-
-  (: pour-left-to-right (-> Jug-State Jug-State))
-  (define (pour-left-to-right st)
-    (let* ([amount (min (jug-state-left st) (- right-cap (jug-state-right st)))]
-           [new-left (- (jug-state-left st) amount)]
-           [new-right (+ (jug-state-right st) amount)])
-      (message (format "Poured ~a gallons from ~aG to ~aG." amount left-cap right-cap))
-      (struct-copy jug-state st [left new-left] [right new-right])))
-
-  (: pour-right-to-left (-> Jug-State Jug-State))
-  (define (pour-right-to-left st)
-    (let* ([amount (min (jug-state-right st) (- left-cap (jug-state-left st)))]
-           [new-right (- (jug-state-right st) amount)]
-           [new-left (+ (jug-state-left st) amount)])
-      (message (format "Poured ~a gallons from ~aG to ~aG." amount right-cap left-cap))
-      (struct-copy jug-state st [right new-right] [left new-left])))
-
-  (: can-fill-right? (-> Jug-State Boolean))
-  (define (can-fill-right? st) (< (jug-state-right st) right-cap))
-
-  (: can-fill-left? (-> Jug-State Boolean))
-  (define (can-fill-left? st) (< (jug-state-left st) left-cap))
-
-  (: can-empty-right? (-> Jug-State Boolean))
-  (define (can-empty-right? st) (> (jug-state-right st) 0))
-
-  (: can-empty-left? (-> Jug-State Boolean))
-  (define (can-empty-left? st) (> (jug-state-left st) 0))
-
-  (: can-pour-right-to-left? (-> Jug-State Boolean))
-  (define (can-pour-right-to-left? st)
-    (and (> (jug-state-right st) 0) (< (jug-state-left st) left-cap)))
-
-  (: can-pour-left-to-right? (-> Jug-State Boolean))
-  (define (can-pour-left-to-right? st)
-    (and (> (jug-state-left st) 0) (< (jug-state-right st) right-cap)))
-
-  (: is-cleared? (-> Jug-State Boolean))
-  (define (is-cleared? st)
-    (or (= (jug-state-left st) target)
-        (= (jug-state-right st) target)))
+  (: pour-right-to-left/message (-> Jug-State Any))
+  (define (pour-right-to-left/message st)
+    (let ([amount (min (jug-state-right st) (- left-cap (jug-state-left st)))])
+      (message (format "Poured ~a gallons from ~aG to ~aG." amount right-cap left-cap))))
 
   (: prompt-playing (-> Jug-State String))
   (define (prompt-playing st)
@@ -91,22 +35,56 @@
 
   (define playing (node "Playing" #:type 'puzzle #:prompt (code prompt-playing)))
   (define check   (node "Check Clear" #:type 'check))
-  (define cleared (node "Cleared!" #:type 'terminal #:trans (code show-cleared)))
+  (define cleared (node "Cleared!"
+                        #:type 'terminal
+                        #:before
+                        (code
+                         (lambda (_)
+                           (message
+                            (format "Congratulations! You made exactly ~a gallons!" target))))))
 
   (values
    (graph g
           #:edges
           (list
-           (edge (format "Fill ~aG" left-cap) #:from playing #:to check #:when (code can-fill-left?) #:trans (code fill-left))
-           (edge (format "Fill ~aG" right-cap) #:from playing #:to check #:when (code can-fill-right?) #:trans (code fill-right))
-           
-           (edge (format "Empty ~aG" left-cap) #:from playing #:to check #:when (code can-empty-left?) #:trans (code empty-left))
-           (edge (format "Empty ~aG" right-cap) #:from playing #:to check #:when (code can-empty-right?) #:trans (code empty-right))
-
-           (edge (format "Pour ~aG -> ~aG" left-cap right-cap) #:from playing #:to check #:when (code can-pour-left-to-right?) #:trans (code pour-left-to-right))
-           (edge (format "Pour ~aG -> ~aG" right-cap left-cap) #:from playing #:to check #:when (code can-pour-right-to-left?) #:trans (code pour-right-to-left))
-           (edge "Not yet" #:mode 'auto #:from check #:to playing #:when (code (negate is-cleared?)))
-           (edge "Clear!" #:mode 'auto #:from check #:to cleared #:when (code is-cleared?))))
+           (edge (format "Fill ~aG" left-cap) #:from playing #:to check
+                 #:when (code (match-λ [(jug-state l _) (< l left-cap)]))
+                 #:trans (code (match-λ [(jug-state _ r) (jug-state left-cap r)]))
+                 #:before (code (lambda (_)
+                                  (message (format "Filled the ~a-gallon jug." left-cap)))))
+           (edge (format "Fill ~aG" right-cap) #:from playing #:to check
+                 #:when (code (match-λ [(jug-state _ r) (< r right-cap)]))
+                 #:trans (code (match-λ [(jug-state l _) (jug-state l right-cap)]))
+                 #:before (code (lambda (_)
+                                  (message (format "Filled the ~a-gallon jug." right-cap)))))
+           (edge (format "Empty ~aG" left-cap) #:from playing #:to check
+                 #:when (code (match-λ [(jug-state l _) (< 0 l)]))
+                 #:trans (code (match-λ [(jug-state _ r) (jug-state 0 r)]))
+                 #:before (code (lambda (_)
+                                  (message (format "Emptied the ~a-gallon jug." left-cap)))))
+           (edge (format "Empty ~aG" right-cap) #:from playing #:to check
+                 #:when (code (match-λ [(jug-state _ r) (< 0 r)]))
+                 #:trans (code (match-λ [(jug-state _ r) (jug-state 0 r)]))
+                 #:before (code (lambda (_)
+                                  (message (format "Emptied the ~a-gallon jug." right-cap)))))
+           (edge (format "Pour ~aG -> ~aG" left-cap right-cap) #:from playing #:to check
+                 #:when (code (match-λ [(jug-state l r) (and (> l 0) (< r right-cap))]))
+                 #:trans (code (match-λ [(jug-state l r)
+                                          (define a (min l (- right-cap r)))
+                                          (jug-state (- l a) (+ r a))]))
+                 #:before (code pour-left-to-right/message))
+           (edge (format "Pour ~aG -> ~aG" right-cap left-cap) #:from playing #:to check
+                 #:when (code (match-λ [(jug-state l r) (and (> r 0) (< l left-cap))]))
+                 #:trans (code (match-λ [(jug-state l r)
+                                          (define a (min (- left-cap l) r))
+                                          (jug-state (+ l a) (- r a))]))
+                 #:before (code pour-right-to-left/message))
+           (edge "Not yet" #:mode 'auto #:from check #:to playing
+                 #:when (code (match-λ [(jug-state l r) (and (not (= l target))
+                                                              (not (= r target)))])))
+           (edge "Clear!" #:mode 'auto #:from check #:to cleared
+                 #:when (code (match-λ [(jug-state l r) (or (= l target)
+                                                             (= r target))])))))
    playing))
 
 (module+ model
@@ -135,7 +113,9 @@
    #:args ()
    (define m (make-model 3 5 4))
    (case (unbox mode)
-     [(dot) (render-dot m)]
+     [(dot) (render-dot m
+                        #:config (dot-config #:global
+                                             (dot-global-config #:rankdir 'LR)))]
      [(console)
       (writeln (console-run m #:config (console-config
                                         #:commands (list (list 'quit 'q "Quit"))
@@ -160,11 +140,9 @@
   (check-false (find-deadlock m terminal-node?))
   (check-false (find-false-terminal m terminal-node?))
   (check-false (find-auto-conflict m))
-
-  (check-false (find-counterexample m (lambda (_n [st : Jug-State])
-                                        (<= 0 (jug-state-left st) 3))))
-  (check-false (find-counterexample m (lambda (_n [st : Jug-State])
-                                        (<= 0 (jug-state-right st) 5))))
+  (check-false (find-counterexample m (match-λ* [(list _ (jug-state l r))
+                                                  (and (<= 0 l 3)
+                                                       (<= 0 r 5))])))
 
   (: shortest-path (-> (Model Jug-State) (Option Journal)))
   (define (shortest-path m)
