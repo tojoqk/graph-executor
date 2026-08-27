@@ -5,7 +5,7 @@
          Code-Text code-text code-text? code-text-text
          current-graph-used-ids current-node-prompt
          Node node-maker
-         node-graph-id node-graph-name node-id node-name node-type node-tags node-desc node-trans node-trans-code-expr node-prompt node-prompt-code-expr node-node-options
+         node-graph-id node-graph-name node-id node-name node-type node-tags node-desc node-trans node-trans-code-expr node-before-code-expr node-after-code-expr node-prompt node-prompt-code-expr node-node-options
          Node-Option (struct-out node-option)
          Node-Info node-node-info node-info-name node-info-type node-info-tags node-info-desc
          any-node
@@ -78,6 +78,8 @@
                   [id : Symbol]
                   [node-info : Node-Info]
                   [trans-code : (Code (-> S S))]
+                  [before-code-expr : (Option Code-Expr)]
+                  [after-code-expr : (Option Code-Expr)]
                   [prompt-code : (Code (-> S String))]
                   [node-options : (Listof Node-Option)])
   #:transparent
@@ -122,10 +124,12 @@
                       #:tags (Listof Symbol)
                       #:desc (Option String)
                       #:trans (Option (Code (-> S S)))
+                      #:before (Option (Code (-> S Any)))
+                      #:after (Option (Code (-> S Any)))
                       #:prompt (Option (U String (Code (-> S String))))
                       #:options (Listof Node-Option)
                       (Node S))))
-(define (%make-node #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc #:trans tr #:prompt pmt #:options opts)
+(define (%make-node #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc #:trans tr #:before before #:after after #:prompt pmt #:options opts)
   (let ([graph-id (make-graph-id graph-name)]
         [node-id (make-node-id graph-name name)])
     (cond [(set-member? (current-graph-used-ids) node-id)
@@ -133,7 +137,32 @@
           [else (current-graph-used-ids (set-add (current-graph-used-ids) node-id))])
     (node graph-id graph-name node-id
           (node-info name type tags desc)
-          (or tr (%code #f identity))
+          (let ([tr (or tr (%code #f identity))])
+            (cond [before (cond [after (let ([before-proc (%code-value before)]
+                                             [after-proc (%code-value after)]
+                                             [trans-proc (%code-value tr)])
+                                         (%code (%code-code-expr tr)
+                                                (lambda ([st : S])
+                                                  (before-proc st)
+                                                  (let ([new-st (trans-proc st)])
+                                                    (after-proc new-st)
+                                                    new-st))))]
+                                [else (%code (%code-code-expr tr)
+                                             (let ([before-proc (%code-value before)]
+                                                   [trans-proc (%code-value tr)])
+                                               (lambda ([st : S])
+                                                 (before-proc st)
+                                                 (trans-proc st))))])]
+                  [after (%code (%code-code-expr tr)
+                                (let ([after-proc (%code-value after)]
+                                      [trans-proc (%code-value tr)])
+                                  (lambda ([st : S])
+                                    (let ([new-st (trans-proc st)])
+                                      (after-proc new-st)
+                                      new-st))))]
+                  [else tr]))
+          (and before (%code-code-expr before))
+          (and after (%code-code-expr after))
           (cond [(not pmt) (%code #f (const (current-node-prompt)))]
                 [(string? pmt) (%code (code-sexp pmt) (const pmt))]
                 [else (%code (%code-code-expr pmt)
@@ -148,12 +177,14 @@
                            [#:tags (Listof Symbol)]
                            [#:desc (Option String)]
                            [#:trans (Option (Code (-> S S)))]
+                           [#:before (Option (Code (-> S Any)))]
+                           [#:after (Option (Code (-> S Any)))]
                            [#:prompt (Option (U String (Code (-> S String))))]
                            [#:options (Listof Node-Option)]
                            (Node S)))))
-(define ((node-maker graph-name) name #:type type #:tags [tags '()] #:desc [desc #f] #:trans [tr #f] #:prompt [pmt #f] #:options [options '()])
+(define ((node-maker graph-name) name #:type type #:tags [tags '()] #:desc [desc #f] #:trans [tr #f] #:before [before #f] #:after [after #f] #:prompt [pmt #f] #:options [options '()])
   (%make-node #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc
-              #:trans tr
+              #:trans tr #:before before #:after after
               #:prompt pmt
               #:options options))
 

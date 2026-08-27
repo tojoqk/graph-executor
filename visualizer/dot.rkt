@@ -54,13 +54,15 @@
                   [type : Symbol]
                   [tags : (Listof Symbol)]
                   [prompt : (Option Code-Expr)]
-                  [trans : (Option Code-Expr)])
+                  [trans : (Option Code-Expr)]
+                  [before : (Option Code-Expr)]
+                  [after : (Option Code-Expr)])
   #:transparent
   #:type-name DotNode)
 
 (: node->dot-node (All (S) (-> (Node S) DotNode)))
 (define (node->dot-node n)
-  (dot-node (node-name n) (node-desc n) (node-type n) (node-tags n) (node-prompt-code-expr n) (node-trans-code-expr n)))
+  (dot-node (node-name n) (node-desc n) (node-type n) (node-tags n) (node-prompt-code-expr n) (node-trans-code-expr n) (node-before-code-expr n) (node-after-code-expr n)))
 
 (struct dot-edge ([name : String] [desc : (Option String)] [mode : EdgeMode] [from : Symbol] [to : Symbol] [when : (Option Code-Expr)] [trans : (Option Code-Expr)] [before : (Option Code-Expr)] [after : (Option Code-Expr)])
   #:transparent
