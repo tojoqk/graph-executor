@@ -165,9 +165,9 @@
   (: shortest-path (-> (Model Jug-State) (Option Journal)))
   (define (shortest-path m)
     (let loop : (Option Journal) ([depth : Natural 0])
-      (find-deadlock m (negate terminal-node?)
-                     #:bound depth
-                     #:bounded (thunk (loop (add1 depth))))))
+      (find-witness m (lambda ([n : Node-Info] _st) (terminal-node? n))
+                    #:bound depth
+                    #:bounded (thunk (loop (add1 depth))))))
 
   (check-equal? (shortest-path (make-model '(3 5 7) 1))
                 '((auto ("Clear!"))

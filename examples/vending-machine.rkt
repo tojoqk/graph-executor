@@ -183,10 +183,10 @@
                                               (and (v-state? st)
                                                    (negative? (v-state-wallet st)))))))
 
-  (check-equal? (find-counterexample m (negate (lambda ([n : Node-Info] st)
-                                                 (and (terminal-node? n)
-                                                      (street? st)
-                                                      (= (street-wallet st) 150)))))
+  (check-equal? (find-witness m (lambda ([n : Node-Info] st)
+                                  (and (terminal-node? n)
+                                       (street? st)
+                                       (= (street-wallet st) 150))))
                 `((choose ("Sit on Bench"))
                   (choose ("Walk Away"))
                   (auto ("Change Dispatched"))
@@ -198,19 +198,19 @@
                   (choose ("Go to Vending Machine"))))
 
   (check-equal? (let loop : (Option Journal) ([depth : Natural 0])
-                  (find-counterexample m (negate (lambda ([n : Node-Info] st)
-                                                   (and (terminal-node? n)
-                                                        (street? st)
-                                                        (= (street-wallet st) 150))))
-                                       #:bound depth
-                                       #:bounded (thunk (loop (add1 depth)))
-                                       #:config (checker-config
-                                                 #:prompt (checker-prompt-config
-                                                           #:between-values
-                                                           (lambda ([info : Prompt-Info] [from : Integer] [to : Integer])
-                                                             (if (memq 'how-much (prompt-info-tags info))
-                                                                 'descending
-                                                                 (default-checker-prompt-between-values info from to)))))))
+                  (find-witness m (lambda ([n : Node-Info] st)
+                                    (and (terminal-node? n)
+                                         (street? st)
+                                         (= (street-wallet st) 150)))
+                                #:bound depth
+                                #:bounded (thunk (loop (add1 depth)))
+                                #:config (checker-config
+                                          #:prompt (checker-prompt-config
+                                                    #:between-values
+                                                    (lambda ([info : Prompt-Info] [from : Integer] [to : Integer])
+                                                      (if (memq 'how-much (prompt-info-tags info))
+                                                          'descending
+                                                          (default-checker-prompt-between-values info from to)))))))
                 '((choose ("Sit on Bench"))
                   (choose ("Walk Away"))
                   (auto ("Dispense Done (Just Zero)"))
