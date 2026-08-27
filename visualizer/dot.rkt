@@ -131,11 +131,10 @@
                           [else '()])
                   ,@(cond [(dot-node-trans dn)
                            => (lambda (x)
-                                (list (left-row
-                                       `((b "trans:")
-                                         (br ((align "left")))
-                                         (font ((point-size "4")) (br ((align "left"))))
-                                         ,@(text->xexprs (show-code-expr x))))))]
+                                (list (center-row
+                                       `((b "trans")
+                                         (br) (font ((point-size "4")) (br))))
+                                      (left-row (text->xexprs (show-code-expr x)))))]
                           [else '()])))))
 
 (: default-dot-edge-node-label-config (-> DotEdge DotEdgeStatus (U (List 'text String)
@@ -156,19 +155,17 @@
                           [else '()])
                   ,@(cond [(dot-edge-when de)
                            => (lambda (x)
-                                (list (left-row
-                                       `((b "when:")
-                                         (br ((align "left")))
-                                         (font ((point-size "4")) (br ((align "left"))))
-                                         ,@(text->xexprs (show-code-expr x))))))]
+                                (list (center-row
+                                       `((b "when")
+                                         (br) (font ((point-size "4")) (br))))
+                                      (left-row (text->xexprs (show-code-expr x)))))]
                           [else '()])
                   ,@(cond [(dot-edge-trans de)
                            => (lambda (x)
-                                (list (left-row
-                                       `((b "trans:")
-                                         (br ((align "left")))
-                                         (font ((point-size "4")) (br ((align "left"))))
-                                         ,@(text->xexprs (show-code-expr x))))))]
+                                (list (center-row
+                                       `((b "trans")
+                                         (br) (font ((point-size "4")) (br))))
+                                      (left-row (text->xexprs (show-code-expr x)))))]
                           [else '()])))))
 
 (struct %dot-config ([global : DotGlobalConfig]
