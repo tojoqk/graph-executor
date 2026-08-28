@@ -1,6 +1,7 @@
 #lang typed/racket
 
-(provide Prompt Prompt-Type Prompt-Value Prompt-Op Prompt-Attributes current-prompt prompt prompt/untyped
+(provide Prompt Prompt-Type Prompt-Value Prompt-Op Prompt-Attributes current-prompt
+         prompt prompt-choose prompt-string prompt-integer prompt-natural prompt-positive-integer prompt-between prompt-random
          Prompt-Result prompt-result Prompt-Implementation
          prompt-result-value prompt-result-attributes prompt-result-info
          Prompt-Result-Choose
@@ -67,18 +68,20 @@
                                  [else value]))]
         [else (error 'prompt "called outside of trans")]))
 
-(: prompt/untyped (All (A) (-> String Prompt-Op (Listof Symbol) Prompt-Value)))
-(define (prompt/untyped title op [tags '()])
-  (case (car op)
-    [(string) (prompt title op tags)]
-    [(integer) (prompt title op tags)]
-    [(natural) (prompt title op tags)]
-    [(positive-integer) (prompt title op tags)]
-    [(between) (prompt title op tags)]
-    [(random) (prompt title op tags)]
-    [(choose) (if (procedure? (second op))
-                  (error 'prompt/untyped "choose with a predicate is not supported in untyped context; use '(choose (<symbol> ...)) instead")
-                  (prompt title op tags))]))
+(: prompt-choose (->* (String (Listof Symbol)) ((Listof Symbol)) Symbol))
+(define (prompt-choose title choices [tags '()]) (prompt title `(choose ,choices) tags))
+(: prompt-string (->* (String) ((Listof Symbol)) String))
+(define (prompt-string title [tags '()]) (prompt title '(string) tags))
+(: prompt-integer (->* (String) ((Listof Symbol)) Integer))
+(define (prompt-integer title [tags '()]) (prompt title '(integer) tags))
+(: prompt-natural (->* (String) ((Listof Symbol)) Natural))
+(define (prompt-natural title [tags '()]) (prompt title '(natural) tags))
+(: prompt-positive-integer (->* (String) ((Listof Symbol)) Positive-Integer))
+(define (prompt-positive-integer title [tags '()]) (prompt title '(positive-integer) tags))
+(: prompt-between (->* (String Integer Integer)((Listof Symbol)) Integer))
+(define (prompt-between title from to [tags '()]) (prompt title `(between ,from ,to) tags))
+(: prompt-random (->* (String Positive-Integer) ((Listof Symbol)) Natural))
+(define (prompt-random title n [tags '()]) (prompt title `(random ,n) tags))
 
 (define-type Prompt-Implementation
   (case-> (-> Prompt-Info (U (List 'choose Procedure (Listof Symbol))

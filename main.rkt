@@ -24,7 +24,8 @@
          Console-Config console-config weight-edge-option
          default-console-commands default-console-chooser
          Journal journal? Journal-Entry
-         prompt Prompt-Info prompt-info-tags
+         prompt prompt-choose prompt-string prompt-integer prompt-natural prompt-positive-integer prompt-between prompt-random
+         Prompt-Info prompt-info-tags
          message
          console-run
          find-counterexample find-witness find-deadlock find-false-terminal find-auto-conflict find-livelock
