@@ -127,7 +127,7 @@
           `(table ((border "0") (cellborder "0") (cellspacing "0") (cellpadding "4"))
                   ,(center-row (list `(b ,(dot-node-name dn))))
                   ,@(cond [(dot-node-desc dn)
-                           => (lambda (d) (list (left-row (text->xexprs d))))]
+                           => (lambda (d) (list (left-row (text->xexprs (show-desc d)))))]
                           [else '()])
                   ,@(cond [(dot-node-trans dn)
                            => (lambda (x)
@@ -151,7 +151,7 @@
           `(table ((border "0") (cellborder "0") (cellspacing "0") (cellpadding "1"))
                   ,(center-row (list `(b ,(dot-edge-name de))))
                   ,@(cond [(dot-edge-desc de)
-                           => (lambda (d) (list (left-row (text->xexprs d))))]
+                           => (lambda (d) (list (left-row (text->xexprs (show-desc d)))))]
                           [else '()])
                   ,@(cond [(dot-edge-when de)
                            => (lambda (x)
@@ -290,6 +290,10 @@
                        '(br ((align "left")))
                        '(font ((point-size "4")) (br ((align "left"))))
                        (rec (rest lines)))])))
+
+(: show-desc (-> String String))
+(define (show-desc desc)
+  (string-append desc "\n"))
 
 (: show-code-expr (-> Code-Expr String))
 (define (show-code-expr ce)
