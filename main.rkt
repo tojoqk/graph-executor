@@ -23,7 +23,8 @@
          Console-Command
          Console-Config console-config weight-edge-option
          default-console-commands default-console-chooser
-         Journal journal? Journal-Entry
+         Journal journal? Journal-Entry journal-entry?
+         journal-entry-edge-mode journal-entry-edge-name journal-entry-edge-attributes journal-entry-prompt-records
          prompt prompt-choose prompt-string prompt-integer prompt-natural prompt-positive-integer prompt-between prompt-random
          Prompt-Info prompt-info-tags
          message

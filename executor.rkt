@@ -164,7 +164,7 @@
 (define ((pop-prompt consume emit) info op)
   (: push-event! (-> Prompt-Value Prompt-Attributes Void))
   (define (push-event! val attrs)
-    (emit (prompt-result op info val attrs)))
+    (emit (prompt-result op info (cons val attrs))))
   (: fail (-> Nothing))
   (define (fail)
     (error 'replay "unexpected end of prompt values"))

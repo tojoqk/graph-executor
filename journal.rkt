@@ -1,7 +1,8 @@
 #lang typed/racket
 
-(provide Journal journal? Journal-Entry journal-undo
-         auto-journal-entry choose-journal-entry)
+(provide Journal journal? Journal-Entry journal-entry? journal-undo
+         auto-journal-entry choose-journal-entry
+         journal-entry-edge-mode journal-entry-edge-name journal-entry-edge-attributes journal-entry-prompt-records)
 
 (require "prompt.rkt")
 
@@ -10,6 +11,7 @@
                                   (Listof (Pairof Prompt-Value Prompt-Attributes))))
 (define-type Journal (Listof Journal-Entry))
 (define-predicate journal? Journal)
+(define-predicate journal-entry? Journal-Entry)
 
 (: journal-undo (-> Journal Journal))
 (define (journal-undo j)
@@ -20,6 +22,18 @@
 (define (auto-journal-entry name prompt-value)
   `(auto (,name) ,@prompt-value))
 
-(: choose-journal-entry (-> String Prompt-Attributes (Listof (Pairof Prompt-Value Prompt-Attributes)) Journal-Entry))
+(: choose-journal-entry (-> String Prompt-Attributes (Listof Prompt-Record) Journal-Entry))
 (define (choose-journal-entry name attrs prompt-values)
   `(choose (,name ,@attrs) ,@prompt-values))
+
+(: journal-entry-edge-mode (-> Journal-Entry (U 'choose 'auto)))
+(define (journal-entry-edge-mode x) (car x))
+
+(: journal-entry-edge-name (-> Journal-Entry String))
+(define (journal-entry-edge-name x) (caadr x))
+
+(: journal-entry-edge-attributes (-> Journal-Entry Prompt-Attributes))
+(define (journal-entry-edge-attributes x) (cdadr x))
+
+(: journal-entry-prompt-records (-> Journal-Entry (Listof Prompt-Record)))
+(define (journal-entry-prompt-records x) (cddr x))

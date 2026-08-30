@@ -4,6 +4,8 @@
          prompt prompt-choose prompt-string prompt-integer prompt-natural prompt-positive-integer prompt-between prompt-random
          Prompt-Result prompt-result Prompt-Implementation
          prompt-result-value prompt-result-attributes prompt-result-info
+         Prompt-Record
+         Prompt-Result
          Prompt-Result-Choose
          Prompt-Result-String
          Prompt-Result-Integer
@@ -113,10 +115,11 @@
 (define (prompt-result-info pi) (third pi))
 
 (define-type Prompt-Result (List 'prompt Prompt-Op Prompt-Info (Pairof Prompt-Value Prompt-Attributes)))
+(define-type Prompt-Record (Pairof Prompt-Value Prompt-Attributes))
 
-(: prompt-result (-> Prompt-Op Prompt-Info Prompt-Value Prompt-Attributes Prompt-Result))
-(define (prompt-result op info value attrs)
-  (list 'prompt op info (cons value attrs)))
+(: prompt-result (-> Prompt-Op Prompt-Info Prompt-Record Prompt-Result))
+(define (prompt-result op info rec)
+  (list 'prompt op info rec))
 
 (define-type Prompt-Result-Choose (List 'prompt (U (List 'choose Procedure (Listof String))
                                                    (List 'choose (Listof String)))
