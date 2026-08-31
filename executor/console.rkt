@@ -29,8 +29,8 @@
 (define (action-console-command key name proc) `(action ,key ,name ,proc))
 (: restore-console-command (-> Symbol String (-> Journal Journal) (List 'restore Symbol String (-> Journal Journal))))
 (define (restore-console-command key name proc) `(restore ,key ,name ,proc))
-(: quit-console-command (-> Symbol String (-> Journal Journal) (List 'quit Symbol String)))
-(define (quit-console-command key name proc) `(quit ,key ,name))
+(: quit-console-command (-> Symbol String (List 'quit Symbol String)))
+(define (quit-console-command key name) `(quit ,key ,name))
 
 (: default-console-commands (Listof Console-Command))
 (define default-console-commands (list (list 'transform 'u "Undo" journal-undo)
