@@ -118,7 +118,7 @@
                                              (dot-global-config #:rankdir 'LR)))]
      [(console)
       (writeln (console-run m #:config (console-config
-                                        #:commands (list (list 'quit 'q "Quit"))
+                                        #:commands (list (quit-console-command 'q "Quit"))
                                         #:trace-display 'hide)))]
      [(random)
       (define j (console-run m #:config (console-config
