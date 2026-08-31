@@ -14,27 +14,45 @@
          Console-Command transform-console-command action-console-command restore-console-command quit-console-command
          Console-Config console-config
          weight-edge-option
-         default-console-commands default-console-chooser)
+         default-console-commands default-console-chooser
+         transform-console-command? transform-console-command
+         action-console-command? action-console-command
+         restore-console-command? restore-console-command
+         quit-console-command? quit-console-command)
 
 (struct weight-edge-option edge-option ([weight : Positive-Integer]))
 
-(define-type Console-Command (U (List 'transform Symbol String (-> Journal Journal))
-                                (List 'action Symbol String (-> Journal Void))
-                                (List 'restore Symbol String (-> (Option Journal)))
-                                (List 'quit Symbol String)))
+(struct transform-console-command ([key : Symbol] [name : String] [proc : (-> Journal Journal)])
+  #:type-name Transform-Console-Command)
+(struct action-console-command ([key : Symbol] [name : String] [proc : (-> Journal Void)])
+  #:type-name Action-Console-Command)
+(struct restore-console-command ([key : Symbol] [name : String] [proc : (-> (Option Journal))])
+    #:type-name Restore-Console-Command)
+(struct quit-console-command ([key : Symbol] [name : String])
+  #:type-name Quit-Console-Command)
 
-(: transform-console-command (-> Symbol String (-> Journal Journal) Console-Command))
-(define (transform-console-command key name proc) `(transform ,key ,name ,proc))
-(: action-console-command (-> Symbol String (-> Journal Void) Console-Command))
-(define (action-console-command key name proc) `(action ,key ,name ,proc))
-(: restore-console-command (-> Symbol String (-> (Option Journal)) Console-Command))
-(define (restore-console-command key name proc) `(restore ,key ,name ,proc))
-(: quit-console-command (-> Symbol String Console-Command))
-(define (quit-console-command key name) `(quit ,key ,name))
+(define-type Console-Command (U Transform-Console-Command
+                                Action-Console-Command
+                                Restore-Console-Command
+                                Quit-Console-Command))
+
+(: console-command-key (-> Console-Command Symbol))
+(define (console-command-key cmd)
+  (cond [(transform-console-command? cmd) (transform-console-command-key cmd)]
+        [(action-console-command? cmd) (action-console-command-key cmd)]
+        [(restore-console-command? cmd) (restore-console-command-key cmd)]
+        [(quit-console-command? cmd) (quit-console-command-key cmd)]))
+
+(: console-command-name (-> Console-Command String))
+(define (console-command-name cmd)
+  (cond [(transform-console-command? cmd) (transform-console-command-name cmd)]
+        [(action-console-command? cmd) (action-console-command-name cmd)]
+        [(restore-console-command? cmd) (restore-console-command-name cmd)]
+        [(quit-console-command? cmd) (quit-console-command-name cmd)]))
 
 (: default-console-commands (Listof Console-Command))
-(define default-console-commands (list (list 'transform 'u "Undo" journal-undo)
-                                       (list 'quit 'q "Quit")))
+(define default-console-commands (list (transform-console-command 'u "Undo" journal-undo)
+                                       (quit-console-command 'q "Quit")))
 
 (: default-console-chooser (-> Node-Info (U 'choose 'random)))
 (define default-console-chooser (lambda (_) 'choose))
@@ -55,7 +73,7 @@
 
 (: console-config-has-quit-command? (-> Console-Config Boolean))
 (define (console-config-has-quit-command? config)
-  (and (memf (lambda ([c : Console-Command]) (eq? 'quit (first c)))
+  (and (memf (lambda ([c : Console-Command]) (quit-console-command? c))
              (%console-config-commands config))
        #t))
 
@@ -127,17 +145,15 @@
                                          (Values (Node S) S Journal)))))
 (define ((console-command-dispatch m loop) n st j cmd)
   (define gs (model-graphs m))
-  (case (car cmd)
-    [(quit) (values n st j)]
-    [(action) ((second cmd) j)
-              (loop n st j)]
-    [(transform) (define-values (tr-n tr-st tr-h)
-                   (replay m ((second cmd) j)))
-                 (loop tr-n tr-st (history->journal tr-h))]
-    [(restore) (define-values (rs-n rs-st rs-h)
-                 (replay m (cond [((second cmd)) => identity]
-                                 [else j])))
-               (loop rs-n rs-st (history->journal rs-h))]))
+  (cond [(quit-command? cmd) (values n st j)]
+        [(action-command? cmd) ((action-command-proc cmd) j) (loop n st j)]
+        [(transform-command? cmd) (define-values (tr-n tr-st tr-h)
+                                    (replay m ((transform-command-proc cmd) j)))
+                                  (loop tr-n tr-st (history->journal tr-h))]
+        [(restore-command? cmd) (define-values (rs-n rs-st rs-h)
+                                  (replay m (cond [((restore-command-proc cmd)) => identity]
+                                                  [else j])))
+                                (loop rs-n rs-st (history->journal rs-h))]))
 
 (: console-step (All (S) (-> Console-Config S (Edge S) (-> (Pairof Prompt-Value Prompt-Attributes) Void) S)))
 (define (console-step config st e emit)
@@ -164,11 +180,11 @@
 
 (: console-command->command (-> Console-Command Command))
 (define (console-command->command c)
-  (case (first c)
-    [(quit) (list (first c))]
-    [(action) (list (first c) (fourth c))]
-    [(transform) (list (first c) (fourth c))]
-    [(restore) (list (first c) (fourth c))]))
+  (cond 
+    [(quit-console-command? c) (quit-command)]
+    [(action-console-command? c) (action-command (action-console-command-proc c))]
+    [(transform-console-command? c) (transform-command (transform-console-command-proc c))]
+    [(restore-console-command? c) (restore-command (restore-console-command-proc c))]))
 
 (: console-choose/choose (All (S) (case-> (-> Console-Config
                                               String (Pairof (Edge S) (Listof (Edge S)))
@@ -185,7 +201,7 @@
             [i : Positive-Integer (in-naturals 1)])
         (fprintf out "  - [~a] ~a\n" i (edge-name choice))))
     (for ([cmd (%console-config-commands config)])
-      (when cmd (fprintf out "  - [~a] ~a\n" (second cmd) (third cmd))))
+      (when cmd (fprintf out "  - [~a] ~a\n" (console-command-key cmd) (console-command-name cmd))))
     (let ([text (get-output-string out)])
       (display text)
       (let retry ()
@@ -200,7 +216,7 @@
                           (list-ref choices (sub1 n))
                           (retry)))]
                 [(findf (lambda ([cmd : Console-Command])
-                          (string=? (symbol->string (second cmd)) (string-trim line)))
+                          (string=? (symbol->string (console-command-key cmd)) (string-trim line)))
                         (%console-config-commands config))
                  => console-command->command]
                 [else (retry)]))))))

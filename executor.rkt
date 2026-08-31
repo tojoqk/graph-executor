@@ -13,12 +13,22 @@
          auto-choose
          find-graph next-edges
          find-edge
-         Command)
+         Command Transform-Command Action-Command Restore-Command Quit-Command
+         transform-command? transform-command transform-command-proc
+         action-command? action-command action-command-proc
+         restore-command? restore-command restore-command-proc
+         quit-command? quit-command)
 
-(define-type Command (U (List 'transform (-> Journal Journal))
-                        (List 'action (-> Journal Void))
-                        (List 'restore (-> (Option Journal)))
-                        (List 'quit)))
+(struct transform-command ([proc : (-> Journal Journal)])
+  #:type-name Transform-Command)
+(struct action-command ([proc : (-> Journal Void)])
+  #:type-name Action-Command)
+(struct restore-command ([proc : (-> (Option Journal))])
+  #:type-name Restore-Command)
+(struct quit-command ()
+  #:type-name Quit-Command)
+
+(define-type Command (U Transform-Command Action-Command Restore-Command Quit-Command))
 
 (define-type Event (U Prompt-Result Message-Result))
 (define-type Pmt (Pairof Prompt-Value Prompt-Attributes))
