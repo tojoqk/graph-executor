@@ -23,13 +23,13 @@
                                 (List 'restore Symbol String (-> (Option Journal)))
                                 (List 'quit Symbol String)))
 
-(: transform-console-command (-> Symbol String (-> Journal Journal) (List 'transform Symbol String (-> Journal Journal))))
+(: transform-console-command (-> Symbol String (-> Journal Journal) Console-Command))
 (define (transform-console-command key name proc) `(transform ,key ,name ,proc))
-(: action-console-command (-> Symbol String (-> Journal Journal) (List 'action Symbol String (-> Journal Journal))))
+(: action-console-command (-> Symbol String (-> Journal Void) Console-Command))
 (define (action-console-command key name proc) `(action ,key ,name ,proc))
-(: restore-console-command (-> Symbol String (-> Journal Journal) (List 'restore Symbol String (-> Journal Journal))))
+(: restore-console-command (-> Symbol String (-> (Option Journal)) Console-Command))
 (define (restore-console-command key name proc) `(restore ,key ,name ,proc))
-(: quit-console-command (-> Symbol String (List 'quit Symbol String)))
+(: quit-console-command (-> Symbol String Console-Command))
 (define (quit-console-command key name) `(quit ,key ,name))
 
 (: default-console-commands (Listof Console-Command))
