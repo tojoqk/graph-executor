@@ -211,9 +211,9 @@
                                                       (if (memq 'how-much (prompt-info-tags info))
                                                           'descending
                                                           (default-checker-prompt-between-values info from to)))))))
-                (journal (choose-journal-entry "Walk Away")
-                         (auto-journal-entry "Dispense Done (Just Zero)")
-                         (choose-journal-entry "Purchase Drink (150 Yen)")
+                (journal (choose-journal-entry "Go to Vending Machine")
                          (choose-journal-entry "Insert Money" #:prompt-records (list (prompt-record 150)))
-                         (choose-journal-entry "Go to Vending Machine")
+                         (choose-journal-entry "Purchase Drink (150 Yen)")
+                         (auto-journal-entry "Dispense Done (Just Zero)")
+                         (choose-journal-entry "Walk Away")
                          (choose-journal-entry "Sit on Bench"))))
