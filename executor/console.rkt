@@ -11,7 +11,8 @@
 (require "../effect/emitter.rkt")
 
 (provide console-run console-choose console-command-dispatch
-         Console-Command transform-console-command action-console-command restore-console-command quit-console-command
+         Console-Command console-command?
+         transform-console-command action-console-command restore-console-command quit-console-command
          Console-Config console-config
          weight-edge-option
          default-console-commands default-console-chooser
@@ -35,6 +36,7 @@
                                 Action-Console-Command
                                 Restore-Console-Command
                                 Quit-Console-Command))
+(define-predicate console-command? Console-Command)
 
 (: console-command-key (-> Console-Command Symbol))
 (define (console-command-key cmd)
