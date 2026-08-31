@@ -1,6 +1,6 @@
 #lang typed/racket
 
-(provide Journal journal? Journal-Entry journal-entry? journal-undo
+(provide Journal journal journal? Journal-Entry journal-entry? journal-undo
          auto-journal-entry choose-journal-entry
          journal-entry-edge-mode journal-entry-edge-name journal-entry-edge-attributes journal-entry-prompt-records)
 
@@ -12,6 +12,10 @@
 (define-type Journal (Listof Journal-Entry))
 (define-predicate journal? Journal)
 (define-predicate journal-entry? Journal-Entry)
+
+(: journal (-> Journal-Entry * Journal))
+(define (journal . es)
+  (reverse es))
 
 (: journal-undo (-> Journal Journal))
 (define (journal-undo j)

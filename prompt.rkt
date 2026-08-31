@@ -4,7 +4,7 @@
          prompt prompt-choose prompt-string prompt-integer prompt-natural prompt-positive-integer prompt-between prompt-random
          Prompt-Result prompt-result Prompt-Implementation
          prompt-result-value prompt-result-attributes prompt-result-info
-         Prompt-Record
+         Prompt-Record prompt-record? prompt-record
          Prompt-Result
          Prompt-Result-Choose
          Prompt-Result-String
@@ -116,6 +116,9 @@
 
 (define-type Prompt-Result (List 'prompt Prompt-Op Prompt-Info (Pairof Prompt-Value Prompt-Attributes)))
 (define-type Prompt-Record (Pairof Prompt-Value Prompt-Attributes))
+(define-predicate prompt-record? Prompt-Record)
+(: prompt-record (-> Prompt-Value [#:prompt-attributes Prompt-Attributes] Prompt-Record))
+(define (prompt-record val #:prompt-attributes [prompt-attributes '()]) (cons val prompt-attributes))
 
 (: prompt-result (-> Prompt-Op Prompt-Info Prompt-Record Prompt-Result))
 (define (prompt-result op info rec)

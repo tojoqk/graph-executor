@@ -23,11 +23,12 @@
          Console-Command transform-console-command action-console-command restore-console-command quit-console-command
          Console-Config console-config weight-edge-option
          default-console-commands default-console-chooser
-         Journal journal? Journal-Entry journal-entry?
+         Journal journal journal? Journal-Entry journal-entry?
          auto-journal-entry choose-journal-entry
          journal-entry-edge-mode journal-entry-edge-name journal-entry-edge-attributes journal-entry-prompt-records
          prompt prompt-choose prompt-string prompt-integer prompt-natural prompt-positive-integer prompt-between prompt-random
          Prompt-Info prompt-info-tags
+         Prompt-Record prompt-record? prompt-record
          message
          console-run
          find-counterexample find-witness find-deadlock find-false-terminal find-auto-conflict find-livelock
