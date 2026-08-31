@@ -18,13 +18,13 @@
   (cond [(memf (lambda ([e : Journal-Entry]) (symbol=? (car e) 'choose)) j) => cdr]
         [else '()]))
 
-(: auto-journal-entry (-> String (Listof (Pairof Prompt-Value Prompt-Attributes)) Journal-Entry))
-(define (auto-journal-entry name prompt-value)
-  `(auto (,name) ,@prompt-value))
+(: auto-journal-entry (-> String [#:prompt-records (Listof Prompt-Record)] Journal-Entry))
+(define (auto-journal-entry name #:prompt-records [prompt-records '()])
+  `(auto (,name) ,@prompt-records))
 
-(: choose-journal-entry (-> String Prompt-Attributes (Listof Prompt-Record) Journal-Entry))
-(define (choose-journal-entry name attrs prompt-values)
-  `(choose (,name ,@attrs) ,@prompt-values))
+(: choose-journal-entry (-> String [#:edge-attributes Prompt-Attributes] [#:prompt-records (Listof Prompt-Record)] Journal-Entry))
+(define (choose-journal-entry name #:edge-attributes [attrs '()] #:prompt-records [prompt-records '()])
+  `(choose (,name ,@attrs) ,@prompt-records))
 
 (: journal-entry-edge-mode (-> Journal-Entry (U 'choose 'auto)))
 (define (journal-entry-edge-mode x) (car x))

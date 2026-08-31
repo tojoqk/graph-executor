@@ -184,8 +184,10 @@
                                (loop (edge-to chosen-edge)
                                      next-st
                                      (cons (case ne-type
-                                             [(auto) (auto-journal-entry (edge-name chosen-edge) ps)]
-                                             [(choose) (choose-journal-entry (edge-name chosen-edge) '() ps)]) j)
+                                             [(auto) (auto-journal-entry (edge-name chosen-edge) #:prompt-records ps)]
+                                             [(choose) (choose-journal-entry (edge-name chosen-edge)
+                                                                             #:edge-attributes '()
+                                                                             #:prompt-records ps)]) j)
                                      (add1 depth))])))
            (thunk #f))))))))
   (if result
@@ -266,8 +268,8 @@
                             (loop (edge-to chosen-edge)
                                   next-st
                                   (cons (case ne-type
-                                          [(auto) (auto-journal-entry (edge-name chosen-edge) ps)]
-                                          [(choose) (choose-journal-entry (edge-name chosen-edge) '() ps)]) j)
+                                          [(auto) (auto-journal-entry (edge-name chosen-edge) #:prompt-records ps)]
+                                          [(choose) (choose-journal-entry (edge-name chosen-edge) #:edge-attributes '() #:prompt-records ps)]) j)
                                   (set-add breadcrumbs key))])))
         (thunk #f)))))))
 
