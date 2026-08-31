@@ -2,7 +2,7 @@
 
 (require "graph.rkt")
 
-(provide Model (rename-out [model* model]) model-graphs model-node model-state)
+(provide Model model? (rename-out [model* model]) model-graphs model-node model-state)
 
 (struct (S) model ([graphs : (Listof (Graph S))]
                    [node : (Node S)]
