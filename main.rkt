@@ -20,7 +20,7 @@
          Graph OpenGraph make-graph make-open-graph any-graph graph-name
          Model model
          apply-journal
-         Console-Command
+         Console-Command transform-console-command action-console-command restore-console-command quit-console-command
          Console-Config console-config weight-edge-option
          default-console-commands default-console-chooser
          Journal journal? Journal-Entry journal-entry?

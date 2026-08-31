@@ -11,7 +11,7 @@
 (require "../effect/emitter.rkt")
 
 (provide console-run console-choose console-command-dispatch
-         Console-Command
+         Console-Command transform-console-command action-console-command restore-console-command quit-console-command
          Console-Config console-config
          weight-edge-option
          default-console-commands default-console-chooser)
@@ -22,6 +22,15 @@
                                 (List 'action Symbol String (-> Journal Void))
                                 (List 'restore Symbol String (-> (Option Journal)))
                                 (List 'quit Symbol String)))
+
+(: transform-console-command (-> Symbol String (-> Journal Journal) (List 'transform Symbol String (-> Journal Journal))))
+(define (transform-console-command key name proc) `(transform ,key ,name ,proc))
+(: action-console-command (-> Symbol String (-> Journal Journal) (List 'action Symbol String (-> Journal Journal))))
+(define (action-console-command key name proc) `(action ,key ,name ,proc))
+(: restore-console-command (-> Symbol String (-> Journal Journal) (List 'restore Symbol String (-> Journal Journal))))
+(define (restore-console-command key name proc) `(restore ,key ,name ,proc))
+(: quit-console-command (-> Symbol String (-> Journal Journal) (List 'quit Symbol String)))
+(define (quit-console-command key name proc) `(quit ,key ,name))
 
 (: default-console-commands (Listof Console-Command))
 (define default-console-commands (list (list 'transform 'u "Undo" journal-undo)
