@@ -126,7 +126,10 @@
                                          #:trace-display 'hide)))
       (displayln "---------")
       (printf "Solved in ~a steps!\n"
-              (count (lambda ([e : Journal-Entry]) (eq? (car e) 'choose)) j))])))
+              (for/sum ([e j])
+                (case (journal-entry-edge-mode e)
+                  [(choose) 1]
+                  [else 0])))])))
 
 (module+ test
   (require typed/rackunit (submod ".." model))
