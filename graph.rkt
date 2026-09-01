@@ -8,14 +8,14 @@
          node-graph-id node-graph-name node-id node-name node-type node-tags node-desc node-trans node-trans-code-expr node-before-code-expr node-after-code-expr node-prompt node-prompt-code-expr node-node-options
          Node-Option (struct-out node-option)
          Node-Info node-info? node-node-info node-info-name node-info-type node-info-tags node-info-desc
-         any-node
+         any-node any-node/any
          Edge Bridge EdgeMode edge? make-edge make-bridge bridge?
          edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-code-expr edge-trans edge-trans-code-expr edge-before-code-expr edge-after-code-expr edge-priority edge-edge-options
          Edge-Option (struct-out edge-option)
          any-bridge any-edge
          Graph OpenGraph make-graph graph? make-open-graph open-graph?
          graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges
-         any-graph)
+         any-graph any-graph/any)
 
 (struct code-sexp ([sexp : Sexp])
   #:transparent
@@ -195,6 +195,8 @@
                                   (lambda ([x : Any]) ((node-trans n) (assert x p?))))]
                [prompt-code (%code (node-prompt-code-expr n)
                                    (lambda ([x : Any]) ((node-prompt n) (assert x p?))))]))
+
+(define any-node/any (inst any-node Any))
 
 (define-type EdgeMode (U 'auto 'choose 'annotation))
 
@@ -515,3 +517,5 @@
                                   (map (any-bridge p?) (open-graph-bridges g)))])
       (struct-copy graph g
                    [edges (map (any-edge p?) (graph-edges g))])))
+
+(define any-graph/any (inst any-graph Any))
