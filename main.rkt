@@ -21,7 +21,7 @@
          Model model
          apply-journal
          Console-Command transform-console-command action-console-command restore-console-command quit-console-command
-         Console-Config console-config weight-edge-option
+         Console-Config console-config random-edge-option
          default-console-commands default-console-chooser
          Journal journal journal? Journal-Entry journal-entry?
          auto-journal-entry choose-journal-entry

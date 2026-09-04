@@ -14,14 +14,14 @@
          Console-Command console-command?
          transform-console-command action-console-command restore-console-command quit-console-command
          Console-Config console-config
-         weight-edge-option
+         random-edge-option
          default-console-commands default-console-chooser
          transform-console-command? transform-console-command
          action-console-command? action-console-command
          restore-console-command? restore-console-command
          quit-console-command? quit-console-command)
 
-(struct weight-edge-option edge-option ([weight : Positive-Integer]))
+(struct random-edge-option edge-option ([weight : Positive-Integer]))
 
 (struct transform-console-command ([key : Symbol] [name : String] [proc : (-> Journal Journal)])
   #:type-name Transform-Console-Command)
@@ -225,10 +225,10 @@
 
 (: edge-weight (All (S) (-> (Edge S) Positive-Integer)))
 (define (edge-weight e)
-  (cond [(findf weight-edge-option? (edge-edge-options e))
+  (cond [(findf random-edge-option? (edge-edge-options e))
          => (lambda (opt)
-              (assert opt weight-edge-option?)
-              (weight-edge-option-weight opt))]
+              (assert opt random-edge-option?)
+              (random-edge-option-weight opt))]
         [else 1]))
 
 (: console-choose/random (All (S) (-> (Pairof (Edge S) (Listof (Edge S))) (Edge S))))
