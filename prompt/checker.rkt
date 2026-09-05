@@ -101,13 +101,10 @@
     [(random) (checker-random amb config info op)]))
 
 (: checker-choose (-> (-> (-> Prompt-Value) * Prompt-Value)
-                      (U (List 'choose Procedure (Listof Symbol))
-                         (List 'choose (Listof Symbol)))
+                      (List 'choose Procedure (Listof Symbol) Procedure)
                       (Values Symbol Prompt-Attributes)))
 (define (checker-choose amb op)
-  (let* ([choices (if (procedure? (second op))
-                      (third op)
-                      (second op))]
+  (let* ([choices (third op)]
          [value (let loop : Prompt-Value ([choices choices])
                   (if (null? choices)
                       (amb)
@@ -116,14 +113,14 @@
     (values (assert value symbol?) '())))
 
 (: checker-between (case-> (-> (-> (-> Prompt-Value) * Prompt-Value) Checker-Prompt-Config
-                             Prompt-Info
-                             (List 'between Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
-                         (-> (-> (-> Prompt-Value) * Prompt-Value) Checker-Prompt-Config
-                             Prompt-Info
-                             (List 'between Natural Natural) (Values Natural Prompt-Attributes))
-                         (-> (-> (-> Prompt-Value) * Prompt-Value) Checker-Prompt-Config
-                             Prompt-Info
-                             (List 'between Integer Integer) (Values Integer Prompt-Attributes))))
+                               Prompt-Info
+                               (List 'between Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
+                           (-> (-> (-> Prompt-Value) * Prompt-Value) Checker-Prompt-Config
+                               Prompt-Info
+                               (List 'between Natural Natural) (Values Natural Prompt-Attributes))
+                           (-> (-> (-> Prompt-Value) * Prompt-Value) Checker-Prompt-Config
+                               Prompt-Info
+                               (List 'between Integer Integer) (Values Integer Prompt-Attributes))))
 (define (checker-between amb config info op)
   (let ([from (second op)]
         [to : Integer (third op)])

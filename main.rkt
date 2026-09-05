@@ -26,7 +26,7 @@
          Journal journal journal? Journal-Entry journal-entry?
          auto-journal-entry choose-journal-entry
          journal-entry-edge-mode journal-entry-edge-name journal-entry-edge-attributes journal-entry-prompt-records
-         prompt
+         prompt op-choose op-string op-integer op-natural op-positive-integer op-between op-random
          Prompt-Info prompt-info-tags
          Prompt-Record prompt-record? prompt-record
          message

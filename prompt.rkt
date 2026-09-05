@@ -1,7 +1,8 @@
 #lang typed/racket
 
 (provide Prompt Prompt-Type Prompt-Value Prompt-Op Prompt-Attributes current-prompt
-         prompt prompt-choose prompt-string prompt-integer prompt-natural prompt-positive-integer prompt-between prompt-random
+         prompt op-choose op-string op-integer op-natural op-positive-integer op-between op-random
+         prompt-choose prompt-string prompt-integer prompt-natural prompt-positive-integer prompt-between prompt-random
          Prompt-Result prompt-result Prompt-Implementation
          prompt-result-value prompt-result-attributes prompt-result-info
          Prompt-Record prompt-record? prompt-record
@@ -23,9 +24,33 @@
 (define (prompt-info* title #:tags [tags '()])
   (prompt-info title tags))
 
+(: op-choose (All (A) (-> (-> Any Boolean : #:+ A)
+                          (Listof (∩ A Symbol))
+                          [#:show (-> (∩ A Symbol) String)]
+                          (List 'choose (-> Any Boolean : #:+ A)
+                                (Listof (∩ A Symbol))
+                                (-> (∩ A Symbol) String)))))
+(define (op-choose predicate choices #:show [show symbol->string])
+  (list 'choose predicate choices show))
+
+(: op-string (-> (List 'string)))
+(define (op-string) '(string))
+(: op-integer (-> (List 'integer)))
+(define (op-integer) '(integer))
+(: op-natural (-> (List 'natural)))
+(define (op-natural) '(natural))
+(: op-positive-integer (-> (List 'positive-integer)))
+(define (op-positive-integer) '(positive-integer))
+(: op-between (case-> (-> Positive-Integer Positive-Integer (List 'between Positive-Integer Positive-Integer))
+                      (-> Natural Natural (List 'between Natural Natural))
+                      (-> Integer Integer (List 'between Integer Integer))))
+(define (op-between from to) `(between ,from ,to))
+(: op-random (-> Positive-Integer (List 'random Positive-Integer)))
+(define (op-random bound) `(random ,bound))
+
 (define-type (Prompt A)
-  (case-> (->* (String (List 'choose (-> Any Boolean : #:+ A) (Listof (∩ A Symbol)))) ((Listof Symbol)) (∩ Symbol A))
-          (->* (String (List 'choose (Listof Symbol))) ((Listof Symbol)) Symbol)
+  (case-> (->* (String (List 'choose (-> Any Boolean : #:+ A) (Listof (∩ A Symbol)) (-> (∩ A Symbol) String)))
+               ((Listof Symbol)) (∩ Symbol A))
           (->* (String (List 'string)) ((Listof Symbol)) String)
           (->* (String (List 'integer)) ((Listof Symbol)) Integer)
           (->* (String (List 'natural)) ((Listof Symbol)) Natural)
@@ -38,8 +63,7 @@
 (define-type Prompt-Attributes (Listof (Pairof Symbol (U String Symbol Integer))))
 
 (define-type Prompt-Type (U 'choose 'string 'integer 'natural 'positive-integer 'between 'random))
-(define-type Prompt-Op (U (List 'choose Procedure (Listof Symbol))
-                          (List 'choose (Listof Symbol))
+(define-type Prompt-Op (U (List 'choose Procedure (Listof Symbol) Procedure)
                           (List 'string)
                           (List 'integer)
                           (List 'natural)
@@ -59,9 +83,7 @@
   (cond [(current-prompt) => (lambda ([p : Prompt-Implementation])
                                (define-values (value _attrs) (p info op))
                                (case (car op)
-                                 [(choose) (if (procedure? (cadr op))
-                                               (assert value (cadr op))
-                                               value)]
+                                 [(choose) (assert value (cadr op))]
                                  [(between)
                                   (let ([from (second op)] [to (third op)])
                                     (if (and (<= from value) (<= value to))
@@ -71,23 +93,22 @@
         [else (error 'prompt "called outside of trans")]))
 
 (: prompt-choose (->* (String (Listof Symbol)) ((Listof Symbol)) Symbol))
-(define (prompt-choose title choices [tags '()]) (prompt title `(choose ,choices) tags))
+(define (prompt-choose title choices [tags '()]) (prompt title (op-choose symbol? choices) tags))
 (: prompt-string (->* (String) ((Listof Symbol)) String))
-(define (prompt-string title [tags '()]) (prompt title '(string) tags))
+(define (prompt-string title [tags '()]) (prompt title (op-string) tags))
 (: prompt-integer (->* (String) ((Listof Symbol)) Integer))
-(define (prompt-integer title [tags '()]) (prompt title '(integer) tags))
+(define (prompt-integer title [tags '()]) (prompt title (op-integer) tags))
 (: prompt-natural (->* (String) ((Listof Symbol)) Natural))
-(define (prompt-natural title [tags '()]) (prompt title '(natural) tags))
+(define (prompt-natural title [tags '()]) (prompt title (op-natural) tags))
 (: prompt-positive-integer (->* (String) ((Listof Symbol)) Positive-Integer))
-(define (prompt-positive-integer title [tags '()]) (prompt title '(positive-integer) tags))
+(define (prompt-positive-integer title [tags '()]) (prompt title (op-positive-integer) tags))
 (: prompt-between (->* (String Integer Integer)((Listof Symbol)) Integer))
-(define (prompt-between title from to [tags '()]) (prompt title `(between ,from ,to) tags))
+(define (prompt-between title from to [tags '()]) (prompt title (op-between from to) tags))
 (: prompt-random (->* (String Positive-Integer) ((Listof Symbol)) Natural))
-(define (prompt-random title n [tags '()]) (prompt title `(random ,n) tags))
+(define (prompt-random title n [tags '()]) (prompt title (op-random n) tags))
 
 (define-type Prompt-Implementation
-  (case-> (-> Prompt-Info (U (List 'choose Procedure (Listof Symbol))
-                             (List 'choose (Listof Symbol)))
+  (case-> (-> Prompt-Info (List 'choose Procedure (Listof Symbol) Procedure)
               (Values Symbol Prompt-Attributes))
           (-> Prompt-Info (List 'string) (Values String Prompt-Attributes))
           (-> Prompt-Info (List 'integer) (Values Integer Prompt-Attributes))

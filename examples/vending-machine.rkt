@@ -14,7 +14,7 @@
 (define (vending-machine-graph g)
   (: insert-money (-> Vending-Machine-State Vending-Machine-State))
   (define (insert-money st)
-    (let ([amount (prompt "How much?" `(between 1 ,(v-state-wallet st)) '(how-much))])
+    (let ([amount (prompt "How much?" (op-between 1 (v-state-wallet st)) '(how-much))])
       (struct-copy v-state st
                    [wallet (- (v-state-wallet st) amount)]
                    [inserted (+ (v-state-inserted st) amount)])))
