@@ -38,7 +38,7 @@
   (%dot-edge-option minlen))
 
 (: default-dot-fontname String)
-(define default-dot-fontname "Times-Roman")
+(define default-dot-fontname "Helvetica,Arial,sans-serif")
 
 (: default-dot-fontsize Positive-Integer)
 (define default-dot-fontsize 14)
