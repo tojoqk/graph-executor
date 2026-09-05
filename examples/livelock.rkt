@@ -88,14 +88,19 @@
   (require (submod ".." model))
 
   (define id-m (make-id-model))
-  (check-equal? (find-livelock id-m) '((choose ("Id"))))
+  (check-equal? (find-livelock id-m) (journal (journal-entry 'choose "Id")))
 
   (define tri-m (make-triangle-model))
-  (check-equal? (find-livelock tri-m) '((choose ("C->A")) (choose ("B->C")) (choose ("A->B"))))
+  (check-equal? (find-livelock tri-m) (journal (journal-entry 'choose "A->B")
+                                               (journal-entry 'choose "B->C")
+                                               (journal-entry 'choose "C->A")))
 
   (define ρ-m (make-ρ-model))
   (: ρ-terminal-node? (-> Node-Info Boolean))
   (define (ρ-terminal-node? n)
     (symbol=? (node-info-type n) 'terminal))
-  (check-equal? (find-livelock ρ-m) '((choose ("D->B")) (choose ("C->D")) (choose ("B->C")) (choose ("A->B"))))
+  (check-equal? (find-livelock ρ-m) (journal (journal-entry 'choose "A->B")
+                                              (journal-entry 'choose "B->C")
+                                              (journal-entry 'choose "C->D")
+                                              (journal-entry 'choose "D->B")))
   (check-false (find-deadlock ρ-m ρ-terminal-node?)))
