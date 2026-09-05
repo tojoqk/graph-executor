@@ -8,6 +8,7 @@
          node-graph-id node-graph-name node-id node-name node-type node-tags node-desc node-trans node-trans-code-expr node-before-code-expr node-after-code-expr node-prompt node-prompt-code-expr node-node-options
          Node-Option (struct-out node-option)
          Node-Info node-info? node-node-info node-info-name node-info-type node-info-tags node-info-desc
+         Edge-Info edge-info?  edge-info-mode edge-info-name edge-info-desc edge-info-from edge-info-to
          any-node any-node/any
          Edge Bridge EdgeMode edge? make-edge make-bridge bridge?
          edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-code-expr edge-trans edge-trans-code-expr edge-before-code-expr edge-after-code-expr edge-priority edge-edge-options
@@ -203,21 +204,38 @@
 (struct edge-option ()
   #:type-name Edge-Option)
 
+(struct edge-info ([mode : EdgeMode]
+                   [name : String]
+                   [desc : (Option String)]
+                   [from : Node-Info]
+                   [to : Node-Info])
+  #:type-name Edge-Info)
+
 (struct (S) edge ([id : Symbol]
-                  [name : String]
-                  [mode : EdgeMode]
-                  [half? : Boolean]
+                  [edge-info : Edge-Info]
                   [from : (Node S)]
                   [to : (Node S)]
-                  [desc : (Option String)]
                   [when-code : (Code (-> S Any))]
                   [trans-code : (Code (-> S S))]
                   [before-code-expr : (Option Code-Expr)]
                   [after-code-expr : (Option Code-Expr)]
                   [priority : Integer]
+                  [half? : Boolean]
                   [edge-options : (Listof Edge-Option)])
   #:transparent
   #:type-name Edge)
+
+(: edge-name (All (S) (-> (Edge S) String)))
+(define (edge-name e)
+  (edge-info-name (edge-edge-info e)))
+
+(: edge-mode (All (S) (-> (Edge S) EdgeMode)))
+(define (edge-mode e)
+  (edge-info-mode (edge-edge-info e)))
+
+(: edge-desc (All (S) (-> (Edge S) (Option String))))
+(define (edge-desc e)
+  (edge-info-desc (edge-edge-info e)))
 
 (: edge-trans (All (S) (-> (Edge S) (-> S S))))
 (define (edge-trans e)
@@ -237,20 +255,30 @@
 
 
 (struct (S) bridge ([id : Symbol]
-                    [name : String]
-                    [mode : EdgeMode]
-                    [half? : Boolean]
+                    [edge-info : Edge-Info]
                     [from : (Node S)]
                     [to : (Node Any)]
-                    [desc : (Option String)]
                     [when-code : (Code (-> S Any))]
                     [trans-code : (Code (-> S Any))]
                     [before-code-expr : (Option Code-Expr)]
                     [after-code-expr : (Option Code-Expr)]
                     [priority : Integer]
+                    [half? : Boolean]
                     [edge-options : (Listof Edge-Option)])
   #:transparent
   #:type-name Bridge)
+
+(: bridge-name (All (S) (-> (Bridge S) String)))
+(define (bridge-name e)
+  (edge-info-name (bridge-edge-info e)))
+
+(: bridge-mode (All (S) (-> (Bridge S) EdgeMode)))
+(define (bridge-mode e)
+  (edge-info-mode (bridge-edge-info e)))
+
+(: bridge-desc (All (S) (-> (Bridge S) (Option String))))
+(define (bridge-desc e)
+  (edge-info-desc (bridge-edge-info e)))
 
 (: bridge-trans (All (S) (-> (Bridge S) (-> S Any))))
 (define (bridge-trans e)
@@ -316,10 +344,12 @@
           [else (current-graph-used-ids (set-add (current-graph-used-ids) edge-id))])
     ((case type [(edge) edge] [(bridge) bridge])
      edge-id
-     name (or mode 'choose)
-     half?
+     (edge-info (or mode 'choose)
+                name
+                desc
+                (node-node-info from)
+                (node-node-info to))
      from to
-     desc
      (or when (%code #f (const #t)))
      (cond [before (cond [after (let ([before-proc (%code-value before)]
                                       [after-proc (%code-value after)]
@@ -347,6 +377,7 @@
      (and before (%code-code-expr before))
      (and after (%code-code-expr after))
      (or priority 0)
+     half?
      opts)))
 
 (: make-bridge (All (S)
@@ -433,17 +464,15 @@
                            (-> (Bridge S) (Edge Any)))))
 (define ((any-bridge p?) b)
   (edge (bridge-id b)
-        (bridge-name b)
-        (bridge-mode b)
-        (bridge-half? b)
+        (bridge-edge-info b)
         ((any-node p?) (bridge-from b))
         ((inst bridge-to S) b)
-        (bridge-desc b)
         (%code (bridge-when-code-expr b) (lambda (x) ((bridge-when b) (assert x p?))))
         (%code (bridge-trans-code-expr b) (lambda (x) ((bridge-trans b) (assert x p?))))
         (bridge-before-code-expr b)
         (bridge-after-code-expr b)
         (bridge-priority b)
+        (bridge-half? b)
         (bridge-edge-options b)))
 
 (: any-edge (All (S) (-> (-> Any Any : #:+ S)
