@@ -45,17 +45,17 @@
           (case (car ne)
             [(choose auto)
              (let* ([edges (cadr ne)]
-                    [j-rec (car j)]
-                    [name (caadr j-rec)]
-                    [attrs (cdadr j-rec)]
-                    [ps-init (cddr j-rec)])
+                    [entry (car j)]
+                    [name (journal-entry-edge-name entry)]
+                    [attrs (journal-entry-edge-attributes entry)]
+                    [records (journal-entry-prompt-records entry)])
                (cond [(findf (lambda ([e : (Edge S)]) (string=? name (edge-name e))) edges)
                       => (lambda ([e : (Edge S)])
                            (match-define (list* edge-evs pvs-1 st-1)
                              (call-with-emitter
                               (thunk
                                (call-with-consumer
-                                ps-init
+                                records
                                 (thunk
                                  (parameterize ([current-message (emit-message emit)]
                                                 [current-prompt (pop-prompt consume emit)])

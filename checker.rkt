@@ -183,11 +183,7 @@
                                (seen-set (hash-set (seen-get) seen-key depth))
                                (loop (edge-to chosen-edge)
                                      next-st
-                                     (cons (case ne-type
-                                             [(auto) (auto-journal-entry (edge-name chosen-edge) #:prompt-records ps)]
-                                             [(choose) (choose-journal-entry (edge-name chosen-edge)
-                                                                             #:edge-attributes '()
-                                                                             #:prompt-records ps)]) j)
+                                     (cons (journal-entry ne-type (edge-name chosen-edge) #:prompt-records ps) j)
                                      (add1 depth))])))
            (thunk #f))))))))
   (if result
@@ -267,9 +263,7 @@
                                (thunk (step st chosen-edge amb config prompt-value-emit))))
                             (loop (edge-to chosen-edge)
                                   next-st
-                                  (cons (case ne-type
-                                          [(auto) (auto-journal-entry (edge-name chosen-edge) #:prompt-records ps)]
-                                          [(choose) (choose-journal-entry (edge-name chosen-edge) #:edge-attributes '() #:prompt-records ps)]) j)
+                                  (cons (journal-entry ne-type (edge-name chosen-edge) #:prompt-records ps) j)
                                   (set-add breadcrumbs key))])))
         (thunk #f)))))))
 

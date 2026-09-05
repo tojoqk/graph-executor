@@ -75,8 +75,9 @@
             (let ([attrs (if (symbol=? (car he) 'choose)
                              (record-attributes he)
                              '())])
-              (cons `(,(car he) (,(edge-name (record-edge he)) ,@attrs)
-                                ,@(append (prompt-values (record-events hn))
-                                          (prompt-values (record-events he))))
+              (cons (journal-entry (car he) (edge-name (record-edge he))
+                                   #:edge-attributes attrs
+                                   #:prompt-records (append (prompt-values (record-events hn))
+                                                            (prompt-values (record-events he))))
                     (history->journal (cddr h))))
             (error 'history->journal "invalid history")))))
