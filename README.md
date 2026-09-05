@@ -162,7 +162,7 @@ This single file shows how to:
                                              (dot-global-config #:rankdir 'LR)))]
      [(console)
       (writeln (console-run m #:config (console-config
-                                        #:commands (list (list 'quit 'q "Quit"))
+                                        #:commands (list (quit-console-command 'q "Quit"))
                                         #:trace-display 'hide)))]
      [(random)
       (define j (console-run m #:config (console-config
@@ -170,7 +170,10 @@ This single file shows how to:
                                          #:trace-display 'hide)))
       (displayln "---------")
       (printf "Solved in ~a steps!\n"
-              (count (lambda ([e : Journal-Entry]) (eq? (car e) 'choose)) j))])))
+              (for/sum ([e j])
+                (case (journal-entry-edge-mode e)
+                  [(choose) 1]
+                  [else 0])))])))
 
 (module+ test
   (require typed/rackunit (submod ".." model))
@@ -188,26 +191,26 @@ This single file shows how to:
                                                   (and (<= 0 l 3)
                                                        (<= 0 r 5))])))
 
-  (: shortest-path (-> (Model Jug-State) (Option Journal)))
+  (: shortest-path (-> (Model Jug-State) (Option (Listof Journal-Entry))))
   (define (shortest-path m)
-    (let loop : (Option Journal) ([depth : Natural 0])
-      (find-deadlock m (const #f)
-                     #:bound depth
-                     #:bounded (thunk (loop (add1 depth))))))
+    (let loop : (Option (Listof Journal-Entry)) ([depth : Natural 0])
+      (find-witness m (lambda ([n : Node-Info] _st) (terminal-node? n))
+                    #:bound depth
+                    #:bounded (thunk (loop (add1 depth))))))
 
   (check-equal? (shortest-path m)
-                '((auto ("Clear!"))
-                  (choose ("Pour 5G -> 3G"))
-                  (auto ("Not yet"))
-                  (choose ("Fill 5G"))
-                  (auto ("Not yet"))
-                  (choose ("Pour 5G -> 3G"))
-                  (auto ("Not yet"))
-                  (choose ("Empty 3G"))
-                  (auto ("Not yet"))
-                  (choose ("Pour 5G -> 3G"))
-                  (auto ("Not yet"))
-                  (choose ("Fill 5G")))))
+                (list (journal-entry 'auto "Clear!")
+                      (journal-entry 'choose "Pour 5G -> 3G")
+                      (journal-entry 'auto "Not yet")
+                      (journal-entry 'choose "Fill 5G")
+                      (journal-entry 'auto "Not yet")
+                      (journal-entry 'choose "Pour 5G -> 3G")
+                      (journal-entry 'auto "Not yet")
+                      (journal-entry 'choose "Empty 3G")
+                      (journal-entry 'auto  "Not yet")
+                      (journal-entry 'choose "Pour 5G -> 3G")
+                      (journal-entry 'auto "Not yet")
+                      (journal-entry 'choose "Fill 5G"))))
 ```
 
 Draw the graph with Graphviz:
