@@ -9,7 +9,7 @@
 (require "../plugin/effect/consumer.rkt")
 (require "../plugin/effect/emitter.rkt")
 
-(provide replay apply-journal
+(provide trace replay
          auto-choose
          find-graph next-edges
          find-edge
@@ -33,8 +33,8 @@
 (define-type Event (U Prompt-Result Message-Result))
 (define-type Pmt (Pairof Prompt-Value Any))
 
-(: replay (All (S) (-> (Model S) (Listof Journal-Entry) (Values (Node S) S (Trace S)))))
-(define (replay m j)
+(: trace (All (S) (-> (Model S) (Listof Journal-Entry) (Values (Node S) S (Trace S)))))
+(define (trace m j)
   (define-values (call-with-consumer consume) ((inst make-consumer Pmt S)))
   (define-values (call-with-emitter emit) ((inst make-emitter Event (Pairof (Listof Pmt) S))))
   (define gs (model-graphs m))
@@ -77,15 +77,15 @@
                                   (case (edge-mode e)
                                     [(auto) (auto-edge-record edge-evs e)]
                                     [(choose) (choose-edge-record edge-evs e ((node-prompt n) st) edges extra)]
-                                    [(annotation) (error 'replay "invalid edge mode")])
+                                    [(annotation) (error 'trace "invalid edge mode")])
                                   h)))]
-                     [else (error 'replay "edge not found")]))]
-            [(terminated) (error 'replay "unexpected termination")]
-            [(auto-conflicted) (error 'replay "unexpected auto-conflicted error: ~s" (second ne))])))))
+                     [else (error 'trace "edge not found")]))]
+            [(terminated) (error 'trace "unexpected termination")]
+            [(auto-conflicted) (error 'trace "unexpected auto-conflicted error: ~s" (second ne))])))))
 
-(: apply-journal (All (S) (-> (Model S) (Listof Journal-Entry) (Values Node-Info S))))
-(define (apply-journal m j)
-  (define-values (n st _h) (replay m j))
+(: replay (All (S) (-> (Model S) (Listof Journal-Entry) (Values Node-Info S))))
+(define (replay m j)
+  (define-values (n st _h) (trace m j))
   (values (node-node-info n) st))
 
 (: find-graph (All (S) (-> (Listof (Graph S)) Symbol (Graph S))))
@@ -177,7 +177,7 @@
     (emit (prompt-result op info (cons val extra))))
   (: fail (-> Nothing))
   (define (fail)
-    (error 'replay "unexpected end of prompt values"))
+    (error 'trace "unexpected end of prompt values"))
   (let* ([val+extra (consume fail)]
          [val (car val+extra)]
          [extra (cdr val+extra)])
@@ -202,7 +202,7 @@
                (let ([min (second op)] [max : Integer (third op)])
                  (cond [(and (<= min val) (<= val max)) (push-event! val extra)
                                                         (values val extra)]
-                       [else (error 'replay "between error" val)]))]
+                       [else (error 'trace "between error" val)]))]
       [(random) (assert val natural?)
                 (push-event! val extra)
                 (values val extra)])))

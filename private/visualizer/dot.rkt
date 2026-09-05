@@ -309,7 +309,7 @@
 
 (: render-dot (All (S) (-> (Model S)  [#:journal (Listof Journal-Entry)] [#:port Output-Port] [#:config DotConfig] Void)))
 (define (render-dot m #:journal [j '()] #:port [port (current-output-port)] #:config [config (dot-config)])
-  (define-values (_n _s h) (replay m j))
+  (define-values (_n _s h) (trace m j))
   (%render-dot (model-graphs m) (model-node m) #:config config #:trace h #:port port))
 
 (: %render-dot (All (S) (-> (Listof (Graph S)) (Node S)

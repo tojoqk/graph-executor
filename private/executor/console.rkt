@@ -88,7 +88,7 @@
 (: console-run (All (S) (-> (Model S) [#:journal (Listof Journal-Entry)] [#:config Console-Config] (Listof Journal-Entry))))
 (define (console-run m #:journal [j '()] #:config [config (console-config)])
   (define gs (model-graphs m))
-  (define-values (n st _) (replay m j))
+  (define-values (n st _) (trace m j))
   (define-values (call-with-emitter emit)
     ((inst make-emitter (Pairof Prompt-Value Any) S)))
   (define-values (_n _st result-j)
@@ -147,10 +147,10 @@
   (cond [(quit-command? cmd) (values n st j)]
         [(action-command? cmd) ((action-command-proc cmd) j) (loop n st j)]
         [(transform-command? cmd) (define-values (tr-n tr-st tr-h)
-                                    (replay m ((transform-command-proc cmd) j)))
+                                    (trace m ((transform-command-proc cmd) j)))
                                   (loop tr-n tr-st (trace->journal tr-h))]
         [(restore-command? cmd) (define-values (rs-n rs-st rs-h)
-                                  (replay m (cond [((restore-command-proc cmd)) => identity]
+                                  (trace m (cond [((restore-command-proc cmd)) => identity]
                                                   [else j])))
                                 (loop rs-n rs-st (trace->journal rs-h))]))
 

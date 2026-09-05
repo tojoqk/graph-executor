@@ -149,7 +149,7 @@
   (define-values (call-with-amb amb amb-fail)
     ((inst make-amb Prompt-Value)))
   (define gs (model-graphs m))
-  (define-values (n st _h) (replay m j))
+  (define-values (n st _h) (trace m j))
   (match-define (list* bounded? _ result)
     (call-with-bounded-state
      #f

@@ -2,4 +2,4 @@
 
 (require "private/executor.rkt")
 
-(provide apply-journal)
+(provide replay)
