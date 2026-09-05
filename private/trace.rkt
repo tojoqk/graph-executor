@@ -7,9 +7,9 @@
 
 (provide Node-Record Edge-Record Auto-Edge-Record Choose-Edge-Record
          node-record auto-edge-record choose-edge-record
-         History Record
+         Trace Record
          record-events record-node record-edge record-node-prompt record-choices record-extra
-         history->journal)
+         trace->journal)
 
 (define-type Event (U Message-Result Prompt-Result))
 (define-type (Node-Record S) (List 'node (Listof Event) (Node S)))
@@ -51,10 +51,10 @@
                            (Auto-Edge-Record S)
                            (Choose-Edge-Record S)))
 
-(define-type (History S) (Listof (Record S)))
+(define-type (Trace S) (Listof (Record S)))
 
-(: history->journal (All (S) (-> (History S) (Listof Journal-Entry))))
-(define (history->journal h)
+(: trace->journal (All (S) (-> (Trace S) (Listof Journal-Entry))))
+(define (trace->journal h)
   (: prompt-values (-> (Listof (U Prompt-Result Message-Result))
                        (Listof (Pairof Prompt-Value Any))))
   (define (prompt-values xs)
@@ -67,7 +67,7 @@
       '()
       (let ([hn (car h)]
             [he (if (null? (cdr h))
-                    (error 'history->journal "invalid history")
+                    (error 'trace->journal "invalid trace")
                     (cadr h))])
         (if (and (symbol=? (car hn) 'node)
                  (or (symbol=? (car he) 'auto)
@@ -79,5 +79,5 @@
                                    #:edge-extra extra
                                    #:prompt-records (append (prompt-values (record-events hn))
                                                             (prompt-values (record-events he))))
-                    (history->journal (cddr h))))
-            (error 'history->journal "invalid history")))))
+                    (trace->journal (cddr h))))
+            (error 'trace->journal "invalid trace")))))

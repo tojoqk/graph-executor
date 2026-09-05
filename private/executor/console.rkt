@@ -7,7 +7,7 @@
 (require "../../plugin/prompt/console.rkt")
 (require "../../plugin/executor.rkt")
 (require "../../plugin/journal.rkt")
-(require "../../plugin/history.rkt")
+(require "../../plugin/trace.rkt")
 (require "../../plugin/effect/emitter.rkt")
 
 (provide console-run console-choose console-command-dispatch
@@ -148,11 +148,11 @@
         [(action-command? cmd) ((action-command-proc cmd) j) (loop n st j)]
         [(transform-command? cmd) (define-values (tr-n tr-st tr-h)
                                     (replay m ((transform-command-proc cmd) j)))
-                                  (loop tr-n tr-st (history->journal tr-h))]
+                                  (loop tr-n tr-st (trace->journal tr-h))]
         [(restore-command? cmd) (define-values (rs-n rs-st rs-h)
                                   (replay m (cond [((restore-command-proc cmd)) => identity]
                                                   [else j])))
-                                (loop rs-n rs-st (history->journal rs-h))]))
+                                (loop rs-n rs-st (trace->journal rs-h))]))
 
 (: console-step (All (S) (-> Console-Config S (Edge S) (-> (Pairof Prompt-Value Any) Void) S)))
 (define (console-step config st e emit)

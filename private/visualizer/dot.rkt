@@ -5,7 +5,7 @@
 (require "../executor.rkt")
 (require (except-in "../visualizer.rkt" find-graph))
 (require "../journal.rkt")
-(require "../history.rkt")
+(require "../trace.rkt")
 (require typed/xml)
 
 (provide DotNode dot-node-name dot-node-desc dot-node-type dot-node-tags dot-node-prompt dot-node-trans
@@ -310,19 +310,19 @@
 (: render-dot (All (S) (-> (Model S)  [#:journal (Listof Journal-Entry)] [#:port Output-Port] [#:config DotConfig] Void)))
 (define (render-dot m #:journal [j '()] #:port [port (current-output-port)] #:config [config (dot-config)])
   (define-values (_n _s h) (replay m j))
-  (%render-dot (model-graphs m) (model-node m) #:config config #:history h #:port port))
+  (%render-dot (model-graphs m) (model-node m) #:config config #:trace h #:port port))
 
 (: %render-dot (All (S) (-> (Listof (Graph S)) (Node S)
                             #:config DotConfig
                             #:port Output-Port
-                            #:history (History S)
+                            #:trace (Trace S)
                             Void)))
 (define (%render-dot gs node
                      #:config config
                      #:port port
-                     #:history h)
-  (parameterize ([current-visited-ids (history->visited-ids h)]
-                 [current-node-id (history->current-node-id h)])
+                     #:trace h)
+  (parameterize ([current-visited-ids (trace->visited-ids h)]
+                 [current-node-id (trace->current-node-id h)])
     (let ([visnodes (reachable-visnodes gs node)])
       (displayln (format "digraph G {") port)
       (fprintf port "  graph [rankdir=~a,dpi=~a]\n"
@@ -459,16 +459,16 @@
         [(zero? k) ""]
         [else (format "~a" k)]))
 
-(: history->visited-ids (All (S) (-> (History S)  (Setof Symbol))))
-(define (history->visited-ids h)
+(: trace->visited-ids (All (S) (-> (Trace S)  (Setof Symbol))))
+(define (trace->visited-ids h)
   (list->set (map (lambda ([r : (Record S)])
                     (case (car r)
                       [(node) (node-id (record-node r))]
                       [(auto choose) (edge-id (record-edge r))]))
                   h)))
 
-(: history->current-node-id (All (S) (-> (History S) (Option Symbol))))
-(define (history->current-node-id h)
+(: trace->current-node-id (All (S) (-> (Trace S) (Option Symbol))))
+(define (trace->current-node-id h)
   (and (pair? h)
        (eq? (caar h) 'node)
        (node-id (record-node (car h)))))
