@@ -1,6 +1,6 @@
 #lang typed/racket
 
-(provide Journal journal journal? Journal-Entry journal-entry? journal-undo
+(provide Journal-Entry journal-entry? journal-undo
          (rename-out [journal-entry* journal-entry])
          journal-entry-edge-mode journal-entry-edge-name journal-entry-edge-attributes journal-entry-prompt-records)
 
@@ -18,13 +18,7 @@
 (define (journal-entry* mode name #:edge-attributes [attrs '()] #:prompt-records [prompt-records '()])
   (journal-entry mode name attrs prompt-records))
 
-(define-type Journal (Listof Journal-Entry))
-(define-predicate journal? Journal)
-
-(: journal (-> Journal-Entry * Journal))
-(define (journal . es) (reverse es))
-
-(: journal-undo (-> Journal Journal))
+(: journal-undo (-> (Listof Journal-Entry) (Listof Journal-Entry)))
 (define (journal-undo j)
   (cond [(memf (lambda ([e : Journal-Entry]) (symbol=? (journal-entry-edge-mode e) 'choose)) j) => cdr]
         [else '()]))

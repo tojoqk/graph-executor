@@ -23,11 +23,11 @@
 
 (struct random-edge-option edge-option ([weight : Positive-Integer]))
 
-(struct transform-console-command ([key : Symbol] [name : String] [proc : (-> Journal Journal)])
+(struct transform-console-command ([key : Symbol] [name : String] [proc : (-> (Listof Journal-Entry) (Listof Journal-Entry))])
   #:type-name Transform-Console-Command)
-(struct action-console-command ([key : Symbol] [name : String] [proc : (-> Journal Void)])
+(struct action-console-command ([key : Symbol] [name : String] [proc : (-> (Listof Journal-Entry) Void)])
   #:type-name Action-Console-Command)
-(struct restore-console-command ([key : Symbol] [name : String] [proc : (-> (Option Journal))])
+(struct restore-console-command ([key : Symbol] [name : String] [proc : (-> (Option (Listof Journal-Entry)))])
     #:type-name Restore-Console-Command)
 (struct quit-console-command ([key : Symbol] [name : String])
   #:type-name Quit-Console-Command)
@@ -85,14 +85,14 @@
     [(show) #t]
     [(hide) #f]))
 
-(: console-run (All (S) (-> (Model S) [#:journal Journal] [#:config Console-Config] Journal)))
+(: console-run (All (S) (-> (Model S) [#:journal (Listof Journal-Entry)] [#:config Console-Config] (Listof Journal-Entry))))
 (define (console-run m #:journal [j '()] #:config [config (console-config)])
   (define gs (model-graphs m))
   (define-values (n st _) (replay m j))
   (define-values (call-with-emitter emit)
     ((inst make-emitter (Pairof Prompt-Value Prompt-Attributes) S)))
   (define-values (_n _st result-j)
-    (let loop : (Values (Node S) S Journal) ([n n] [st st] [j : Journal j])
+    (let loop : (Values (Node S) S (Listof Journal-Entry)) ([n n] [st st] [j : (Listof Journal-Entry) j])
       (define command-dispatch (console-command-dispatch m loop))
       (let ([ne (next-edges gs st n)])
         (case (car ne)
@@ -137,11 +137,11 @@
 
 (: console-command-dispatch (All (S)
                                  (-> (Model S)
-                                     (-> (Node S) S Journal
-                                         (Values (Node S) S Journal))
-                                     (-> (Node S) S Journal
+                                     (-> (Node S) S (Listof Journal-Entry)
+                                         (Values (Node S) S (Listof Journal-Entry)))
+                                     (-> (Node S) S (Listof Journal-Entry)
                                          Command
-                                         (Values (Node S) S Journal)))))
+                                         (Values (Node S) S (Listof Journal-Entry))))))
 (define ((console-command-dispatch m loop) n st j cmd)
   (define gs (model-graphs m))
   (cond [(quit-command? cmd) (values n st j)]

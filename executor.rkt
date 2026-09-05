@@ -19,11 +19,11 @@
          restore-command? restore-command restore-command-proc
          quit-command? quit-command)
 
-(struct transform-command ([proc : (-> Journal Journal)])
+(struct transform-command ([proc : (-> (Listof Journal-Entry) (Listof Journal-Entry))])
   #:type-name Transform-Command)
-(struct action-command ([proc : (-> Journal Void)])
+(struct action-command ([proc : (-> (Listof Journal-Entry) Void)])
   #:type-name Action-Command)
-(struct restore-command ([proc : (-> (Option Journal))])
+(struct restore-command ([proc : (-> (Option (Listof Journal-Entry)))])
   #:type-name Restore-Command)
 (struct quit-command ()
   #:type-name Quit-Command)
@@ -33,7 +33,7 @@
 (define-type Event (U Prompt-Result Message-Result))
 (define-type Pmt (Pairof Prompt-Value Prompt-Attributes))
 
-(: replay (All (S) (-> (Model S) Journal (Values (Node S) S (History S)))))
+(: replay (All (S) (-> (Model S) (Listof Journal-Entry) (Values (Node S) S (History S)))))
 (define (replay m j)
   (define-values (call-with-consumer consume) ((inst make-consumer Pmt S)))
   (define-values (call-with-emitter emit) ((inst make-emitter Event (Pairof (Listof Pmt) S))))
@@ -83,7 +83,7 @@
             [(terminated) (error 'replay "unexpected termination")]
             [(auto-conflicted) (error 'replay "unexpected auto-conflicted error: ~s" (second ne))])))))
 
-(: apply-journal (All (S) (-> (Model S) Journal (Values Node-Info S))))
+(: apply-journal (All (S) (-> (Model S) (Listof Journal-Entry) (Values Node-Info S))))
 (define (apply-journal m j)
   (define-values (n st _h) (replay m j))
   (values (node-node-info n) st))

@@ -38,11 +38,11 @@
   (%checker-config prompt-config trace-display))
 
 (: find-counterexample (All (S) (-> (Model S) (-> Node-Info S Any)
-                                    [#:journal Journal]
+                                    [#:journal (Listof Journal-Entry)]
                                     [#:bound (Option Natural)]
-                                    [#:bounded (-> (Option Journal))]
+                                    [#:bounded (-> (Option (Listof Journal-Entry)))]
                                     [#:config Checker-Config]
-                                    (Option Journal))))
+                                    (Option (Listof Journal-Entry)))))
 (define (find-counterexample m invariant
                              #:journal [j '()]
                              #:bound [bound #f]
@@ -57,11 +57,11 @@
                         #:config config))
 
 (: find-witness (All (S) (-> (Model S) (-> Node-Info S Any)
-                             [#:journal Journal]
+                             [#:journal (Listof Journal-Entry)]
                              [#:bound (Option Natural)]
-                             [#:bounded (-> (Option Journal))]
+                             [#:bounded (-> (Option (Listof Journal-Entry)))]
                              [#:config Checker-Config]
-                             (Option Journal))))
+                             (Option (Listof Journal-Entry)))))
 (define (find-witness m predicate
                       #:journal [j '()]
                       #:bound [bound #f]
@@ -77,9 +77,9 @@
 
 (: find-deadlock (All (S) (-> (Model S) (-> Node-Info Any)
                               [#:bound (Option Natural)]
-                              [#:bounded (-> (Option Journal))]
+                              [#:bounded (-> (Option (Listof Journal-Entry)))]
                               [#:config Checker-Config]
-                              (Option Journal))))
+                              (Option (Listof Journal-Entry)))))
 (define (find-deadlock m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)] #:config [config (checker-config)])
   (%find-counterexample m
                         (lambda ([ne : (Next-Edge S)] [n : Node-Info] _st)
@@ -92,9 +92,9 @@
 
 (: find-false-terminal (All (S) (-> (Model S) (-> Node-Info Any)
                                     [#:bound (Option Natural)]
-                                    [#:bounded (-> (Option Journal))]
+                                    [#:bounded (-> (Option (Listof Journal-Entry)))]
                                     [#:config Checker-Config]
-                                    (Option Journal))))
+                                    (Option (Listof Journal-Entry)))))
 (define (find-false-terminal m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)] #:config [config (checker-config)])
   (%find-counterexample m
                         (lambda ([ne : (Next-Edge S)] [n : Node-Info] _st)
@@ -107,9 +107,9 @@
 
 (: find-auto-conflict (All (S) (-> (Model S)
                                    [#:bound (Option Natural)]
-                                   [#:bounded (-> (Option Journal))]
+                                   [#:bounded (-> (Option (Listof Journal-Entry)))]
                                    [#:config Checker-Config]
-                                   (Option Journal))))
+                                   (Option (Listof Journal-Entry)))))
 (define (find-auto-conflict m #:bound [bound #f] #:bounded [bounded (const #f)] #:config [config (checker-config)])
   (%find-counterexample m
                         (lambda ([ne : (Next-Edge S)] _n _st)
@@ -123,11 +123,11 @@
 (define pmt-info (prompt-info "choose"))
 
 (: %find-counterexample (All (S) (-> (Model S) (-> (Next-Edge S) Node-Info S Any)
-                                     [#:journal Journal]
+                                     [#:journal (Listof Journal-Entry)]
                                      [#:bound (Option Natural)]
-                                     [#:bounded (-> (Option Journal))]
+                                     [#:bounded (-> (Option (Listof Journal-Entry)))]
                                      #:config Checker-Config
-                                     (Option Journal))))
+                                     (Option (Listof Journal-Entry)))))
 (define (%find-counterexample m invariant
                               #:journal [j '()]
                               #:bound [bound #f]
@@ -135,9 +135,9 @@
                               #:config config)
   (define-values (call-with-bounded-state _bounded-get bounded-set)
     ((inst make-state Boolean (Pairof (Immutable-HashTable (Pairof Symbol S) Natural)
-                                      (Option Journal)))))
+                                      (Option (Listof Journal-Entry))))))
   (define-values (call-with-seen-state seen-get seen-set)
-    ((inst make-state (Immutable-HashTable (Pairof Symbol S) Natural) (Option Journal))))
+    ((inst make-state (Immutable-HashTable (Pairof Symbol S) Natural) (Option (Listof Journal-Entry)))))
   (define-values (call-with-prompt-value-emitter prompt-value-emit)
     ((inst make-emitter (Pairof Prompt-Value Prompt-Attributes) S)))
   (define-values (call-with-amb amb amb-fail)
@@ -151,7 +151,7 @@
       (call-with-seen-state
        (hash)
        (thunk
-        (let/ec return : Journal
+        (let/ec return : (Listof Journal-Entry)
           (call-with-amb
            (thunk
             (let loop : #f ([n n] [st st] [j j] [depth : Natural 0])
@@ -218,7 +218,7 @@
   (emit (cons val attrs))
   (values val attrs))
 
-(: find-livelock (All (S) (-> (Model S) [#:config Checker-Config] (Option Journal))))
+(: find-livelock (All (S) (-> (Model S) [#:config Checker-Config] (Option (Listof Journal-Entry)))))
 (define (find-livelock m #:config [config (checker-config)])
   (define-values (call-with-reachable-state reachable-get reachable-set)
     ((inst make-state (Setof (Pairof Symbol S)) False)))
@@ -227,14 +227,14 @@
   (define-values (call-with-amb amb amb-fail)
     ((inst make-amb Prompt-Value)))
   (define gs (model-graphs m))
-  (let/ec return : Journal
+  (let/ec return : (Listof Journal-Entry)
     (cdr
      (call-with-reachable-state
       (set)
       (thunk
        (call-with-amb
         (thunk
-         (let loop : #f ([n (model-node m)] [st (model-state m)] [j : Journal '()] [breadcrumbs : (Setof (Pairof Symbol S)) (set)])
+         (let loop : #f ([n (model-node m)] [st (model-state m)] [j : (Listof Journal-Entry) '()] [breadcrumbs : (Setof (Pairof Symbol S)) (set)])
            (define key `(,(node-id n) . ,st))
            (when (set-member? (reachable-get) key)
              (amb-fail))

@@ -53,7 +53,7 @@
 
 (define-type (History S) (Listof (Record S)))
 
-(: history->journal (All (S) (-> (History S) Journal)))
+(: history->journal (All (S) (-> (History S) (Listof Journal-Entry))))
 (define (history->journal h)
   (: prompt-values (-> (Listof (U Prompt-Result Message-Result))
                        (Listof (Pairof Prompt-Value Prompt-Attributes))))

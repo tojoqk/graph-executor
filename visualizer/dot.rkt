@@ -307,7 +307,7 @@
            (displayln (code-text-text ce) out)
            (get-output-string out))]))
 
-(: render-dot (All (S) (-> (Model S)  [#:journal Journal] [#:port Output-Port] [#:config DotConfig] Void)))
+(: render-dot (All (S) (-> (Model S)  [#:journal (Listof Journal-Entry)] [#:port Output-Port] [#:config DotConfig] Void)))
 (define (render-dot m #:journal [j '()] #:port [port (current-output-port)] #:config [config (dot-config)])
   (define-values (_n _s h) (replay m j))
   (%render-dot (model-graphs m) (model-node m) #:config config #:history h #:port port))
