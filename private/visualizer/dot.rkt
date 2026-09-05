@@ -336,6 +336,8 @@
       (fprintf port "  fontsize=~a\n"
                (dot-string (number->string
                             (global-config-fontsize (%dot-config-global config)))))
+      (fprintf port "  node [fontname=~a]\n" (dot-string (global-config-fontname (%dot-config-global config))))
+      (fprintf port "  edge [fontname=~a]\n" (dot-string (global-config-fontname (%dot-config-global config))))
 
       (: display-visnodes (-> (Nested-Graphs S) Void))
       (define (display-visnodes g)
