@@ -11,8 +11,8 @@
 <polygon fill="white" stroke="none" points="-4,4 -4,-957.22 1194.75,-957.22 1194.75,4 -4,4"/>
 <g id="clust1" class="cluster">
 <title>cluster_[16]Water Jug Puzzle</title>
-<polygon fill="none" stroke="black" points="8,-8 8,-934 1182.75,-934 1182.75,-8 8,-8"/>
-<text xml:space="preserve" text-anchor="middle" x="595.38" y="-916.7" font-family="Times,serif" font-size="14.00">Water Jug Puzzle</text>
+<polygon fill="none" stroke="black" points="8,-8 8,-938 1182.75,-938 1182.75,-8 8,-8"/>
+<text xml:space="preserve" text-anchor="middle" x="595.38" y="-920.7" font-family="Helvetica,Arial,sans-serif" font-size="14.00">Water Jug Puzzle</text>
 </g>
 <!-- [16]Water Jug Puzzle[7]Playing -->
 <g id="node1" class="node">
