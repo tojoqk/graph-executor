@@ -9,7 +9,7 @@
 (require "../plugin/effect/consumer.rkt")
 (require "../plugin/effect/emitter.rkt")
 
-(provide trace replay
+(provide replay trace apply-journal
          auto-choose
          find-graph next-edges
          find-edge
@@ -33,12 +33,12 @@
 (define-type Event (U Prompt-Result Message-Result))
 (define-type Pmt (Pairof Prompt-Value Any))
 
-(: trace (All (S) (-> (Model S) (Listof Journal-Entry) (Values (Node S) S (Trace S)))))
-(define (trace m j)
+(: apply-journal (All (S) (-> (Model S) (Listof Journal-Entry) (Values (Node S) S Trace))))
+(define (apply-journal m j)
   (define-values (call-with-consumer consume) ((inst make-consumer Pmt S)))
   (define-values (call-with-emitter emit) ((inst make-emitter Event (Pairof (Listof Pmt) S))))
   (define gs (model-graphs m))
-  (let loop ([n (model-node m)] [st (model-state m)] [j (reverse j)] [h : (Trace S) '()])
+  (let loop ([n (model-node m)] [st (model-state m)] [j (reverse j)] [h : Trace '()])
     (let ([ne (next-edges gs st n)])
       (if (null? j)
           (values n st h)
@@ -73,20 +73,28 @@
                                  next-st
                                  (cdr j)
                                  (list*
-                                  (node-record node-evs (edge-to e))
+                                  (node-record (node-id (edge-to e)) (node-node-info (edge-to e)) node-evs)
                                   (case (edge-mode e)
-                                    [(auto) (auto-edge-record edge-evs e)]
-                                    [(choose) (choose-edge-record edge-evs e ((node-prompt n) st) edges extra)]
-                                    [(annotation) (error 'trace "invalid edge mode")])
+                                    [(auto) (auto-edge-record (edge-id e) (edge-edge-info e) edge-evs)]
+                                    [(choose) (choose-edge-record (edge-id e) (edge-edge-info e) edge-evs ((node-prompt n) st)
+                                                                  (cons (edge-edge-info (car edges))
+                                                                        (map (inst edge-edge-info S) (cdr edges)))
+                                                                  extra)]
+                                    [(annotation) (error 'apply-journal "invalid edge mode")])
                                   h)))]
-                     [else (error 'trace "edge not found")]))]
-            [(terminated) (error 'trace "unexpected termination")]
-            [(auto-conflicted) (error 'trace "unexpected auto-conflicted error: ~s" (second ne))])))))
+                     [else (error 'apply-journal "edge not found")]))]
+            [(terminated) (error 'apply-journal "unexpected termination")]
+            [(auto-conflicted) (error 'apply-journal "unexpected auto-conflicted error: ~s" (second ne))])))))
+
+(: trace (All (S) (-> (Model S) (Listof Journal-Entry) (Values Node-Info S Trace))))
+(define (trace m j)
+  (define-values (n st t) (apply-journal m j))
+  (values (node-node-info n) st t))
 
 (: replay (All (S) (-> (Model S) (Listof Journal-Entry) (Values Node-Info S))))
 (define (replay m j)
-  (define-values (n st _h) (trace m j))
-  (values (node-node-info n) st))
+  (define-values (info st _t) (trace m j))
+  (values info st))
 
 (: find-graph (All (S) (-> (Listof (Graph S)) Symbol (Graph S))))
 (define (find-graph gs g-id)
@@ -177,7 +185,7 @@
     (emit (prompt-result op info (cons val extra))))
   (: fail (-> Nothing))
   (define (fail)
-    (error 'trace "unexpected end of prompt values"))
+    (error 'apply-journal "unexpected end of prompt values"))
   (let* ([val+extra (consume fail)]
          [val (car val+extra)]
          [extra (cdr val+extra)])
@@ -202,7 +210,7 @@
                (let ([min (second op)] [max : Integer (third op)])
                  (cond [(and (<= min val) (<= val max)) (push-event! val extra)
                                                         (values val extra)]
-                       [else (error 'trace "between error" val)]))]
+                       [else (error 'apply-journal "between error" val)]))]
       [(random) (assert val natural?)
                 (push-event! val extra)
                 (values val extra)])))

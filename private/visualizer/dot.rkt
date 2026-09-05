@@ -309,13 +309,13 @@
 
 (: render-dot (All (S) (-> (Model S)  [#:journal (Listof Journal-Entry)] [#:port Output-Port] [#:config DotConfig] Void)))
 (define (render-dot m #:journal [j '()] #:port [port (current-output-port)] #:config [config (dot-config)])
-  (define-values (_n _s h) (trace m j))
+  (define-values (_n _s h) (apply-journal m j))
   (%render-dot (model-graphs m) (model-node m) #:config config #:trace h #:port port))
 
 (: %render-dot (All (S) (-> (Listof (Graph S)) (Node S)
                             #:config DotConfig
                             #:port Output-Port
-                            #:trace (Trace S)
+                            #:trace Trace
                             Void)))
 (define (%render-dot gs node
                      #:config config
@@ -459,19 +459,18 @@
         [(zero? k) ""]
         [else (format "~a" k)]))
 
-(: trace->visited-ids (All (S) (-> (Trace S)  (Setof Symbol))))
+(: trace->visited-ids (-> Trace (Setof Symbol)))
 (define (trace->visited-ids h)
-  (list->set (map (lambda ([r : (Record S)])
-                    (case (car r)
-                      [(node) (node-id (record-node r))]
-                      [(auto choose) (edge-id (record-edge r))]))
+  (list->set (map (lambda ([r : Record])
+                    (cond [(node-record? r) (node-record-node-id r)]
+                          [(edge-record? r) (edge-record-edge-id r)]))
                   h)))
 
-(: trace->current-node-id (All (S) (-> (Trace S) (Option Symbol))))
+(: trace->current-node-id (-> Trace (Option Symbol)))
 (define (trace->current-node-id h)
   (and (pair? h)
-       (eq? (caar h) 'node)
-       (node-id (record-node (car h)))))
+       (node-record? (car h))
+       (node-record-node-id (car h))))
 
 (: current-visited-ids (Parameterof (Setof Symbol)))
 (define current-visited-ids (make-parameter ((inst set Symbol))))

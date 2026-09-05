@@ -2,7 +2,7 @@
 
 (require "../private/executor.rkt")
 
-(provide trace
+(provide apply-journal
          auto-choose
          find-graph next-edges
          find-edge

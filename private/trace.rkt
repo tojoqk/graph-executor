@@ -5,56 +5,39 @@
 (require "message.rkt")
 (require "journal.rkt")
 
-(provide Node-Record Edge-Record Auto-Edge-Record Choose-Edge-Record
-         node-record auto-edge-record choose-edge-record
+(provide Node-Record node-record node-record? node-record-node-id node-record-node-info node-record-events
+         Edge-Record (rename-out [edge-record*? edge-record?]) edge-record edge-record-edge-id edge-record-edge-info edge-record-events
+         Auto-Edge-Record auto-edge-record? auto-edge-record
+         Choose-Edge-Record choose-edge-record? choose-edge-record choose-edge-record-prompt choose-edge-record-choices choose-edge-record-extra
          Trace Record
-         record-events record-node record-edge record-node-prompt record-choices record-extra
          trace->journal)
 
 (define-type Event (U Message-Result Prompt-Result))
-(define-type (Node-Record S) (List 'node (Listof Event) (Node S)))
-(define-type (Edge-Record S) (U (Auto-Edge-Record S) (Choose-Edge-Record S)))
-(define-type (Auto-Edge-Record S) (List 'auto (Listof Event) (Edge S)))
-(define-type (Choose-Edge-Record S) (List 'choose (Listof Event) (Edge S) String (Pairof (Edge S) (Listof (Edge S))) Any))
+(struct node-record ([node-id : Symbol]
+                     [node-info : Node-Info]
+                     [events : (Listof Event)])
+  #:transparent
+  #:type-name Node-Record)
+(struct edge-record ([edge-id : Symbol]
+                     [edge-info : Edge-Info]
+                     [events : (Listof Event)])
+  #:transparent)
+(struct auto-edge-record edge-record ()
+  #:transparent
+  #:type-name Auto-Edge-Record)
+(struct choose-edge-record edge-record ([prompt : String]
+                                        [choices : (Listof Edge-Info)]
+                                        [extra : Any])
+  #:transparent
+  #:type-name Choose-Edge-Record)
 
-(: node-record (All (S) (-> (Listof Event) (Node S) (Node-Record S))))
-(define (node-record es n)
-  (list 'node es n))
+(define-type Edge-Record (U Auto-Edge-Record Choose-Edge-Record))
+(define-predicate edge-record*? Edge-Record)
+(define-type Record (U Node-Record Edge-Record))
+(define-type Trace (Listof Record))
 
-(: auto-edge-record (All (S) (-> (Listof Event) (Edge S) (Auto-Edge-Record S))))
-(define (auto-edge-record es e)
-  (list 'auto es e))
-
-(: choose-edge-record (All (S) (-> (Listof Event) (Edge S) String (Pairof (Edge S) (Listof (Edge S))) Any (Choose-Edge-Record S))))
-(define (choose-edge-record es e pmt edges extra)
-  (list 'choose es e pmt edges extra))
-
-(: record-events (All (S) (-> (U (Node-Record S) (Auto-Edge-Record S) (Choose-Edge-Record S)) (Listof Event))))
-(define (record-events r) (second r))
-
-(: record-node (All (S) (-> (Node-Record S) (Node S))))
-(define (record-node r) (third r))
-
-(: record-edge (All (S) (-> (U (Auto-Edge-Record S) (Choose-Edge-Record S)) (Edge S))))
-(define (record-edge r) (third r))
-
-(: record-node-prompt (All (S) (-> (Choose-Edge-Record S) String)))
-(define (record-node-prompt r) (fourth r))
-
-(: record-choices (All (S) (-> (Choose-Edge-Record S) (Pairof (Edge S) (Listof (Edge S))))))
-(define (record-choices r) (fifth r))
-
-(: record-extra (All (S) (-> (Choose-Edge-Record S) Any)))
-(define (record-extra r) (sixth r))
-
-(define-type (Record S) (U (Node-Record S)
-                           (Auto-Edge-Record S)
-                           (Choose-Edge-Record S)))
-
-(define-type (Trace S) (Listof (Record S)))
-
-(: trace->journal (All (S) (-> (Trace S) (Listof Journal-Entry))))
-(define (trace->journal h)
+(: trace->journal  (-> Trace (Listof Journal-Entry)))
+[define (trace->journal t)
   (: prompt-values (-> (Listof (U Prompt-Result Message-Result))
                        (Listof (Pairof Prompt-Value Any))))
   (define (prompt-values xs)
@@ -63,21 +46,21 @@
                     [(prompt) (fourth x)]
                     [(message) #f]))
                 xs))
-  (if (null? h)
+  (if (null? t)
       '()
-      (let ([hn (car h)]
-            [he (if (null? (cdr h))
+      (let ([tn (car t)]
+            [te (if (null? (cdr t))
                     (error 'trace->journal "invalid trace")
-                    (cadr h))])
-        (if (and (symbol=? (car hn) 'node)
-                 (or (symbol=? (car he) 'auto)
-                     (symbol=? (car he) 'choose)))
-            (let ([extra (if (symbol=? (car he) 'choose)
-                             (record-extra he)
-                             '())])
-              (cons (journal-entry (car he) (edge-name (record-edge he))
-                                   #:edge-extra extra
-                                   #:prompt-records (append (prompt-values (record-events hn))
-                                                            (prompt-values (record-events he))))
-                    (trace->journal (cddr h))))
-            (error 'trace->journal "invalid trace")))))
+                    (cadr t))])
+        (if (and (node-record? tn) (or (auto-edge-record? te) (choose-edge-record? te)))
+            (let ([mode (edge-info-mode (edge-record-edge-info te))])
+              (case mode
+                [(auto choose) (cons (journal-entry mode
+                                                    (edge-info-name (edge-record-edge-info te))
+                                                    #:edge-extra (and (choose-edge-record? te)
+                                                                      (choose-edge-record-extra te))
+                                                    #:prompt-records (append (prompt-values (node-record-events tn))
+                                                                             (prompt-values (edge-record-events te))))
+                                     (trace->journal (cddr t)))]
+                [(annotation) (error 'trace->journal "invalid trace (unexpected edge mode: ~a" mode)]))
+            (error 'trace->journal "invalid trace"))))]
