@@ -1,18 +1,24 @@
 #lang typed/racket
 
-(require "graph.rkt")
-(require "model.rkt")
-(require "prompt.rkt")
-(require "message.rkt")
-(require "prompt/checker.rkt")
-(require "executor.rkt")
-(require "journal.rkt")
-(require "effect/amb.rkt")
-(require "effect/emitter.rkt")
-(require "effect/state.rkt")
+(require "plugin/graph.rkt")
+(require "plugin/model.rkt")
+(require "plugin/prompt.rkt")
+(require "plugin/message.rkt")
+(require "plugin/prompt/checker.rkt")
+(require "plugin/executor.rkt")
+(require "plugin/journal.rkt")
+(require "plugin/effect/amb.rkt")
+(require "plugin/effect/emitter.rkt")
+(require "plugin/effect/state.rkt")
 
 (provide find-counterexample find-witness find-deadlock find-false-terminal find-auto-conflict find-livelock
-         Checker-Config checker-config)
+         Checker-Config checker-config Checker-Prompt-Config checker-prompt-config
+         default-checker-prompt-string-values
+         default-checker-prompt-integer-values
+         default-checker-prompt-natural-values
+         default-checker-prompt-positive-integer-values
+         default-checker-prompt-between-values
+         default-checker-prompt-random-values)
 
 (: checker-config-trace-display? (-> Checker-Config Boolean))
 (define (checker-config-trace-display? config)

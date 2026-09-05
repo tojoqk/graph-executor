@@ -1,6 +1,6 @@
 #lang typed/racket
 
-(require "../graph.rkt")
+(require "graph.rkt")
 (provide VisNode VisNode-Node VisNode-Edge
          find-graph reachable-visnodes visnode-id visnodes-edges visnodes->graphs
          Nested-Graphs graphs->nested)
