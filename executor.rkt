@@ -31,7 +31,7 @@
 (define-type Command (U Transform-Command Action-Command Restore-Command Quit-Command))
 
 (define-type Event (U Prompt-Result Message-Result))
-(define-type Pmt (Pairof Prompt-Value Prompt-Attributes))
+(define-type Pmt (Pairof Prompt-Value Any))
 
 (: replay (All (S) (-> (Model S) (Listof Journal-Entry) (Values (Node S) S (History S)))))
 (define (replay m j)
@@ -47,7 +47,7 @@
              (let* ([edges (cadr ne)]
                     [entry (car j)]
                     [name (journal-entry-edge-name entry)]
-                    [attrs (journal-entry-edge-attributes entry)]
+                    [extra (journal-entry-edge-extra entry)]
                     [records (journal-entry-prompt-records entry)])
                (cond [(findf (lambda ([e : (Edge S)]) (string=? name (edge-name e))) edges)
                       => (lambda ([e : (Edge S)])
@@ -76,7 +76,7 @@
                                   (node-record node-evs (edge-to e))
                                   (case (edge-mode e)
                                     [(auto) (auto-edge-record edge-evs e)]
-                                    [(choose) (choose-edge-record edge-evs e ((node-prompt n) st) edges attrs)]
+                                    [(choose) (choose-edge-record edge-evs e ((node-prompt n) st) edges extra)]
                                     [(annotation) (error 'replay "invalid edge mode")])
                                   h)))]
                      [else (error 'replay "edge not found")]))]
@@ -172,37 +172,37 @@
                   (-> Event Void)
                   Prompt-Implementation))
 (define ((pop-prompt consume emit) info op)
-  (: push-event! (-> Prompt-Value Prompt-Attributes Void))
-  (define (push-event! val attrs)
-    (emit (prompt-result op info (cons val attrs))))
+  (: push-event! (-> Prompt-Value Any Void))
+  (define (push-event! val extra)
+    (emit (prompt-result op info (cons val extra))))
   (: fail (-> Nothing))
   (define (fail)
     (error 'replay "unexpected end of prompt values"))
-  (let* ([val+attrs (consume fail)]
-         [val (car val+attrs)]
-         [attrs (cdr val+attrs)])
+  (let* ([val+extra (consume fail)]
+         [val (car val+extra)]
+         [extra (cdr val+extra)])
     (case (car op)
       [(choose) (assert val symbol?)
-                (push-event! val attrs)
-                (values val attrs)]
+                (push-event! val extra)
+                (values val extra)]
       [(string) (assert val string?)
-                (push-event! val attrs)
-                (values val attrs)]
+                (push-event! val extra)
+                (values val extra)]
       [(integer) (assert (assert val exact?) integer?)
-                 (push-event! val attrs)
-                 (values val attrs)]
+                 (push-event! val extra)
+                 (values val extra)]
       [(natural) (assert (assert val exact?) natural?)
-                 (push-event! val attrs)
-                 (values val attrs)]
+                 (push-event! val extra)
+                 (values val extra)]
       [(positive-integer) (assert (assert val exact?) positive-integer?)
-                          (push-event! val attrs)
-                          (values val attrs)]
+                          (push-event! val extra)
+                          (values val extra)]
       [(between) (assert val exact?)
                (assert val integer?)
                (let ([min (second op)] [max : Integer (third op)])
-                 (cond [(and (<= min val) (<= val max)) (push-event! val attrs)
-                                                        (values val attrs)]
+                 (cond [(and (<= min val) (<= val max)) (push-event! val extra)
+                                                        (values val extra)]
                        [else (error 'replay "between error" val)]))]
       [(random) (assert val natural?)
-                (push-event! val attrs)
-                (values val attrs)])))
+                (push-event! val extra)
+                (values val extra)])))

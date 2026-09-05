@@ -102,7 +102,7 @@
 
 (: checker-choose (-> (-> (-> Prompt-Value) * Prompt-Value)
                       (List 'choose Procedure (Listof Symbol) Procedure)
-                      (Values Symbol Prompt-Attributes)))
+                      (Values Symbol Any)))
 (define (checker-choose amb op)
   (let* ([choices (third op)]
          [value (let loop : Prompt-Value ([choices choices])
@@ -110,17 +110,17 @@
                       (amb)
                       (amb (thunk (car choices))
                            (thunk (loop (cdr choices))))))])
-    (values (assert value symbol?) '())))
+    (values (assert value symbol?) #f)))
 
 (: checker-between (case-> (-> (-> (-> Prompt-Value) * Prompt-Value) Checker-Prompt-Config
                                Prompt-Info
-                               (List 'between Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
+                               (List 'between Positive-Integer Positive-Integer) (Values Positive-Integer Any))
                            (-> (-> (-> Prompt-Value) * Prompt-Value) Checker-Prompt-Config
                                Prompt-Info
-                               (List 'between Natural Natural) (Values Natural Prompt-Attributes))
+                               (List 'between Natural Natural) (Values Natural Any))
                            (-> (-> (-> Prompt-Value) * Prompt-Value) Checker-Prompt-Config
                                Prompt-Info
-                               (List 'between Integer Integer) (Values Integer Prompt-Attributes))))
+                               (List 'between Integer Integer) (Values Integer Any))))
 (define (checker-between amb config info op)
   (let ([from (second op)]
         [to : Integer (third op)])
@@ -148,9 +148,9 @@
                              (<= from value) (<= value to))
                         value
                         (error 'prompt "invalid between value ~a" value)))))
-            '())))
+            #f)))
 
-(: checker-random (-> (-> (-> Prompt-Value) * Prompt-Value) Checker-Prompt-Config Prompt-Info (List 'random Positive-Integer) (Values Natural Prompt-Attributes)))
+(: checker-random (-> (-> (-> Prompt-Value) * Prompt-Value) Checker-Prompt-Config Prompt-Info (List 'random Positive-Integer) (Values Natural Any)))
 (define (checker-random amb config info op)
   (let ([n (second op)])
     (values (let ([vals ((%checker-prompt-config-random-values config) info n)])
@@ -171,4 +171,4 @@
                         (unless (< r n)
                           (error 'prompt "must be ~a < ~a" r n))
                         r)]))
-            '())))
+            #f)))

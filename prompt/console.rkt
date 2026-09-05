@@ -14,7 +14,7 @@
     [(random) (console-random info op)]))
 
 (: console-choose (-> Prompt-Info (U (List 'choose Procedure (Listof Symbol) Procedure))
-                      (Values Symbol Prompt-Attributes)))
+                      (Values Symbol Any)))
 (define (console-choose info op)
   (let ([choices (third op)]
         [out (open-output-string)])
@@ -34,13 +34,13 @@
                       (if (and (exact? n)
                                (positive-integer? n)
                                (<= n (length choices)))
-                          (values (list-ref choices (sub1 n)) '())
+                          (values (list-ref choices (sub1 n)) #f)
                           (retry)))]
                 [else (retry)]))))))
 
-(: console-input-number (case-> (-> Prompt-Info (List 'integer) (Values Integer Prompt-Attributes))
-                                (-> Prompt-Info (List 'natural) (Values Natural Prompt-Attributes))
-                                (-> Prompt-Info (List 'positive-integer) (Values Positive-Integer Prompt-Attributes))))
+(: console-input-number (case-> (-> Prompt-Info (List 'integer) (Values Integer Any))
+                                (-> Prompt-Info (List 'natural) (Values Natural Any))
+                                (-> Prompt-Info (List 'positive-integer) (Values Positive-Integer Any))))
 (define (console-input-number info op)
   (newline)
   (printf "* ~a\n" (prompt-info-title info))
@@ -53,19 +53,19 @@
                   (case (car op)
                     [(integer)
                      (if (and (exact? value) (integer? value))
-                         (values value '())
+                         (values value #f)
                          (retry))]
                     [(natural)
                      (if (and (exact? value) (natural? value))
-                         (values value '())
+                         (values value #f)
                          (retry))]
                     [(positive-integer)
                      (if (and (exact? value) (positive-integer? value))
-                         (values value '())
+                         (values value #f)
                          (retry))]))]
             [else (retry)]))))
 
-(: console-string (case-> (-> Prompt-Info (List 'string) (Values String Prompt-Attributes))))
+(: console-string (case-> (-> Prompt-Info (List 'string) (Values String Any))))
 (define (console-string info op)
   (newline)
   (printf "* ~a\n" (prompt-info-title info))
@@ -75,11 +75,11 @@
       (if (or (eof-object? value)
               (regexp-match #rx"^\\s*$" value))
           (retry)
-          (values value '())))))
+          (values value #f)))))
 
-(: console-between (case-> (-> Prompt-Info (List 'between Positive-Integer Positive-Integer) (Values Positive-Integer Prompt-Attributes))
-                         (-> Prompt-Info (List 'between Natural Natural) (Values Natural Prompt-Attributes))
-                         (-> Prompt-Info (List 'between Integer Integer) (Values Integer Prompt-Attributes))))
+(: console-between (case-> (-> Prompt-Info (List 'between Positive-Integer Positive-Integer) (Values Positive-Integer Any))
+                         (-> Prompt-Info (List 'between Natural Natural) (Values Natural Any))
+                         (-> Prompt-Info (List 'between Integer Integer) (Values Integer Any))))
 (define (console-between info op)
   (newline)
   (printf "* ~a\n" (prompt-info-title info))
@@ -93,10 +93,10 @@
                => (lambda ([value : Number])
                     (if (and (exact? value) (integer? value)
                              (<= from value) (<= value to))
-                        (values value '())
+                        (values value #f)
                         (retry)))]
               [else (retry)])))))
 
-(: console-random (-> Prompt-Info (List 'random Positive-Integer) (Values Natural Prompt-Attributes)))
+(: console-random (-> Prompt-Info (List 'random Positive-Integer) (Values Natural Any)))
 (define (console-random info op)
-  (values (random (second op)) '()))
+  (values (random (second op)) #f))

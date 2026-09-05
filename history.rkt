@@ -8,14 +8,14 @@
 (provide Node-Record Edge-Record Auto-Edge-Record Choose-Edge-Record
          node-record auto-edge-record choose-edge-record
          History Record
-         record-events record-node record-edge record-node-prompt record-choices record-attributes
+         record-events record-node record-edge record-node-prompt record-choices record-extra
          history->journal)
 
 (define-type Event (U Message-Result Prompt-Result))
 (define-type (Node-Record S) (List 'node (Listof Event) (Node S)))
 (define-type (Edge-Record S) (U (Auto-Edge-Record S) (Choose-Edge-Record S)))
 (define-type (Auto-Edge-Record S) (List 'auto (Listof Event) (Edge S)))
-(define-type (Choose-Edge-Record S) (List 'choose (Listof Event) (Edge S) String (Pairof (Edge S) (Listof (Edge S))) Prompt-Attributes))
+(define-type (Choose-Edge-Record S) (List 'choose (Listof Event) (Edge S) String (Pairof (Edge S) (Listof (Edge S))) Any))
 
 (: node-record (All (S) (-> (Listof Event) (Node S) (Node-Record S))))
 (define (node-record es n)
@@ -25,9 +25,9 @@
 (define (auto-edge-record es e)
   (list 'auto es e))
 
-(: choose-edge-record (All (S) (-> (Listof Event) (Edge S) String (Pairof (Edge S) (Listof (Edge S))) Prompt-Attributes (Choose-Edge-Record S))))
-(define (choose-edge-record es e pmt edges attrs)
-  (list 'choose es e pmt edges attrs))
+(: choose-edge-record (All (S) (-> (Listof Event) (Edge S) String (Pairof (Edge S) (Listof (Edge S))) Any (Choose-Edge-Record S))))
+(define (choose-edge-record es e pmt edges extra)
+  (list 'choose es e pmt edges extra))
 
 (: record-events (All (S) (-> (U (Node-Record S) (Auto-Edge-Record S) (Choose-Edge-Record S)) (Listof Event))))
 (define (record-events r) (second r))
@@ -44,8 +44,8 @@
 (: record-choices (All (S) (-> (Choose-Edge-Record S) (Pairof (Edge S) (Listof (Edge S))))))
 (define (record-choices r) (fifth r))
 
-(: record-attributes (All (S) (-> (Choose-Edge-Record S) Prompt-Attributes)))
-(define (record-attributes r) (sixth r))
+(: record-extra (All (S) (-> (Choose-Edge-Record S) Any)))
+(define (record-extra r) (sixth r))
 
 (define-type (Record S) (U (Node-Record S)
                            (Auto-Edge-Record S)
@@ -56,7 +56,7 @@
 (: history->journal (All (S) (-> (History S) (Listof Journal-Entry))))
 (define (history->journal h)
   (: prompt-values (-> (Listof (U Prompt-Result Message-Result))
-                       (Listof (Pairof Prompt-Value Prompt-Attributes))))
+                       (Listof (Pairof Prompt-Value Any))))
   (define (prompt-values xs)
     (filter-map (lambda ([x : (U Prompt-Result Message-Result)])
                   (case (first x)
@@ -72,11 +72,11 @@
         (if (and (symbol=? (car hn) 'node)
                  (or (symbol=? (car he) 'auto)
                      (symbol=? (car he) 'choose)))
-            (let ([attrs (if (symbol=? (car he) 'choose)
-                             (record-attributes he)
+            (let ([extra (if (symbol=? (car he) 'choose)
+                             (record-extra he)
                              '())])
               (cons (journal-entry (car he) (edge-name (record-edge he))
-                                   #:edge-attributes attrs
+                                   #:edge-extra extra
                                    #:prompt-records (append (prompt-values (record-events hn))
                                                             (prompt-values (record-events he))))
                     (history->journal (cddr h))))

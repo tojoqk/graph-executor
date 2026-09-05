@@ -24,7 +24,7 @@
          Console-Config console-config random-edge-option
          default-console-commands default-console-chooser
          Journal-Entry journal-entry? journal-entry
-         journal-entry-edge-mode journal-entry-edge-name journal-entry-edge-attributes journal-entry-prompt-records
+         journal-entry-edge-mode journal-entry-edge-name journal-entry-edge-extra journal-entry-prompt-records
          prompt op-choose op-string op-integer op-natural op-positive-integer op-between op-random
          Prompt-Info prompt-info-tags
          Prompt-Record prompt-record? prompt-record

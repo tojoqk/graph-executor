@@ -351,7 +351,7 @@
                         [(eq? 'node (car v))
                          (fprintf port "  ~a ~a\n"
                                   (dot-string (symbol->string (get-id v)))
-                                  (format-node-attributes
+                                  (format-node-extra
                                    ((%dot-config-node-label config) (node->dot-node (caddr v))
                                                                     (dot-node-status (caddr v)))
                                    ((%dot-config-node config) (node->dot-node (caddr v))
@@ -359,7 +359,7 @@
                         [(eq? 'edge (car v))
                          (fprintf port "  ~a ~a\n"
                                   (dot-string (symbol->string (get-id v)))
-                                  (format-node-attributes
+                                  (format-node-extra
                                    ((%dot-config-edge-node-label config) (edge->dot-edge (caddr v))
                                                                          (dot-edge-status (caddr v)))
                                    ((%dot-config-edge-node config) (edge->dot-edge (caddr v))
@@ -385,7 +385,7 @@
                   (fprintf port "  ~a -> ~a ~a\n"
                            (dot-string (symbol->string (node-id (edge-from (caddr v)))))
                            (dot-string (symbol->string (edge-id (caddr v))))
-                           (format-edge-attributes
+                           (format-edge-extra
                             (show-priority (edge-priority (caddr v)))
                             (apply-half
                              (apply-minlen
@@ -395,7 +395,7 @@
                     (fprintf port "  ~a -> ~a ~a\n"
                              (dot-string (symbol->string (edge-id (caddr v))))
                              (dot-string (symbol->string (node-id (edge-to (caddr v)))))
-                             (format-edge-attributes
+                             (format-edge-extra
                               ""
                               (struct-copy edge-config
                                            (apply-minlen
@@ -411,8 +411,8 @@
       (format "0~x" b)
       (format "~x" b)))
 
-(: format-node-attributes (-> (U (List 'text String) (Pairof 'html (Listof XExpr))) DotNodeConfig String))
-(define (format-node-attributes label nc)
+(: format-node-extra (-> (U (List 'text String) (Pairof 'html (Listof XExpr))) DotNodeConfig String))
+(define (format-node-extra label nc)
   (format "[label=~a,shape=~a,style=~a,color=~a,fillcolor=~a]"
           (ann (case (first label)
                  [(text) (dot-string (second label))]
@@ -430,8 +430,8 @@
       (symbol->string s)
       s))
 
-(: format-edge-attributes (-> String DotEdgeConfig String))
-(define (format-edge-attributes label ec)
+(: format-edge-extra (-> String DotEdgeConfig String))
+(define (format-edge-extra label ec)
   (format "[label=~a,arrowhead=~a,arrowtail=~a,style=~a,color=~a,minlen=~a]"
           (dot-string label)
           (dot-string (edge-config-arrowhead ec))
