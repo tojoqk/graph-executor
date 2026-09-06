@@ -30,10 +30,10 @@
 
 (: op-choose (All (A) (-> (-> Any Boolean : #:+ A)
                           (Listof (∩ A Symbol))
-                          [#:show (-> (∩ A Symbol) String)]
+                          [#:show (-> Symbol String)]
                           (List 'choose (-> Any Boolean : #:+ A)
                                 (Listof (∩ A Symbol))
-                                (-> (∩ A Symbol) String)))))
+                                (-> Symbol String)))))
 (define (op-choose predicate choices #:show [show symbol->string])
   (list 'choose predicate choices show))
 (: op-choose-predicate (All (A) (-> (List 'choose (-> Any Boolean : #:+ A)
@@ -77,7 +77,7 @@
 (define (op-random-bound op) (second op))
 
 (define-type (Prompt A)
-  (case-> (->* (String (List 'choose (-> Any Boolean : #:+ A) (Listof (∩ A Symbol)) (-> (∩ A Symbol) String)))
+  (case-> (->* (String (List 'choose (-> Any Boolean : #:+ A) (Listof (∩ A Symbol)) (-> Symbol String)))
                ((Listof Symbol)) (∩ Symbol A))
           (->* (String (List 'string)) ((Listof Symbol)) String)
           (->* (String (List 'integer)) ((Listof Symbol)) Integer)
@@ -89,7 +89,7 @@
           (->* (String (List 'random Positive-Integer)) ((Listof Symbol)) Natural)))
 
 (define-type Prompt-Type (U 'choose 'string 'integer 'natural 'positive-integer 'between 'random))
-(define-type Prompt-Op (U (List 'choose Procedure (Listof Symbol) Procedure)
+(define-type Prompt-Op (U (List 'choose Procedure (Listof Symbol) (-> Symbol String))
                           (List 'string)
                           (List 'integer)
                           (List 'natural)
@@ -134,7 +134,7 @@
 (define (prompt-random title n [tags '()]) (prompt title (op-random n) tags))
 
 (define-type Prompt-Implementation
-  (case-> (-> Prompt-Info (List 'choose Procedure (Listof Symbol) Procedure)
+  (case-> (-> Prompt-Info (List 'choose Procedure (Listof Symbol) (-> Symbol String))
               (Values Symbol Any))
           (-> Prompt-Info (List 'string) (Values String Any))
           (-> Prompt-Info (List 'integer) (Values Integer Any))
