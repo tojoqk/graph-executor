@@ -64,7 +64,7 @@
                                   (message (format "Emptied the ~a-gallon jug." left-cap)))))
            (edge (format "Empty ~aG" right-cap) #:from playing #:to check
                  #:when (code (match-λ [(jug-state _ r) (< 0 r)]))
-                 #:trans (code (match-λ [(jug-state _ r) (jug-state 0 r)]))
+                 #:trans (code (match-λ [(jug-state l _) (jug-state l 0)]))
                  #:before (code (lambda (_)
                                   (message (format "Emptied the ~a-gallon jug." right-cap)))))
            (edge (format "Pour ~aG -> ~aG" left-cap right-cap) #:from playing #:to check
