@@ -13,26 +13,26 @@
 
 (struct auto ([edge-name : String]
               [prompt-records : (Listof Prompt-Record)])
-  #:prefab #:type-name Journal-Entry-Auto)
+  #:prefab #:type-name Auto-Journal-Entry)
 
-(: auto* (-> String [#:prompt-records (Listof Prompt-Record)] Journal-Entry-Auto))
+(: auto* (-> String [#:prompt-records (Listof Prompt-Record)] Auto-Journal-Entry))
 (define (auto* name #:prompt-records [prompt-records '()])
   (auto name prompt-records))
 
 (struct choice ([edge-name : String]
                 [edge-extra : Any]
                 [prompt-records : (Listof Prompt-Record)])
-  #:prefab #:type-name Journal-Entry-Choice)
+  #:prefab #:type-name Choice-Journal-Entry)
 
-(define-predicate auto*? Journal-Entry-Auto)
+(define-predicate auto*? Auto-Journal-Entry)
 
-(: choice* (-> String [#:edge-extra Any] [#:prompt-records (Listof Prompt-Record)] Journal-Entry-Choice))
+(: choice* (-> String [#:edge-extra Any] [#:prompt-records (Listof Prompt-Record)] Choice-Journal-Entry))
 (define (choice* name #:edge-extra [extra #f] #:prompt-records [prompt-records '()])
   (choice name extra prompt-records))
 
-(define-predicate choice*? Journal-Entry-Choice)
+(define-predicate choice*? Choice-Journal-Entry)
 
-(define-type Journal-Entry (U Journal-Entry-Auto Journal-Entry-Choice))
+(define-type Journal-Entry (U Auto-Journal-Entry Choice-Journal-Entry))
 (define-predicate journal-entry? Journal-Entry)
 
 (: journal-entry-edge-name (-> Journal-Entry String))
