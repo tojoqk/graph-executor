@@ -199,7 +199,7 @@
 
 (define any-node/any (inst any-node Any))
 
-(define-type EdgeMode (U 'auto 'choose 'annotation))
+(define-type EdgeMode (U 'auto 'choice 'annotation))
 
 (struct edge-option ()
   #:type-name Edge-Option)
@@ -344,7 +344,7 @@
           [else (current-graph-used-ids (set-add (current-graph-used-ids) edge-id))])
     ((case type [(edge) edge] [(bridge) bridge])
      edge-id
-     (edge-info (or mode 'choose)
+     (edge-info (or mode 'choice)
                 name
                 desc
                 (node-node-info from)

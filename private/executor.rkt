@@ -43,7 +43,7 @@
       (if (null? j)
           (values n st h)
           (case (car ne)
-            [(choose auto)
+            [(choice auto)
              (let* ([edges (cadr ne)]
                     [entry (car j)]
                     [name (journal-entry-edge-name entry)]
@@ -76,7 +76,7 @@
                                   (node-record (node-id (edge-to e)) (node-node-info (edge-to e)) node-evs)
                                   (case (edge-mode e)
                                     [(auto) (auto-edge-record (edge-id e) (edge-edge-info e) edge-evs)]
-                                    [(choose) (choose-edge-record (edge-id e) (edge-edge-info e) edge-evs ((node-prompt n) st)
+                                    [(choice) (choice-edge-record (edge-id e) (edge-edge-info e) edge-evs ((node-prompt n) st)
                                                                   (cons (edge-edge-info (car edges))
                                                                         (map (inst edge-edge-info S) (cdr edges)))
                                                                   extra)]
@@ -101,7 +101,7 @@
                        S
                        (Node S)
                        (U (List 'auto (List (Edge S)))
-                          (List 'choose (Pairof (Edge S) (Listof (Edge S))))
+                          (List 'choice (Pairof (Edge S) (Listof (Edge S))))
                           (List 'terminated)
                           (List 'auto-conflicted (Pairof String (Listof String)))))))
 (define (next-edges gs st n)
@@ -111,7 +111,7 @@
     (if (null? aes)
         (if (null? es)
             (list 'terminated)
-            (list 'choose es))
+            (list 'choice es))
         (if (null? (cdr aes))
             (list 'auto aes)
             (list 'auto-conflicted (cons (edge-name (car aes))

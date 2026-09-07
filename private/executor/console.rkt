@@ -121,7 +121,7 @@
              (loop (edge-to chosen-edge)
                    next-st
                    (cons (auto (edge-name chosen-edge) #:prompt-records ps) j)))]
-          [(choose)
+          [(choice)
            (define choose-pmt ((node-prompt n) st))
            (let ([cmd (console-choose ((%console-config-chooser config) (node-node-info n)) config choose-pmt (second ne))])
              (cond [(edge? cmd)
@@ -131,7 +131,7 @@
                        (thunk (console-step config st chosen-edge emit))))
                     (loop (edge-to chosen-edge)
                           next-st
-                          (cons (choose (edge-name chosen-edge) #:prompt-records ps) j))]
+                          (cons (choice (edge-name chosen-edge) #:prompt-records ps) j))]
                    [else (command-dispatch n st j cmd)]))]))))
   result-j)
 

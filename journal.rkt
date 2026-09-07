@@ -2,5 +2,5 @@
 
 (require "private/journal.rkt")
 
-(provide Journal-Entry journal-entry? auto auto? choose choose? journal-undo
+(provide Journal-Entry journal-entry? auto auto? choice choice? journal-undo
          journal-entry-edge-mode journal-entry-edge-name journal-entry-edge-extra journal-entry-prompt-records)

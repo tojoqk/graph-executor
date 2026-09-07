@@ -128,7 +128,7 @@
       (printf "Solved in ~a steps!\n"
               (for/sum ([e j])
                 (case (journal-entry-edge-mode e)
-                  [(choose) 1]
+                  [(choice) 1]
                   [else 0])))])))
 
 (module+ test
@@ -156,14 +156,14 @@
 
   (check-equal? (shortest-path m)
                 (list (auto "Clear!")
-                      (choose "Pour 5G -> 3G")
+                      (choice "Pour 5G -> 3G")
                       (auto "Not yet")
-                      (choose "Fill 5G")
+                      (choice "Fill 5G")
                       (auto "Not yet")
-                      (choose "Pour 5G -> 3G")
+                      (choice "Pour 5G -> 3G")
                       (auto "Not yet")
-                      (choose "Empty 3G")
+                      (choice "Empty 3G")
                       (auto  "Not yet")
-                      (choose "Pour 5G -> 3G")
+                      (choice "Pour 5G -> 3G")
                       (auto "Not yet")
-                      (choose "Fill 5G"))))
+                      (choice "Fill 5G"))))

@@ -28,7 +28,7 @@
 
 (define-type (Next-Edge S)
   (U (List 'auto (Pairof (Edge S) (Listof (Edge S))))
-     (List 'choose (Pairof (Edge S) (Listof (Edge S))))
+     (List 'choice (Pairof (Edge S) (Listof (Edge S))))
      (List 'terminated)
      (List 'auto-conflicted (Pairof String (Listof String)))))
 
@@ -175,7 +175,7 @@
                 (return j))
               (case ne-type
                 [(terminated auto-conflicted) (amb-fail)]
-                [(auto choose) (when (and bound (= bound depth))
+                [(auto choice) (when (and bound (= bound depth))
                                  (begin (bounded-set #t)
                                         (amb-fail)))
                                (define name
@@ -191,7 +191,7 @@
                                      next-st
                                      (cons (case ne-type
                                              [(auto) (auto (edge-name chosen-edge) #:prompt-records ps)]
-                                             [(choose) (choose (edge-name chosen-edge) #:prompt-records ps)])
+                                             [(choice) (choice (edge-name chosen-edge) #:prompt-records ps)])
                                            j)
                                      (add1 depth))])))
            (thunk #f))))))))
@@ -262,7 +262,7 @@
            (case ne-type
              [(terminated auto-conflicted) (reachable-set (set-union (reachable-get) breadcrumbs))
                                            (amb-fail)]
-             [(auto choose) (define name
+             [(auto choice) (define name
                               (amb-choose amb (map (inst edge-name S) (second ne))))
                             (define chosen-edge (find-edge (second ne) name))
                             (when (checker-config-trace-display? config)
@@ -274,7 +274,7 @@
                                   next-st
                                   (cons (case ne-type
                                           [(auto) (auto (edge-name chosen-edge) #:prompt-records ps)]
-                                          [(choose) (choose (edge-name chosen-edge) #:prompt-records ps)])
+                                          [(choice) (choice (edge-name chosen-edge) #:prompt-records ps)])
                                         j)
                                   (set-add breadcrumbs key))])))
         (thunk #f)))))))
@@ -307,7 +307,7 @@
              [(terminated) (return (set-union reachable (list->set breadcrumbs)))]
              [(auto-conflicted) (seen-set (set-add (seen-get) key))
                                 (amb-fail)]
-             [(auto choose) (define name
+             [(auto choice) (define name
                               (amb-choose amb (map (inst edge-name S) (second ne))))
                             (define chosen-edge (find-edge (second ne) name))
                             (when (checker-config-trace-display? config)

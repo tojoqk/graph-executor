@@ -104,7 +104,7 @@
      (graph g
             #:edges
             (list
-             (edge "Sit on Bench" #:mode 'choose #:from on-street #:to bench
+             (edge "Sit on Bench" #:mode 'choice #:from on-street #:to bench
                    #:priority -1))
             #:bridges
             (list
@@ -187,15 +187,15 @@
                                   (and (terminal-node? n)
                                        (street? st)
                                        (= (street-wallet st) 150))))
-                `(,(choose "Sit on Bench")
-                  ,(choose "Walk Away")
+                `(,(choice "Sit on Bench")
+                  ,(choice "Walk Away")
                   ,(auto "Change Dispatched")
-                  ,(choose "Press Return Lever")
+                  ,(choice "Press Return Lever")
                   ,(auto "Dispense Done (Remaining Inserted)")
-                  ,(choose "Purchase Drink (150 Yen)")
-                  ,@(make-list 299 (choose "Insert More" #:prompt-records (list (prompt-record 1))))
-                  ,(choose "Insert Money" #:prompt-records (list (prompt-record 1)))
-                  ,(choose "Go to Vending Machine")))
+                  ,(choice "Purchase Drink (150 Yen)")
+                  ,@(make-list 299 (choice "Insert More" #:prompt-records (list (prompt-record 1))))
+                  ,(choice "Insert Money" #:prompt-records (list (prompt-record 1)))
+                  ,(choice "Go to Vending Machine")))
 
   (check-equal? (let loop : (Option (Listof Journal-Entry)) ([depth : Natural 0])
                   (find-witness m (lambda ([n : Node-Info] st)
@@ -211,9 +211,9 @@
                                                       (if (memq 'how-much (prompt-info-tags info))
                                                           'descending
                                                           (default-checker-prompt-between-values info from to)))))))
-                (list (choose "Sit on Bench")
-                      (choose "Walk Away")
+                (list (choice "Sit on Bench")
+                      (choice "Walk Away")
                       (auto "Dispense Done (Just Zero)")
-                      (choose "Purchase Drink (150 Yen)")
-                      (choose "Insert Money" #:prompt-records (list (prompt-record 150)))
-                      (choose "Go to Vending Machine"))))
+                      (choice "Purchase Drink (150 Yen)")
+                      (choice "Insert Money" #:prompt-records (list (prompt-record 150)))
+                      (choice "Go to Vending Machine"))))

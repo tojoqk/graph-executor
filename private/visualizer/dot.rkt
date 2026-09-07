@@ -108,7 +108,7 @@
         [(auto) (case s
                   [(default) (dot-edge-config #:color "red")]
                   [(visited) (dot-edge-config #:color "orange")])]
-        [(choose) (case s
+        [(choice) (case s
                     [(default) (dot-edge-config #:color "blue")]
                     [(visited) (dot-edge-config #:color "cyan")])]
         [(annotation) (dot-edge-config #:style '("dashed") #:color "black")]))))

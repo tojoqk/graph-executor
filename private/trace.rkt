@@ -8,7 +8,7 @@
 (provide Node-Record node-record node-record? node-record-node-id node-record-node-info node-record-events
          Edge-Record (rename-out [edge-record*? edge-record?]) edge-record edge-record-edge-id edge-record-edge-info edge-record-events
          Auto-Edge-Record auto-edge-record? auto-edge-record
-         Choose-Edge-Record choose-edge-record? choose-edge-record choose-edge-record-prompt choose-edge-record-choices choose-edge-record-extra
+         Choice-Edge-Record choice-edge-record? choice-edge-record choice-edge-record-prompt choice-edge-record-choices choice-edge-record-extra
          Trace Record
          trace->journal)
 
@@ -25,13 +25,13 @@
 (struct auto-edge-record edge-record ()
   #:transparent
   #:type-name Auto-Edge-Record)
-(struct choose-edge-record edge-record ([prompt : String]
+(struct choice-edge-record edge-record ([prompt : String]
                                         [choices : (Listof Edge-Info)]
                                         [extra : Any])
   #:transparent
-  #:type-name Choose-Edge-Record)
+  #:type-name Choice-Edge-Record)
 
-(define-type Edge-Record (U Auto-Edge-Record Choose-Edge-Record))
+(define-type Edge-Record (U Auto-Edge-Record Choice-Edge-Record))
 (define-predicate edge-record*? Edge-Record)
 (define-type Record (U Node-Record Edge-Record))
 (define-type Trace (Listof Record))
@@ -52,16 +52,16 @@
             [te (if (null? (cdr t))
                     (error 'trace->journal "invalid trace")
                     (cadr t))])
-        (if (and (node-record? tn) (or (auto-edge-record? te) (choose-edge-record? te)))
+        (if (and (node-record? tn) (or (auto-edge-record? te) (choice-edge-record? te)))
             (let ([mode (edge-info-mode (edge-record-edge-info te))])
               (case mode
                 [(auto) (cons (auto (edge-info-name (edge-record-edge-info te))
                                     #:prompt-records (append (prompt-values (node-record-events tn))
                                                              (prompt-values (edge-record-events te))))
                               (trace->journal (cddr t)))]
-                [(choose) (cons (choose (edge-info-name (edge-record-edge-info te))
-                                        #:edge-extra (and (choose-edge-record? te)
-                                                          (choose-edge-record-extra te))
+                [(choice) (cons (choice (edge-info-name (edge-record-edge-info te))
+                                        #:edge-extra (and (choice-edge-record? te)
+                                                          (choice-edge-record-extra te))
                                         #:prompt-records (append (prompt-values (node-record-events tn))
                                                                  (prompt-values (edge-record-events te))))
                                 (trace->journal (cddr t)))]
