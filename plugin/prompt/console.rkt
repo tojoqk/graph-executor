@@ -13,16 +13,17 @@
     [(between) (console-between info op)]
     [(random) (console-random info op)]))
 
-(: console-choose (-> Prompt-Info (U (List 'choose Procedure (Listof Symbol) Procedure))
+(: console-choose (-> Prompt-Info (U (List 'choose Procedure (Listof Symbol) (-> Symbol String)))
                       (Values Symbol Any)))
 (define (console-choose info op)
   (let ([choices (third op)]
+        [show (fourth op)]
         [out (open-output-string)])
     (newline)
     (fprintf out "* ~a\n" (prompt-info-title info))
     (for ([choice choices]
           [i : Positive-Integer (in-naturals 1)])
-      (fprintf out "  - [~a] ~a\n" i choice))
+      (fprintf out "  - [~a] ~a\n" i (show choice)))
     (let ([text (get-output-string out)])
       (display text)
       (let retry ()
