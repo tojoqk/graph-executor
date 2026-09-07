@@ -172,7 +172,7 @@ This single file shows how to:
       (printf "Solved in ~a steps!\n"
               (for/sum ([e j])
                 (case (journal-entry-edge-mode e)
-                  [(choose) 1]
+                  [(choice) 1]
                   [else 0])))])))
 
 (module+ test
@@ -199,18 +199,18 @@ This single file shows how to:
                     #:bounded (thunk (loop (add1 depth))))))
 
   (check-equal? (shortest-path m)
-                (list (journal-entry 'auto "Clear!")
-                      (journal-entry 'choose "Pour 5G -> 3G")
-                      (journal-entry 'auto "Not yet")
-                      (journal-entry 'choose "Fill 5G")
-                      (journal-entry 'auto "Not yet")
-                      (journal-entry 'choose "Pour 5G -> 3G")
-                      (journal-entry 'auto "Not yet")
-                      (journal-entry 'choose "Empty 3G")
-                      (journal-entry 'auto  "Not yet")
-                      (journal-entry 'choose "Pour 5G -> 3G")
-                      (journal-entry 'auto "Not yet")
-                      (journal-entry 'choose "Fill 5G"))))
+                (list (auto "Clear!")
+                      (choice "Pour 5G -> 3G")
+                      (auto "Not yet")
+                      (choice "Fill 5G")
+                      (auto "Not yet")
+                      (choice "Pour 5G -> 3G")
+                      (auto "Not yet")
+                      (choice "Empty 3G")
+                      (auto  "Not yet")
+                      (choice "Pour 5G -> 3G")
+                      (auto "Not yet")
+                      (choice "Fill 5G"))))
 ```
 
 Draw the graph with Graphviz:
@@ -336,7 +336,7 @@ Congratulations! You made exactly 4 gallons!
 * Choose:
   - [q] Quit
 ? q
-((auto ("Clear!")) (choose ("Pour 3G -> 5G")) (auto ("Not yet")) (choose ("Fill 3G")) (auto ("Not yet")) (choose ("Pour 3G -> 5G")) (auto ("Not yet")) (choose ("Empty 5G")) (auto ("Not yet")) (choose ("Pour 3G -> 5G")) (auto ("Not yet")) (choose ("Fill 3G")) (auto ("Not yet")) (choose ("Pour 3G -> 5G")) (auto ("Not yet")) (choose ("Fill 3G")))
+(#s(auto "Clear!" ()) #s(choice "Pour 3G -> 5G" #f ()) #s(auto "Not yet" ()) #s(choice "Fill 3G" #f ()) #s(auto "Not yet" ()) #s(choice "Pour 3G -> 5G" #f ()) #s(auto "Not yet" ()) #s(choice "Empty 5G" #f ()) #s(auto "Not yet" ()) #s(choice "Pour 3G -> 5G" #f ()) #s(auto "Not yet" ()) #s(choice "Fill 3G" #f ()) #s(auto "Not yet" ()) #s(choice "Pour 3G -> 5G" #f ()) #s(auto "Not yet" ()) #s(choice "Fill 3G" #f ()))
 ```
 
 </details>
