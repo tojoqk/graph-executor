@@ -56,17 +56,17 @@
 (define default-console-commands (list (transform-console-command 'u "Undo" journal-undo)
                                        (quit-console-command 'q "Quit")))
 
-(: default-console-chooser (-> Node-Info (U 'choose 'random)))
-(define default-console-chooser (lambda (_) 'choose))
+(: default-console-chooser (-> Node-Info (U 'interactive 'random)))
+(define default-console-chooser (lambda (_) 'interactive))
 
 (struct %console-config ([commands : (Listof Console-Command)]
                          [trace-display : (U 'show 'hide)]
-                         [chooser : (-> Node-Info (U 'choose 'random))])
+                         [chooser : (-> Node-Info (U 'interactive 'random))])
   #:type-name Console-Config)
 
 (: console-config (-> [#:commands (Listof Console-Command)]
                       [#:trace-display (U 'show 'hide)]
-                      [#:chooser (-> Node-Info (U 'choose 'random))]
+                      [#:chooser (-> Node-Info (U 'interactive 'random))]
                       Console-Config))
 (define (console-config #:commands [commands default-console-commands]
                         #:trace-display [trace-display 'show]
@@ -106,10 +106,10 @@
                 (newline)
                 (displayln ">> Terminated"))])
            (define choose-pmt ((node-prompt n) st))
-           (if (and (eq? ((%console-config-chooser config) (node-node-info n)) 'choose)
+           (if (and (eq? ((%console-config-chooser config) (node-node-info n)) 'interactive)
                     (console-config-has-quit-command? config))
                (command-dispatch n st j
-                                 (console-choose 'choose config choose-pmt '()))
+                                 (console-choose 'interactive config choose-pmt '()))
                (values n st j))]
           [(auto)
            (let* ([chosen-edge (auto-choose ne)])
@@ -151,7 +151,7 @@
                                   (loop tr-n tr-st (trace->journal tr-h))]
         [(restore-command? cmd) (define-values (rs-n rs-st rs-h)
                                   (trace m (cond [((restore-command-proc cmd)) => identity]
-                                                         [else j])))
+                                                 [else j])))
                                 (loop rs-n rs-st (trace->journal rs-h))]))
 
 (: console-step (All (S) (-> Console-Config S (Edge S) (-> (Pairof Prompt-Value Any) Void) S)))
@@ -185,13 +185,13 @@
     [(transform-console-command? c) (transform-command (transform-console-command-proc c))]
     [(restore-console-command? c) (restore-command (restore-console-command-proc c))]))
 
-(: console-choose/choose (All (S) (case-> (-> Console-Config
-                                              String (Pairof (Edge S) (Listof (Edge S)))
-                                              (U (Edge S) Command))
-                                          (-> Console-Config
-                                              String Null
-                                              Command))))
-(define (console-choose/choose config pmt choices)
+(: console-choose/interactive (All (S) (case-> (-> Console-Config
+                                                   String (Pairof (Edge S) (Listof (Edge S)))
+                                                   (U (Edge S) Command))
+                                               (-> Console-Config
+                                                   String Null
+                                                   Command))))
+(define (console-choose/interactive config pmt choices)
   (let ([out (open-output-string)])
     (newline)
     (fprintf out "* ~a\n" pmt)
@@ -240,9 +240,9 @@
               [(null? rst) (error 'console-choose/random "unreachble")]
               [else (loop rst (- r (edge-weight fst)))])))))
 
-(: console-choose (All (S) (case-> (-> (U 'choose 'random) Console-Config String (Pairof (Edge S) (Listof (Edge S))) (U (Edge S) Command))
-                                   (-> 'choose Console-Config String Null Command))))
+(: console-choose (All (S) (case-> (-> (U 'interactive 'random) Console-Config String (Pairof (Edge S) (Listof (Edge S))) (U (Edge S) Command))
+                                   (-> 'interactive Console-Config String Null Command))))
 (define (console-choose chooser config pmt choices)
   (case chooser
-    [(choose) (console-choose/choose config pmt choices)]
+    [(interactive) (console-choose/interactive config pmt choices)]
     [(random) (console-choose/random choices)]))
