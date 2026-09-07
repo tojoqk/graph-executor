@@ -55,12 +55,15 @@
         (if (and (node-record? tn) (or (auto-edge-record? te) (choose-edge-record? te)))
             (let ([mode (edge-info-mode (edge-record-edge-info te))])
               (case mode
-                [(auto choose) (cons (journal-entry mode
-                                                    (edge-info-name (edge-record-edge-info te))
-                                                    #:edge-extra (and (choose-edge-record? te)
-                                                                      (choose-edge-record-extra te))
-                                                    #:prompt-records (append (prompt-values (node-record-events tn))
-                                                                             (prompt-values (edge-record-events te))))
-                                     (trace->journal (cddr t)))]
+                [(auto) (cons (auto (edge-info-name (edge-record-edge-info te))
+                                    #:prompt-records (append (prompt-values (node-record-events tn))
+                                                             (prompt-values (edge-record-events te))))
+                              (trace->journal (cddr t)))]
+                [(choose) (cons (choose (edge-info-name (edge-record-edge-info te))
+                                        #:edge-extra (and (choose-edge-record? te)
+                                                          (choose-edge-record-extra te))
+                                        #:prompt-records (append (prompt-values (node-record-events tn))
+                                                                 (prompt-values (edge-record-events te))))
+                                (trace->journal (cddr t)))]
                 [(annotation) (error 'trace->journal "invalid trace (unexpected edge mode: ~a" mode)]))
             (error 'trace->journal "invalid trace"))))]

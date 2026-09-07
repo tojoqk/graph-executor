@@ -179,7 +179,7 @@
                                  (begin (bounded-set #t)
                                         (amb-fail)))
                                (define name
-                                 (choose amb (map (inst edge-name S) (second ne))))
+                                 (amb-choose amb (map (inst edge-name S) (second ne))))
                                (define chosen-edge (find-edge (second ne) name))
                                (when (checker-config-trace-display? config)
                                  (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
@@ -189,7 +189,10 @@
                                (seen-set (hash-set (seen-get) seen-key depth))
                                (loop (edge-to chosen-edge)
                                      next-st
-                                     (cons (journal-entry ne-type (edge-name chosen-edge) #:prompt-records ps) j)
+                                     (cons (case ne-type
+                                             [(auto) (auto (edge-name chosen-edge) #:prompt-records ps)]
+                                             [(choose) (choose (edge-name chosen-edge) #:prompt-records ps)])
+                                           j)
                                      (add1 depth))])))
            (thunk #f))))))))
   (if result
@@ -260,7 +263,7 @@
              [(terminated auto-conflicted) (reachable-set (set-union (reachable-get) breadcrumbs))
                                            (amb-fail)]
              [(auto choose) (define name
-                              (choose amb (map (inst edge-name S) (second ne))))
+                              (amb-choose amb (map (inst edge-name S) (second ne))))
                             (define chosen-edge (find-edge (second ne) name))
                             (when (checker-config-trace-display? config)
                               (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
@@ -269,7 +272,10 @@
                                (thunk (step st chosen-edge amb config prompt-value-emit))))
                             (loop (edge-to chosen-edge)
                                   next-st
-                                  (cons (journal-entry ne-type (edge-name chosen-edge) #:prompt-records ps) j)
+                                  (cons (case ne-type
+                                          [(auto) (auto (edge-name chosen-edge) #:prompt-records ps)]
+                                          [(choose) (choose (edge-name chosen-edge) #:prompt-records ps)])
+                                        j)
                                   (set-add breadcrumbs key))])))
         (thunk #f)))))))
 
@@ -302,7 +308,7 @@
              [(auto-conflicted) (seen-set (set-add (seen-get) key))
                                 (amb-fail)]
              [(auto choose) (define name
-                              (choose amb (map (inst edge-name S) (second ne))))
+                              (amb-choose amb (map (inst edge-name S) (second ne))))
                             (define chosen-edge (find-edge (second ne) name))
                             (when (checker-config-trace-display? config)
                               (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
@@ -327,8 +333,8 @@
          (let ([n (edge-to e)])
            (printf "Current Node: ~a (Graph: ~a)\n" (node-name n) (node-graph-name n))))))))
 
-(: choose (-> (-> (-> Prompt-Value) * Prompt-Value) (Listof String) String))
-(define (choose amb lst)
+(: amb-choose (-> (-> (-> Prompt-Value) * Prompt-Value) (Listof String) String))
+(define (amb-choose amb lst)
   (assert (let loop : Prompt-Value ([lst lst])
             (if (null? lst)
                 (amb)
