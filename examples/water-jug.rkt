@@ -162,9 +162,9 @@
   (check-false (find-false-terminal m terminal-node?))
   (check-false (find-auto-conflict m))
 
-  (: shortest-path (-> (Model Jug-State) (Option (Listof Journal-Entry))))
+  (: shortest-path (-> (Model Jug-State) (Option Journal)))
   (define (shortest-path m)
-    (let loop : (Option (Listof Journal-Entry)) ([depth : Natural 0])
+    (let loop : (Option Journal) ([depth : Natural 0])
       (find-witness m (lambda ([n : Node-Info] _st) (terminal-node? n))
                     #:bound depth
                     #:bounded (thunk (loop (add1 depth))))))

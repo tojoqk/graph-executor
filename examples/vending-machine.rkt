@@ -197,7 +197,7 @@
                   ,(choice "Insert Money" #:prompt-records (list (prompt-record 1)))
                   ,(choice "Go to Vending Machine")))
 
-  (check-equal? (let loop : (Option (Listof Journal-Entry)) ([depth : Natural 0])
+  (check-equal? (let loop : (Option Journal) ([depth : Natural 0])
                   (find-witness m (lambda ([n : Node-Info] st)
                                     (and (terminal-node? n)
                                          (street? st)

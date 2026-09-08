@@ -1,12 +1,16 @@
 #lang typed/racket
 
-(provide Journal-Entry journal-entry? (rename-out [auto* auto] [auto*? auto?] [choice* choice] [choice*? choice?])
+(provide Journal journal?
+         Journal-Entry journal-entry? (rename-out [auto* auto] [auto*? auto?] [choice* choice] [choice*? choice?])
          journal-entry-edge-mode journal-entry-edge-name journal-entry-edge-extra journal-entry-prompt-records
          journal-undo)
 
 (require "prompt.rkt")
 
-(: journal-undo (-> (Listof Journal-Entry) (Listof Journal-Entry)))
+(define-type Journal (Listof Journal-Entry))
+(define-predicate journal? Journal)
+
+(: journal-undo (-> Journal Journal))
 (define (journal-undo j)
   (cond [(memf (lambda ([e : Journal-Entry]) (symbol=? (journal-entry-edge-mode e) 'choice)) j) => cdr]
         [else '()]))

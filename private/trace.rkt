@@ -36,7 +36,7 @@
 (define-type Record (U Node-Record Edge-Record))
 (define-type Trace (Listof Record))
 
-(: trace->journal  (-> Trace (Listof Journal-Entry)))
+(: trace->journal  (-> Trace Journal))
 [define (trace->journal t)
   (: prompt-values (-> (Listof (U Prompt-Result Message-Result))
                        (Listof (Pairof Prompt-Value Any))))
