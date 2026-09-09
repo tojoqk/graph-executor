@@ -67,14 +67,14 @@
 <title>[16]Water Jug Puzzle[7]Playing[8]Empty 5G</title>
 <text xml:space="preserve" text-anchor="start" x="262.75" y="-497.2" font-family="Helvetica,Arial,sans-serif" font-weight="bold" font-size="14.00">Empty 5G</text>
 <text xml:space="preserve" text-anchor="start" x="276.62" y="-474.2" font-family="Helvetica,Arial,sans-serif" font-weight="bold" font-size="14.00">when</text>
-<text xml:space="preserve" text-anchor="start" x="173.12" y="-454.2" font-family="Helvetica,Arial,sans-serif" font-size="14.00">(match&#45;λ ((jug&#45;state _ r) (&lt; 0 r)))</text>
+<text xml:space="preserve" text-anchor="start" x="174.62" y="-454.2" font-family="Helvetica,Arial,sans-serif" font-size="14.00">(match&#45;λ ((jug&#45;state _ r) (&lt; 0 r)))</text>
 <text xml:space="preserve" text-anchor="start" x="277.75" y="-434.2" font-family="Helvetica,Arial,sans-serif" font-weight="bold" font-size="14.00">trans</text>
-<text xml:space="preserve" text-anchor="start" x="173.12" y="-414.2" font-family="Helvetica,Arial,sans-serif" font-size="14.00">(match&#45;λ ((jug&#45;state _ r) (jug&#45;state 0 r)))</text>
+<text xml:space="preserve" text-anchor="start" x="174.62" y="-414.2" font-family="Helvetica,Arial,sans-serif" font-size="14.00">(match&#45;λ ((jug&#45;state l _) (jug&#45;state l 0)))</text>
 </g>
 <!-- [16]Water Jug Puzzle[7]Playing&#45;&gt;[16]Water Jug Puzzle[7]Playing[8]Empty 5G -->
 <g id="edge7" class="edge">
 <title>[16]Water Jug Puzzle[7]Playing&#45;&gt;[16]Water Jug Puzzle[7]Playing[8]Empty 5G</title>
-<path fill="none" stroke="blue" d="M92.09,-459C111.96,-459 137.74,-459 164.21,-459"/>
+<path fill="none" stroke="blue" d="M92.09,-459C112.36,-459 138.77,-459 165.79,-459"/>
 </g>
 <!-- [16]Water Jug Puzzle[7]Playing[13]Pour 3G &#45;&gt; 5G -->
 <g id="node6" class="node">
@@ -137,8 +137,8 @@
 <!-- [16]Water Jug Puzzle[7]Playing[8]Empty 5G&#45;&gt;[16]Water Jug Puzzle[11]Check Clear -->
 <g id="edge8" class="edge">
 <title>[16]Water Jug Puzzle[7]Playing[8]Empty 5G&#45;&gt;[16]Water Jug Puzzle[11]Check Clear</title>
-<path fill="none" stroke="blue" d="M427.35,-459C448.48,-459 469.48,-459 488.03,-459"/>
-<polygon fill="blue" stroke="blue" points="488.02,-462.5 498.02,-459 488.02,-455.5 488.02,-462.5"/>
+<path fill="none" stroke="blue" d="M425.86,-459C447.47,-459 469,-459 487.96,-459"/>
+<polygon fill="blue" stroke="blue" points="487.91,-462.5 497.91,-459 487.91,-455.5 487.91,-462.5"/>
 </g>
 <!-- [16]Water Jug Puzzle[7]Playing[13]Pour 3G &#45;&gt; 5G&#45;&gt;[16]Water Jug Puzzle[11]Check Clear -->
 <g id="edge10" class="edge">
