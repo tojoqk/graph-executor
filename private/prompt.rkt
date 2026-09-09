@@ -30,10 +30,10 @@
 
 (: op-choose (All (A) (-> (-> Any Boolean : #:+ A)
                           (Listof (∩ A Symbol))
-                          [#:show (-> Symbol String)]
+                          [#:show (-> (∩ A Symbol) String)]
                           (List 'choose (-> Any Boolean : #:+ A)
                                 (Listof (∩ A Symbol))
-                                (-> Symbol String)))))
+                                (-> (∩ A Symbol) String)))))
 (define (op-choose predicate choices #:show [show symbol->string])
   (list 'choose predicate choices show))
 (: op-choose-predicate (All (A) (-> (List 'choose (-> Any Boolean : #:+ A)
@@ -77,7 +77,7 @@
 (define (op-random-bound op) (second op))
 
 (define-type (Prompt A)
-  (case-> (->* (String (List 'choose (-> Any Boolean : #:+ A) (Listof (∩ A Symbol)) (-> Symbol String)))
+  (case-> (->* (String (List 'choose (-> Any Boolean : #:+ A) (Listof (∩ A Symbol)) (-> (∩ A Symbol) String)))
                ((Listof Symbol)) (∩ Symbol A))
           (->* (String (List 'string)) ((Listof Symbol)) String)
           (->* (String (List 'integer)) ((Listof Symbol)) Integer)
@@ -107,15 +107,23 @@
 (define (prompt title op [tags '()])
   (define info (prompt-info* title #:tags tags))
   (cond [(current-prompt) => (lambda ([p : Prompt-Implementation])
-                               (define-values (value _extra) (p info op))
                                (case (car op)
-                                 [(choose) (assert value (cadr op))]
+                                 [(choose)
+                                  (define-values (value _extra)
+                                    (p info `(choose ,(second op) ,(third op)
+                                                     ,(lambda ([x : Symbol])
+                                                        (if ((second op) x)
+                                                            ((fourth op) x)
+                                                            (error 'prompt "invalid choice type" x))))))
+                                  (assert value (cadr op))]
                                  [(between)
+                                  (define-values (value _extra) (p info op))
                                   (let ([from (second op)] [to (third op)])
                                     (if (and (<= from value) (<= value to))
                                         value
                                         (error 'prompt "between implementation error")))]
-                                 [else value]))]
+                                 [else (define-values (value _extra) (p info op))
+                                       value]))]
         [else (error 'prompt "called outside of trans")]))
 
 (: prompt-choose (->* (String (Listof Symbol)) ((Listof Symbol)) Symbol))
