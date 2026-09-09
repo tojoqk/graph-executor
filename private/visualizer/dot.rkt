@@ -64,13 +64,13 @@
 (define (node->dot-node n)
   (dot-node (node-name n) (node-desc n) (node-type n) (node-tags n) (node-prompt-code-expr n) (node-trans-code-expr n) (node-before-code-expr n) (node-after-code-expr n)))
 
-(struct dot-edge ([name : String] [desc : (Option String)] [mode : EdgeMode] [from : Symbol] [to : Symbol] [when : (Option Code-Expr)] [trans : (Option Code-Expr)] [before : (Option Code-Expr)] [after : (Option Code-Expr)])
+(struct dot-edge ([name : String] [desc : (Option String)] [mode : EdgeMode] [from : Symbol] [to : Symbol] [when : (Option Code-Expr)] [trans : (Option Code-Expr)] [before : (Option Code-Expr)] [after : (Option Code-Expr)] [priority : Integer])
   #:transparent
   #:type-name DotEdge)
 
 (: edge->dot-edge (All (S) (-> (Edge S) DotEdge)))
 (define (edge->dot-edge e)
-  (dot-edge (edge-name e) (edge-desc e) (edge-mode e) (node-type (edge-from e)) (node-type (edge-to e)) (edge-when-code-expr e) (edge-trans-code-expr e) (edge-before-code-expr e) (edge-after-code-expr e)))
+  (dot-edge (edge-name e) (edge-desc e) (edge-mode e) (node-type (edge-from e)) (node-type (edge-to e)) (edge-when-code-expr e) (edge-trans-code-expr e) (edge-before-code-expr e) (edge-after-code-expr e) (edge-priority e)))
 
 (define-type DotNodeStatus (U 'default 'visited 'current))
 (: dot-node-status (All (S) (-> (Node S) DotNodeStatus)))
@@ -168,6 +168,12 @@
                                       (left-row (text->xexprs (show-code-expr x)))))]
                           [else '()])))))
 
+(: default-dot-edge-label-config (-> DotEdge DotEdgeStatus (U (List 'text String)
+                                                              (Pairof 'html (Listof XExpr)))))
+(define default-dot-edge-label-config
+  (lambda ([de : DotEdge] _)
+    (list 'text (show-priority (dot-edge-priority de)))))
+
 (struct %dot-config ([global : DotGlobalConfig]
                      [node : (-> DotNode DotNodeStatus DotNodeConfig)]
                      [node-label : (-> DotNode DotNodeStatus (U (List 'text String)
@@ -175,7 +181,9 @@
                      [edge-node : (-> DotEdge DotEdgeStatus DotNodeConfig)]
                      [edge-node-label : (-> DotEdge DotEdgeStatus (U (List 'text String)
                                                                      (Pairof 'html (Listof XExpr))))]
-                     [edge : (-> DotEdge DotEdgeStatus DotEdgeConfig)])
+                     [edge : (-> DotEdge DotEdgeStatus DotEdgeConfig)]
+                     [edge-label : (-> DotEdge DotEdgeStatus (U (List 'text String)
+                                                                (Pairof 'html (Listof XExpr))))])
   #:type-name DotConfig)
 
 (: dot-config (-> [#:global (Option DotGlobalConfig)]
@@ -192,13 +200,15 @@
                     #:node-label [node-label #f]
                     #:edge-node [edge-node #f]
                     #:edge-node-label [edge-node-label #f]
-                    #:edge [edge #f])
+                    #:edge [edge #f]
+                    #:edge-label [edge-label #f])
   (%dot-config (or global (dot-global-config))
                (or node default-dot-node-config)
                (or node-label default-dot-node-label-config)
                (or edge-node default-dot-edge-node-config)
                (or edge-node-label default-dot-edge-node-label-config)
-               (or edge default-dot-edge-config)))
+               (or edge default-dot-edge-config)
+               (or edge-label default-dot-edge-label-config)))
 
 (define-type Rankdir (U 'TB 'LR 'BT 'RL))
 
@@ -388,7 +398,8 @@
                            (dot-string (symbol->string (node-id (edge-from (caddr v)))))
                            (dot-string (symbol->string (edge-id (caddr v))))
                            (format-edge-extra
-                            (show-priority (edge-priority (caddr v)))
+                            ((%dot-config-edge-label config) (edge->dot-edge (caddr v))
+                                                             (dot-edge-status (caddr v)))
                             (apply-half
                              (apply-minlen
                               ((%dot-config-edge config) (edge->dot-edge (caddr v))
@@ -398,7 +409,7 @@
                              (dot-string (symbol->string (edge-id (caddr v))))
                              (dot-string (symbol->string (node-id (edge-to (caddr v)))))
                              (format-edge-extra
-                              ""
+                              (list 'text "")
                               (struct-copy edge-config
                                            (apply-minlen
                                             ((%dot-config-edge config) (edge->dot-edge (caddr v))
@@ -432,10 +443,14 @@
       (symbol->string s)
       s))
 
-(: format-edge-extra (-> String DotEdgeConfig String))
+(: format-edge-extra (-> (U (List 'text String) (Pairof 'html (Listof XExpr))) DotEdgeConfig String))
 (define (format-edge-extra label ec)
   (format "[label=~a,arrowhead=~a,arrowtail=~a,style=~a,color=~a,minlen=~a]"
-          (dot-string label)
+          (ann (case (first label)
+                 [(text) (dot-string (second label))]
+                 [(html) (format "<~a>"
+                                 (string-join (map xexpr->string (rest label)) ""))])
+               String)
           (dot-string (edge-config-arrowhead ec))
           (dot-string (edge-config-arrowtail ec))
           (dot-string (string-join (edge-config-style ec) ","))
