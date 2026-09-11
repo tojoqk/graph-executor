@@ -46,39 +46,33 @@
   (%checker-config prompt-config trace-display))
 
 (: find-counterexample (All (S) (-> (Model S) (-> Node-Info S Any)
-                                    [#:journal Journal]
                                     [#:bound (Option Natural)]
                                     [#:bounded (-> (Option Journal))]
                                     [#:config Checker-Config]
                                     (Option Journal))))
 (define (find-counterexample m invariant
-                             #:journal [j '()]
                              #:bound [bound #f]
                              #:bounded [bounded (const #f)]
                              #:config [config (checker-config)])
   (%find-counterexample m
                         (lambda (_ne [n : Node-Info] [st : S])
                           (invariant n st))
-                        #:journal j
                         #:bound bound
                         #:bounded bounded
                         #:config config))
 
 (: find-witness (All (S) (-> (Model S) (-> Node-Info S Any)
-                             [#:journal Journal]
                              [#:bound (Option Natural)]
                              [#:bounded (-> (Option Journal))]
                              [#:config Checker-Config]
                              (Option Journal))))
 (define (find-witness m predicate
-                      #:journal [j '()]
                       #:bound [bound #f]
                       #:bounded [bounded (const #f)]
                       #:config [config (checker-config)])
   (%find-counterexample m
                         (negate (lambda (_ne [n : Node-Info] [st : S])
                                   (predicate n st)))
-                        #:journal j
                         #:bound bound
                         #:bounded bounded
                         #:config config))
@@ -195,13 +189,11 @@
 
 (: %find-unsafety (All (S) (-> (Model S)
                                (Listof (-> (Next-Edge S) Node-Info S (Option Unsafety-Reason)))
-                               [#:journal Journal]
                                [#:bound (Option Natural)]
                                [#:bounded (-> (Option Unsafety))]
                                #:config Checker-Config
                                (Option Unsafety))))
 (define (%find-unsafety m invariants
-                        #:journal [j '()]
                         #:bound [bound #f]
                         #:bounded [bounded (const #f)]
                         #:config config)
@@ -215,7 +207,8 @@
   (define-values (call-with-amb amb amb-fail)
     ((inst make-amb Prompt-Value)))
   (define gs (model-graphs m))
-  (define-values (n st _h) (trace m j))
+  (define n (model-node m))
+  (define st (model-state m))
   (match-define (list* bounded? _ result)
     (call-with-bounded-state
      #f
@@ -226,7 +219,7 @@
         (let/ec return : Unsafety
           (call-with-amb
            (thunk
-            (let loop : #f ([n n] [st st] [j j] [depth : Natural 0])
+            (let loop : #f ([n n] [st st] [j : Journal '()] [depth : Natural 0])
               (define seen-key `(,(node-id n) . ,st))
               (let ([seen-depth (hash-ref (seen-get) seen-key #f)])
                 (when seen-depth
@@ -271,20 +264,17 @@
           #f)))
 
 (: %find-counterexample (All (S) (-> (Model S) (-> (Next-Edge S) Node-Info S Any)
-                                     [#:journal Journal]
                                      [#:bound (Option Natural)]
                                      [#:bounded (-> (Option Journal))]
                                      #:config Checker-Config
                                      (Option Journal))))
 (define (%find-counterexample m invariant
-                              #:journal [j '()]
                               #:bound [bound #f]
                               #:bounded [bounded (const #f)]
                               #:config config)
   (let ([ce (counterexample "%find-counterexample")])
     (cond [(%find-unsafety m (list (lambda ([ne : (Next-Edge S)] [n : Node-Info] [st : S])
                                      (if (invariant ne n st) #f ce)))
-                           #:journal j
                            #:bound bound
                            #:bounded (lambda ()
                                        (cond [(bounded) => (lambda ([j : Journal]) (unsafety ce j))]
