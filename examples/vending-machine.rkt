@@ -174,14 +174,13 @@
     (symbol=? (node-info-type n) 'terminal))
 
   (define m (make-model))
+  (check-false (find-unsafety m terminal-node?
+                              #:invariants
+                              (list (invariant "No negative wallet"
+                                               (negate (lambda (_n st)
+                                                         (and (v-state? st)
+                                                              (negative? (v-state-wallet st)))))))))
   (check-false (find-livelock m))
-  (check-false (find-deadlock m terminal-node?))
-  (check-false (find-false-terminal m terminal-node?))
-  (check-false (find-auto-conflict m))
-  (check-false (find-counterexample m
-                                    (negate (lambda (_n st)
-                                              (and (v-state? st)
-                                                   (negative? (v-state-wallet st)))))))
 
   (check-equal? (find-witness m (lambda ([n : Node-Info] st)
                                   (and (terminal-node? n)

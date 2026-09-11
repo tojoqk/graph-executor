@@ -139,13 +139,14 @@
   (: terminal-node? (-> Node-Info Boolean))
   (define (terminal-node? x) (eq? (node-info-type x) 'terminal))
 
+  (check-false (find-unsafety m terminal-node?
+                              #:invariants
+                              (list
+                               (invariant "bound"
+                                          (match-λ* [(list _ (jug-state l r))
+                                                      (and (<= 0 l 3)
+                                                           (<= 0 r 5))])))))
   (check-false (find-livelock m))
-  (check-false (find-deadlock m terminal-node?))
-  (check-false (find-false-terminal m terminal-node?))
-  (check-false (find-auto-conflict m))
-  (check-false (find-counterexample m (match-λ* [(list _ (jug-state l r))
-                                                  (and (<= 0 l 3)
-                                                       (<= 0 r 5))])))
 
   (: shortest-path (-> (Model Jug-State) (Option Journal)))
   (define (shortest-path m)
