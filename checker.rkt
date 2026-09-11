@@ -11,7 +11,9 @@
 (require "plugin/effect/emitter.rkt")
 (require "plugin/effect/state.rkt")
 
-(provide find-counterexample find-witness find-deadlock find-false-terminal find-auto-conflict find-livelock
+(provide Unsafety unsafety? unsafety-journal
+         find-unsafety invariant Invariant
+         find-counterexample find-witness find-deadlock find-false-terminal find-auto-conflict find-livelock
          Checker-Config checker-config Checker-Prompt-Config checker-prompt-config
          default-checker-prompt-string-values
          default-checker-prompt-integer-values
@@ -87,11 +89,7 @@
                               [#:config Checker-Config]
                               (Option Journal))))
 (define (find-deadlock m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)] #:config [config (checker-config)])
-  (%find-counterexample m
-                        (lambda ([ne : (Next-Edge S)] [n : Node-Info] _st)
-                          (case (car ne)
-                            [(terminated) (terminal-node? n)]
-                            [else #t]))
+  (%find-counterexample m (deadlock-condition terminal-node?)
                         #:bound bound
                         #:bounded bounded
                         #:config config))
@@ -102,11 +100,7 @@
                                     [#:config Checker-Config]
                                     (Option Journal))))
 (define (find-false-terminal m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)] #:config [config (checker-config)])
-  (%find-counterexample m
-                        (lambda ([ne : (Next-Edge S)] [n : Node-Info] _st)
-                          (case (car ne)
-                            [(terminated) #t]
-                            [else (not (terminal-node? n))]))
+  (%find-counterexample m (false-terminal-condition terminal-node?)
                         #:bound bound
                         #:bounded bounded
                         #:config config))
@@ -118,32 +112,104 @@
                                    (Option Journal))))
 (define (find-auto-conflict m #:bound [bound #f] #:bounded [bounded (const #f)] #:config [config (checker-config)])
   (%find-counterexample m
-                        (lambda ([ne : (Next-Edge S)] _n _st)
-                          (case (car ne)
-                            [(auto-conflicted) #f]
-                            [else #t]))
+                        auto-conflict-condition
                         #:bound bound
                         #:bounded bounded
                         #:config config))
 
-(define pmt-info (prompt-info "choose"))
+(struct (S) invariant ([name : String]
+                       [predicate : (-> Node-Info S Any)])
+  #:type-name Invariant)
 
-(: %find-counterexample (All (S) (-> (Model S) (-> (Next-Edge S) Node-Info S Any)
-                                     [#:journal Journal]
-                                     [#:bound (Option Natural)]
-                                     [#:bounded (-> (Option Journal))]
-                                     #:config Checker-Config
-                                     (Option Journal))))
-(define (%find-counterexample m invariant
-                              #:journal [j '()]
-                              #:bound [bound #f]
-                              #:bounded [bounded (const #f)]
-                              #:config config)
+(struct deadlock ()
+  #:transparent
+  #:type-name Deadlock)
+
+(struct false-terminal ()
+  #:transparent
+  #:type-name False-Terminal)
+
+(struct auto-conflict ()
+  #:transparent
+  #:type-name Auto-Conflict)
+
+(struct counterexample ([invariant-name : String])
+  #:transparent
+  #:type-name Counterexample)
+
+(define-type Unsafety-Reason (U Deadlock False-Terminal Auto-Conflict Counterexample))
+(define-predicate unsafety-reason? (U Deadlock False-Terminal Auto-Conflict Counterexample))
+
+(struct unsafety ([reason : Unsafety-Reason]
+                  [journal : Journal])
+  #:transparent
+  #:type-name Unsafety)
+
+(: deadlock-condition (-> (-> Node-Info Any) (All (S) (-> (Next-Edge S) Node-Info S Any))))
+(define ((deadlock-condition terminal-node?) ne n _st)
+  (case (car ne)
+    [(terminated) (terminal-node? n)]
+    [else #t]))
+
+(: false-terminal-condition (-> (-> Node-Info Any) (All (S) (-> (Next-Edge S) Node-Info S Any))))
+(define ((false-terminal-condition terminal-node?) ne n _st)
+  (case (car ne)
+    [(terminated) #t]
+    [else (not (terminal-node? n))]))
+
+(: auto-conflict-condition (All (S) (-> (Next-Edge S) Node-Info S Any)))
+(define (auto-conflict-condition ne _n _st)
+  (case (car ne)
+    [(auto-conflicted) #f]
+    [else #t]))
+
+(: find-unsafety (All (S) (-> (Model S)
+                              (-> Node-Info Any)
+                              [#:invariants (Listof (Invariant S))]
+                              [#:bound (Option Natural)]
+                              [#:bounded (-> (Option Unsafety))]
+                              [#:config Checker-Config]
+                              (Option Unsafety))))
+(define (find-unsafety m terminal-node?
+                       #:invariants [invariants '()]
+                       #:bound [bound #f]
+                       #:bounded [bounded (const #f)]
+                       #:config [config (checker-config)])
+  (let* ([deadlock-c (deadlock-condition terminal-node?)]
+         [false-terminal-c (false-terminal-condition terminal-node?)]
+         [lst (list* (lambda ([ne : (Next-Edge S)] [n : Node-Info] [st : S])
+                       (if (deadlock-c ne n st) #f (deadlock)))
+                     (lambda ([ne : (Next-Edge S)] [n : Node-Info] [st : S])
+                       (if (false-terminal-c ne n st) #f (false-terminal)))
+                     (lambda ([ne : (Next-Edge S)] [n : Node-Info] [st : S])
+                       (if (auto-conflict-condition ne n st) #f (auto-conflict)))
+                     (for/list : (Listof (-> (Next-Edge S) Node-Info S (Option Unsafety-Reason)))
+                               ([inv (in-list invariants)])
+                       (let ([p (invariant-predicate inv)]
+                             [ce (counterexample (invariant-name inv))])
+                         (lambda (_ne [n : Node-Info] [st : S]) (if (p n st) #f ce)))))])
+    (%find-unsafety m lst
+                    #:bound bound
+                    #:bounded bounded
+                    #:config config)))
+
+(: %find-unsafety (All (S) (-> (Model S)
+                               (Listof (-> (Next-Edge S) Node-Info S (Option Unsafety-Reason)))
+                               [#:journal Journal]
+                               [#:bound (Option Natural)]
+                               [#:bounded (-> (Option Unsafety))]
+                               #:config Checker-Config
+                               (Option Unsafety))))
+(define (%find-unsafety m invariants
+                        #:journal [j '()]
+                        #:bound [bound #f]
+                        #:bounded [bounded (const #f)]
+                        #:config config)
   (define-values (call-with-bounded-state _bounded-get bounded-set)
     ((inst make-state Boolean (Pairof (Immutable-HashTable (Pairof Symbol S) Natural)
-                                      (Option Journal)))))
+                                      (Option Unsafety)))))
   (define-values (call-with-seen-state seen-get seen-set)
-    ((inst make-state (Immutable-HashTable (Pairof Symbol S) Natural) (Option Journal))))
+    ((inst make-state (Immutable-HashTable (Pairof Symbol S) Natural) (Option Unsafety))))
   (define-values (call-with-prompt-value-emitter prompt-value-emit)
     ((inst make-emitter (Pairof Prompt-Value Any) S)))
   (define-values (call-with-amb amb amb-fail)
@@ -157,7 +223,7 @@
       (call-with-seen-state
        (hash)
        (thunk
-        (let/ec return : Journal
+        (let/ec return : Unsafety
           (call-with-amb
            (thunk
             (let loop : #f ([n n] [st st] [j j] [depth : Natural 0])
@@ -171,8 +237,11 @@
                       (amb-fail))))
               (define ne (next-edges gs st n))
               (define ne-type (car ne))
-              (unless (invariant ne (node-node-info n) st)
-                (return j))
+              (cond [(for/or : (Option Unsafety-Reason)
+                             ([inv (in-list invariants)])
+                       (inv ne (node-node-info n) st))
+                     => (lambda ([r : Unsafety-Reason])
+                          (return (unsafety r j)))])
               (case ne-type
                 [(terminated auto-conflicted) (amb-fail)]
                 [(auto choice) (when (and bound (= bound depth))
@@ -200,6 +269,29 @@
       (if bounded?
           (bounded)
           #f)))
+
+(: %find-counterexample (All (S) (-> (Model S) (-> (Next-Edge S) Node-Info S Any)
+                                     [#:journal Journal]
+                                     [#:bound (Option Natural)]
+                                     [#:bounded (-> (Option Journal))]
+                                     #:config Checker-Config
+                                     (Option Journal))))
+(define (%find-counterexample m invariant
+                              #:journal [j '()]
+                              #:bound [bound #f]
+                              #:bounded [bounded (const #f)]
+                              #:config config)
+  (let ([ce (counterexample "%find-counterexample")])
+    (cond [(%find-unsafety m (list (lambda ([ne : (Next-Edge S)] [n : Node-Info] [st : S])
+                                     (if (invariant ne n st) #f ce)))
+                           #:journal j
+                           #:bound bound
+                           #:bounded (lambda ()
+                                       (cond [(bounded) => (lambda ([j : Journal]) (unsafety ce j))]
+                                             [else #f]))
+                           #:config config)
+           => unsafety-journal]
+          [else #f])))
 
 (: step (All (S) (-> S
                      (Edge S)
