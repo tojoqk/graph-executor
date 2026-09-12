@@ -13,8 +13,8 @@
     [(between) (console-between info op)]
     [(random) (console-random info op)]))
 
-(: console-choose (-> Prompt-Info (U (List 'choose Procedure (Listof Symbol) (-> Symbol String)))
-                      (Values Symbol Any)))
+(: console-choose (-> Prompt-Info (U (List 'choose Procedure (Listof Prompt-Value) (-> Prompt-Value String)))
+                      (Values Prompt-Value Any)))
 (define (console-choose info op)
   (let ([choices (third op)]
         [show (fourth op)]

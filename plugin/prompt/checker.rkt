@@ -101,8 +101,8 @@
     [(random) (checker-random amb config info op)]))
 
 (: checker-choose (-> (-> (-> Prompt-Value) * Prompt-Value)
-                      (List 'choose Procedure (Listof Symbol) Procedure)
-                      (Values Symbol Any)))
+                      (List 'choose Procedure (Listof Prompt-Value) Procedure)
+                      (Values Prompt-Value Any)))
 (define (checker-choose amb op)
   (let* ([choices (third op)]
          [value (let loop : Prompt-Value ([choices choices])
