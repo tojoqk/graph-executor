@@ -2,7 +2,7 @@
 
 (require "../private/prompt.rkt")
 
-(provide Prompt-Type Prompt-Value Prompt-Op current-prompt
+(provide Prompt-Type Prompt-Value prompt-value? Prompt-Op current-prompt
          op-choose op-string op-integer op-natural op-positive-integer op-between op-random
          op-choose-predicate op-choose-choices op-choose-show
          op-between-from op-between-to

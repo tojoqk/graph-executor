@@ -110,7 +110,7 @@
                       (amb)
                       (amb (thunk (car choices))
                            (thunk (loop (cdr choices))))))])
-    (values (assert value symbol?) #f)))
+    (values (assert value prompt-value?) #f)))
 
 (: checker-between (case-> (-> (-> (-> Prompt-Value) * Prompt-Value) Checker-Prompt-Config
                                Prompt-Info

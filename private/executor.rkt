@@ -185,7 +185,7 @@
          [val (car val+extra)]
          [extra (cdr val+extra)])
     (case (car op)
-      [(choose) (assert val symbol?)
+      [(choose) (assert val prompt-value?)
                 (push-event! val extra)
                 (values val extra)]
       [(string) (assert val string?)

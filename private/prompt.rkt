@@ -1,6 +1,6 @@
 #lang typed/racket
 
-(provide Prompt Prompt-Type Prompt-Value Prompt-Op current-prompt
+(provide Prompt Prompt-Type Prompt-Value prompt-value? Prompt-Op current-prompt
          prompt
          op-choose op-choose-predicate op-choose-choices op-choose-show
          op-string op-integer op-natural op-positive-integer
