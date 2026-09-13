@@ -555,7 +555,7 @@
   (values (node-maker graph-name)
           (%graph-maker graph-name parent-name)))
 
-(: open-graph-maker (-> String
+(: open-graph-maker (-> String [#:parent-name (Option String)]
                         (Values (All (S T) (-> String
                                                #:type (∩ T Symbol)
                                                [#:tags (Listof Symbol)]
