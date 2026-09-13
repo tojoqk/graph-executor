@@ -16,5 +16,5 @@
          edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-code-expr edge-trans edge-trans-code-expr edge-before-code-expr edge-after-code-expr edge-priority edge-edge-options edge-edge-info
          Edge-Option (struct-out edge-option)
          Graph OpenGraph graph-maker graph? open-graph-maker open-graph?
-         graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges
+         graph-id graph-name graph-parent-id graph-parent-name graph-edges
          any-graph)
