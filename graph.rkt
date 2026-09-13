@@ -10,5 +10,5 @@
          Edge make-edge Bridge bridge? make-bridge
          Edge-Info edge-info-mode edge-info-name edge-info-desc edge-info-from edge-info-to
          Edge-Option
-         Graph graph-maker OpenGraph open-graph-maker
+         Graph graph-name graph-maker OpenGraph open-graph-maker
          any-graph)
