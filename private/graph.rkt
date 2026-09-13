@@ -4,7 +4,7 @@
          Code-Sexp code-sexp code-sexp? code-sexp-sexp
          Code-Text code-text code-text? code-text-text
          current-graph-used-ids current-node-prompt
-         Node node? node-maker
+         Node node?
          node-graph-id node-graph-name node-id node-name node-type node-tags node-desc node-trans node-trans-code-expr node-before-code-expr node-after-code-expr node-prompt node-prompt-code-expr node-node-options node-node-info
          Node-Option (struct-out node-option)
          Node-Info node-info? node-info-name node-info-type node-info-tags node-info-desc
@@ -13,8 +13,7 @@
          Edge Bridge EdgeMode edge? make-edge make-bridge bridge?
          edge-id edge-name edge-mode edge-half? edge-from edge-to edge-desc edge-when edge-when-code-expr edge-trans edge-trans-code-expr edge-before-code-expr edge-after-code-expr edge-priority edge-edge-options edge-edge-info
          Edge-Option (struct-out edge-option)
-         any-bridge any-edge
-         Graph OpenGraph make-graph graph? make-open-graph open-graph?
+         Graph OpenGraph graph? open-graph? graph-maker open-graph-maker
          graph-id graph-name graph-parent-id graph-parent-name graph-desc graph-edges
          any-graph any-graph/any)
 
@@ -496,15 +495,14 @@
   #:transparent
   #:type-name Graph)
 
-(: make-graph (All (S) (-> String
-                           [#:parent-name (Option String)]
-                           [#:desc (Option String)]
-                           [#:edges (Option (Listof (Edge S)))]
-                           (Graph S))))
-(define (make-graph name
-                #:parent-name [parent-name #f]
-                #:desc [desc #f]
-                #:edges [edges #f])
+(: %graph-maker (-> String
+                    (All (S) (-> [#:parent-name (Option String)]
+                                 [#:desc (Option String)]
+                                 [#:edges (Option (Listof (Edge S)))]
+                                 (Graph S)))))
+(define ((%graph-maker name) #:parent-name [parent-name #f]
+                             #:desc [desc #f]
+                             #:edges [edges #f])
   (let ([graph-id (make-graph-id name)])
     (cond [(set-member? (current-graph-used-ids) graph-id)
            (error "graph: duplicate ID" graph-id)]
@@ -519,23 +517,26 @@
   #:transparent
   #:type-name OpenGraph)
 
-(: make-open-graph (All (S)
-                        (-> String
-                            [#:parent-name (Option String)]
-                            [#:desc (Option String)]
-                            [#:edges (Option (Listof (Edge S)))]
-                            [#:bridges (Option (Listof (Bridge S)))]
-                            (OpenGraph S))))
-(define (make-open-graph name
-                         #:parent-name [parent-name #f]
-                         #:desc [desc #f]
-                         #:edges [edges #f]
-                         #:bridges [bridges #f])
-  (open-graph ((inst make-graph S) name
-                                   #:parent-name parent-name
-                                   #:desc desc
-                                   #:edges edges)
-              (or bridges '())))
+(: %open-graph-maker (-> String (All (S) (-> [#:parent-name (Option String)]
+                                             [#:desc (Option String)]
+                                             [#:edges (Option (Listof (Edge S)))]
+                                             [#:bridges (Option (Listof (Bridge S)))]
+                                             (OpenGraph S)))))
+(define (%open-graph-maker name)
+  (: f (All (S) (-> [#:parent-name (Option String)]
+                    [#:desc (Option String)]
+                    [#:edges (Option (Listof (Edge S)))]
+                    [#:bridges (Option (Listof (Bridge S)))]
+                    (OpenGraph S))))
+  (define (f #:parent-name [parent-name #f]
+             #:desc [desc #f]
+             #:edges [edges #f]
+             #:bridges [bridges #f])
+    (open-graph ((inst (%graph-maker name) S) #:parent-name parent-name
+                                              #:desc desc
+                                              #:edges edges)
+                (or bridges '())))
+  f)
 
 (: any-graph (All (S) (-> (-> Any Any : #:+ S)
                           (-> (U (Graph S) (OpenGraph S)) (Graph Any)))))
@@ -548,3 +549,42 @@
                    [edges (map (any-edge p?) (graph-edges g))])))
 
 (define any-graph/any (inst any-graph Any))
+
+(: graph-maker (-> String
+                   (Values (All (S T) (-> String
+                                          #:type (∩ T Symbol)
+                                          [#:tags (Listof Symbol)]
+                                          [#:desc (Option String)]
+                                          [#:trans (Option (Code (-> S S)))]
+                                          [#:before (Option (Code (-> S Any)))]
+                                          [#:after (Option (Code (-> S Any)))]
+                                          [#:prompt (Option (U String (Code (-> S String))))]
+                                          [#:options (Listof Node-Option)]
+                                          (Node S)))
+                           (All (S) (-> [#:parent-name (Option String)]
+                                        [#:desc (Option String)]
+                                        [#:edges (Option (Listof (Edge S)))]
+                                        (Graph S))))))
+(define (graph-maker graph-name)
+  (values (node-maker graph-name)
+          (%graph-maker graph-name)))
+
+(: open-graph-maker (-> String
+                   (Values (All (S T) (-> String
+                                          #:type (∩ T Symbol)
+                                          [#:tags (Listof Symbol)]
+                                          [#:desc (Option String)]
+                                          [#:trans (Option (Code (-> S S)))]
+                                          [#:before (Option (Code (-> S Any)))]
+                                          [#:after (Option (Code (-> S Any)))]
+                                          [#:prompt (Option (U String (Code (-> S String))))]
+                                          [#:options (Listof Node-Option)]
+                                          (Node S)))
+                           (All (S) (-> [#:parent-name (Option String)]
+                                        [#:desc (Option String)]
+                                        [#:edges (Option (Listof (Edge S)))]
+                                        [#:bridges (Option (Listof (Bridge S)))]
+                                        (OpenGraph S))))))
+(define (open-graph-maker graph-name)
+  (values (node-maker graph-name)
+          (%open-graph-maker graph-name)))

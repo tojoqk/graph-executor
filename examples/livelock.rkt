@@ -4,20 +4,21 @@
 
 (: id-graph (-> String (Values (Graph Null) (Node Null))))
 (define (id-graph graph-name)
-  (define node (inst (node-maker graph-name) Null 'node))
+  (define-values (make-node make-graph) (graph-maker graph-name))
+  (define node (inst make-node Null 'node))
   (define edge (inst make-edge Null))
   (define graph (inst make-graph Null))
 
   (define n (node "Node" #:type 'node))
 
   (values
-   (graph graph-name
-          #:edges (list (edge "Id" #:from n #:to n)))
+   (graph #:edges (list (edge "Id" #:from n #:to n)))
    n))
 
 (: triangle-graph (-> String (Values (Graph Null) (Node Null))))
 (define (triangle-graph graph-name)
-  (define node (inst (node-maker graph-name) Null 'node))
+  (define-values (make-node make-graph) (graph-maker graph-name))
+  (define node (inst make-node Null 'node))
   (define edge (inst make-edge Null))
   (define graph (inst make-graph Null))
 
@@ -26,15 +27,15 @@
   (define c (node "C" #:type 'node))
 
   (values
-   (graph graph-name
-          #:edges (list (edge "A->B" #:from a #:to b)
+   (graph #:edges (list (edge "A->B" #:from a #:to b)
                         (edge "B->C" #:from b #:to c)
                         (edge "C->A" #:from c #:to a)))
    a))
 
 (: ρ-graph (-> String (Values (Graph Null) (Node Null))))
 (define (ρ-graph graph-name)
-  (define node (inst (node-maker graph-name) Null (U 'node 'terminal)))
+  (define-values (make-node make-graph) (graph-maker graph-name))
+  (define node (inst make-node Null (U 'node 'terminal)))
   (define edge (inst make-edge Null))
   (define graph (inst make-graph Null))
 
@@ -45,8 +46,7 @@
   (define e (node "E" #:type 'terminal))
 
   (values
-   (graph graph-name
-          #:edges (list (edge "A->B" #:from a #:to b)
+   (graph #:edges (list (edge "A->B" #:from a #:to b)
                         (edge "A->E" #:from a #:to e)
                         (edge "B->C" #:from b #:to c)
                         (edge "C->D" #:from c #:to d)
@@ -104,3 +104,4 @@
                                            (choice "B->C")
                                            (choice "A->B")))
   (check-false (find-deadlock ρ-m ρ-terminal-node?)))
+

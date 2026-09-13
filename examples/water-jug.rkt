@@ -76,7 +76,8 @@
                               caps)
                          "\n")))
 
-  (define node (inst (node-maker g) Jug-State (U 'puzzle 'check 'terminal)))
+  (define-values (make-node make-graph) (graph-maker g))
+  (define node (inst make-node Jug-State (U 'puzzle 'check 'terminal)))
   (define edge (inst make-edge Jug-State))
   (define graph (inst make-graph Jug-State))
 
@@ -88,8 +89,7 @@
   (define cleared (node "Cleared!" #:type 'terminal #:trans (code show-cleared)))
 
   (values
-   (graph g
-          #:edges
+   (graph #:edges
           `(,@(for/list : (Listof (Edge Jug-State))
                         ([cap (in-list caps)])
                 (edge (format "Fill ~aG" cap)

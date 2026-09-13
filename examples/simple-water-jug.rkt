@@ -29,7 +29,8 @@
             left-cap (jug-state-left st) left-cap
             right-cap (jug-state-right st) right-cap))
 
-  (define node (inst (node-maker g) Jug-State (U 'puzzle 'check 'terminal)))
+  (define-values (make-node make-graph) (graph-maker g))
+  (define node (inst make-node Jug-State (U 'puzzle 'check 'terminal)))
   (define edge (inst make-edge Jug-State))
   (define graph (inst make-graph Jug-State))
 
@@ -44,8 +45,7 @@
                             (format "Congratulations! You made exactly ~a gallons!" target))))))
 
   (values
-   (graph g
-          #:edges
+   (graph #:edges
           (list
            (edge (format "Fill ~aG" left-cap) #:from playing #:to check
                  #:when (code (match-λ [(jug-state l _) (< l left-cap)]))

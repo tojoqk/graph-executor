@@ -42,7 +42,8 @@
   (define (inserted? st)
     (< 0 (v-state-inserted st)))
 
-  (define node (inst (node-maker g) Vending-Machine-State (U 'start 'normal)))
+  (define-values (make-node make-open-graph) (open-graph-maker g))
+  (define node (inst make-node Vending-Machine-State (U 'start 'normal)))
   (define edge (inst make-edge Vending-Machine-State))
   (define bridge (inst make-bridge Vending-Machine-State))
   (define graph (inst make-open-graph Vending-Machine-State))
@@ -55,7 +56,6 @@
   (values
    (lambda (output output-edge)
      (graph
-      g
       #:edges
       (list
        (edge "Insert Money" #:from idle #:to has-coins
@@ -91,7 +91,8 @@
                      (-> (Node Any) (Code (-> Street-State Any)) (OpenGraph Street-State))
                      (Node Street-State))))
 (define (street-graph g)
-  (define node (inst (node-maker g) Street-State (U 'street 'terminal)))
+  (define-values (make-node make-open-graph) (open-graph-maker g))
+  (define node (inst make-node Street-State (U 'street 'terminal)))
   (define graph (inst make-open-graph Street-State))
   (define edge (inst make-edge Street-State))
   (define bridge (inst make-bridge Street-State))
@@ -101,8 +102,7 @@
 
   (values
    (lambda (output output-edge)
-     (graph g
-            #:edges
+     (graph #:edges
             (list
              (edge "Sit on Bench" #:mode 'choice #:from on-street #:to bench
                    #:priority -1))
