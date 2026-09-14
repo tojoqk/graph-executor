@@ -194,6 +194,8 @@
                   [#:edge-node-label (Option (-> DotEdge DotEdgeStatus (U (List 'text String)
                                                                           (Pairof 'html (Listof XExpr)))))]
                   [#:edge (Option (-> DotEdge DotEdgeStatus DotEdgeConfig))]
+                  [#:edge-label (-> DotEdge DotEdgeStatus (U (List 'text String)
+                                                             (Pairof 'html (Listof XExpr))))]
                   DotConfig))
 (define (dot-config #:global [global #f]
                     #:node [node #f]
