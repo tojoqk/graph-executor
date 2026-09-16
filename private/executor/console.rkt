@@ -101,11 +101,9 @@
             [(terminated auto-conflicted)
              (case (car ne)
                [(auto-conflicted)
-                (newline)
                 (printf ">> Auto conflicted: ~s" (cdr ne))]
                [(terminated)
                 (when (console-config-trace-display? config)
-                  (newline)
                   (displayln ">> Terminated"))])
              (define choose-pmt ((node-prompt n) st))
              (if (and (eq? ((%console-config-chooser config) (node-node-info n)) 'interactive)
@@ -159,7 +157,6 @@
 (: console-step (All (S) (-> Console-Config S (Edge S) (-> (Pairof Prompt-Value Any) Void) S)))
 (define (console-step config st e emit)
   (define (console-message val)
-    (newline)
     (displayln val))
   (parameterize ([current-prompt (console-prompt/log emit)]
                  [current-message console-message])
@@ -195,7 +192,6 @@
                                                    Command))))
 (define (console-choose/interactive config pmt choices)
   (let ([out (open-output-string)])
-    (newline)
     (fprintf out "* ~a\n" pmt)
     (unless (null? choices)
       (for ([choice choices]
