@@ -87,53 +87,55 @@
 
 (: console-run (All (S) (-> (Model S) [#:journal Journal] [#:config Console-Config] Journal)))
 (define (console-run m #:journal [j '()] #:config [config (console-config)])
-  (define gs (model-graphs m))
-  (define-values (n st _t) (trace m j))
-  (define-values (call-with-emitter emit)
-    ((inst make-emitter (Pairof Prompt-Value Any) S)))
-  (define-values (_n _st result-j)
-    (let loop : (Values (Node S) S Journal) ([n n] [st st] [j : Journal j])
-      (define command-dispatch (console-command-dispatch m loop))
-      (let ([ne (next-edges gs st n)])
-        (case (car ne)
-          [(terminated auto-conflicted)
-           (case (car ne)
-             [(auto-conflicted)
-              (newline)
-              (printf ">> Auto conflicted: ~s" (cdr ne))]
-             [(terminated)
-              (when (console-config-trace-display? config)
+  (parameterize ([current-prompt prompt-without-trans]
+                 [current-message message-without-trans])
+    (define gs (model-graphs m))
+    (define-values (n st _t) (trace m j))
+    (define-values (call-with-emitter emit)
+      ((inst make-emitter (Pairof Prompt-Value Any) S)))
+    (define-values (_n _st result-j)
+      (let loop : (Values (Node S) S Journal) ([n n] [st st] [j : Journal j])
+        (define command-dispatch (console-command-dispatch m loop))
+        (let ([ne (next-edges gs st n)])
+          (case (car ne)
+            [(terminated auto-conflicted)
+             (case (car ne)
+               [(auto-conflicted)
                 (newline)
-                (displayln ">> Terminated"))])
-           (define choose-pmt ((node-prompt n) st))
-           (if (and (eq? ((%console-config-chooser config) (node-node-info n)) 'interactive)
-                    (console-config-has-quit-command? config))
-               (command-dispatch n st j
-                                 (console-choose 'interactive config choose-pmt '()))
-               (values n st j))]
-          [(auto)
-           (let* ([chosen-edge (auto-choose ne)])
-             (when (console-config-trace-display? config)
-               (displayln (format ">> [Auto] ~a" (edge-name chosen-edge))))
-             (match-define (cons ps next-st)
-               (call-with-emitter
-                (thunk (console-step config st chosen-edge emit))))
-             (loop (edge-to chosen-edge)
-                   next-st
-                   (cons (auto (edge-name chosen-edge) #:prompt-records ps) j)))]
-          [(choice)
-           (define choose-pmt ((node-prompt n) st))
-           (let ([cmd (console-choose ((%console-config-chooser config) (node-node-info n)) config choose-pmt (second ne))])
-             (cond [(edge? cmd)
-                    (define chosen-edge cmd)
-                    (match-define (cons ps next-st)
-                      (call-with-emitter
-                       (thunk (console-step config st chosen-edge emit))))
-                    (loop (edge-to chosen-edge)
-                          next-st
-                          (cons (choice (edge-name chosen-edge) #:prompt-records ps) j))]
-                   [else (command-dispatch n st j cmd)]))]))))
-  result-j)
+                (printf ">> Auto conflicted: ~s" (cdr ne))]
+               [(terminated)
+                (when (console-config-trace-display? config)
+                  (newline)
+                  (displayln ">> Terminated"))])
+             (define choose-pmt ((node-prompt n) st))
+             (if (and (eq? ((%console-config-chooser config) (node-node-info n)) 'interactive)
+                      (console-config-has-quit-command? config))
+                 (command-dispatch n st j
+                                   (console-choose 'interactive config choose-pmt '()))
+                 (values n st j))]
+            [(auto)
+             (let* ([chosen-edge (auto-choose ne)])
+               (when (console-config-trace-display? config)
+                 (displayln (format ">> [Auto] ~a" (edge-name chosen-edge))))
+               (match-define (cons ps next-st)
+                 (call-with-emitter
+                  (thunk (console-step config st chosen-edge emit))))
+               (loop (edge-to chosen-edge)
+                     next-st
+                     (cons (auto (edge-name chosen-edge) #:prompt-records ps) j)))]
+            [(choice)
+             (define choose-pmt ((node-prompt n) st))
+             (let ([cmd (console-choose ((%console-config-chooser config) (node-node-info n)) config choose-pmt (second ne))])
+               (cond [(edge? cmd)
+                      (define chosen-edge cmd)
+                      (match-define (cons ps next-st)
+                        (call-with-emitter
+                         (thunk (console-step config st chosen-edge emit))))
+                      (loop (edge-to chosen-edge)
+                            next-st
+                            (cons (choice (edge-name chosen-edge) #:prompt-records ps) j))]
+                     [else (command-dispatch n st j cmd)]))]))))
+    result-j))
 
 (: console-command-dispatch (All (S)
                                  (-> (Model S)

@@ -1,6 +1,6 @@
 #lang typed/racket
 
-(require "../prompt.rkt")
+(require "../../private/prompt/base.rkt")
 
 (provide console-prompt)
 

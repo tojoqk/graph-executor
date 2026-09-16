@@ -197,71 +197,73 @@
                         #:bound [bound #f]
                         #:bounded [bounded (const #f)]
                         #:config config)
-  (define-values (call-with-bounded-state _bounded-get bounded-set)
-    ((inst make-state Boolean (Pairof (Immutable-HashTable (Pairof Symbol S) Natural)
-                                      (Option Unsafety)))))
-  (define-values (call-with-seen-state seen-get seen-set)
-    ((inst make-state (Immutable-HashTable (Pairof Symbol S) Natural) (Option Unsafety))))
-  (define-values (call-with-prompt-value-emitter prompt-value-emit)
-    ((inst make-emitter (Pairof Prompt-Value Any) S)))
-  (define-values (call-with-amb amb amb-fail)
-    ((inst make-amb Prompt-Value)))
-  (define gs (model-graphs m))
-  (define n (model-node m))
-  (define st (model-state m))
-  (match-define (list* bounded? _ result)
-    (call-with-bounded-state
-     #f
-     (thunk
-      (call-with-seen-state
-       (hash)
+  (parameterize ([current-prompt prompt-without-trans]
+                 [current-message message-without-trans])
+    (define-values (call-with-bounded-state _bounded-get bounded-set)
+      ((inst make-state Boolean (Pairof (Immutable-HashTable (Pairof Symbol S) Natural)
+                                        (Option Unsafety)))))
+    (define-values (call-with-seen-state seen-get seen-set)
+      ((inst make-state (Immutable-HashTable (Pairof Symbol S) Natural) (Option Unsafety))))
+    (define-values (call-with-prompt-value-emitter prompt-value-emit)
+      ((inst make-emitter (Pairof Prompt-Value Any) S)))
+    (define-values (call-with-amb amb amb-fail)
+      ((inst make-amb Prompt-Value)))
+    (define gs (model-graphs m))
+    (define n (model-node m))
+    (define st (model-state m))
+    (match-define (list* bounded? _ result)
+      (call-with-bounded-state
+       #f
        (thunk
-        (let/ec return : Unsafety
-          (call-with-amb
-           (thunk
-            (let loop : #f ([n n] [st st] [j : Journal '()] [depth : Natural 0])
-              (define seen-key `(,(node-id n) . ,st))
-              (let ([seen-depth (hash-ref (seen-get) seen-key #f)])
-                (when seen-depth
-                  (if bound
-                      (if (< depth seen-depth)
-                          (void)
-                          (amb-fail))
-                      (amb-fail))))
-              (define ne (next-edges gs st n))
-              (define ne-type (car ne))
-              (cond [(for/or : (Option Unsafety-Reason)
-                             ([inv (in-list invariants)])
-                       (inv ne (node-node-info n) st))
-                     => (lambda ([r : Unsafety-Reason])
-                          (return (unsafety r j)))])
-              (case ne-type
-                [(terminated auto-conflicted) (amb-fail)]
-                [(auto choice) (when (and bound (= bound depth))
-                                 (begin (bounded-set #t)
-                                        (amb-fail)))
-                               (define name
-                                 (amb-choose amb (map (inst edge-name S) (second ne))))
-                               (define chosen-edge (find-edge (second ne) name))
-                               (when (checker-config-trace-display? config)
-                                 (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
-                               (match-define (cons ps next-st)
-                                 (call-with-prompt-value-emitter
-                                  (thunk (step st chosen-edge amb config prompt-value-emit))))
-                               (seen-set (hash-set (seen-get) seen-key depth))
-                               (loop (edge-to chosen-edge)
-                                     next-st
-                                     (cons (case ne-type
-                                             [(auto) (auto (edge-name chosen-edge) #:prompt-records ps)]
-                                             [(choice) (choice (edge-name chosen-edge) #:prompt-records ps)])
-                                           j)
-                                     (add1 depth))])))
-           (thunk #f))))))))
-  (if result
-      result
-      (if bounded?
-          (bounded)
-          #f)))
+        (call-with-seen-state
+         (hash)
+         (thunk
+          (let/ec return : Unsafety
+            (call-with-amb
+             (thunk
+              (let loop : #f ([n n] [st st] [j : Journal '()] [depth : Natural 0])
+                (define seen-key `(,(node-id n) . ,st))
+                (let ([seen-depth (hash-ref (seen-get) seen-key #f)])
+                  (when seen-depth
+                    (if bound
+                        (if (< depth seen-depth)
+                            (void)
+                            (amb-fail))
+                        (amb-fail))))
+                (define ne (next-edges gs st n))
+                (define ne-type (car ne))
+                (cond [(for/or : (Option Unsafety-Reason)
+                               ([inv (in-list invariants)])
+                         (inv ne (node-node-info n) st))
+                       => (lambda ([r : Unsafety-Reason])
+                            (return (unsafety r j)))])
+                (case ne-type
+                  [(terminated auto-conflicted) (amb-fail)]
+                  [(auto choice) (when (and bound (= bound depth))
+                                   (begin (bounded-set #t)
+                                          (amb-fail)))
+                                 (define name
+                                   (amb-choose amb (map (inst edge-name S) (second ne))))
+                                 (define chosen-edge (find-edge (second ne) name))
+                                 (when (checker-config-trace-display? config)
+                                   (printf "Current Edge: ~a (Graph: ~a)\n" (edge-name chosen-edge) (node-graph-name n)))
+                                 (match-define (cons ps next-st)
+                                   (call-with-prompt-value-emitter
+                                    (thunk (step st chosen-edge amb config prompt-value-emit))))
+                                 (seen-set (hash-set (seen-get) seen-key depth))
+                                 (loop (edge-to chosen-edge)
+                                       next-st
+                                       (cons (case ne-type
+                                               [(auto) (auto (edge-name chosen-edge) #:prompt-records ps)]
+                                               [(choice) (choice (edge-name chosen-edge) #:prompt-records ps)])
+                                             j)
+                                       (add1 depth))])))
+             (thunk #f))))))))
+    (if result
+        result
+        (if bounded?
+            (bounded)
+            #f))))
 
 (: %find-counterexample (All (S) (-> (Model S) (-> (Next-Edge S) Node-Info S Any)
                                      [#:bound (Option Natural)]
