@@ -73,7 +73,8 @@ This single file shows how to:
             left-cap (jug-state-left st) left-cap
             right-cap (jug-state-right st) right-cap))
 
-  (define node (inst (node-maker g) Jug-State (U 'puzzle 'check 'terminal)))
+  (define-values (make-node make-graph) (graph-maker g))
+  (define node (inst make-node Jug-State (U 'puzzle 'check 'terminal)))
   (define edge (inst make-edge Jug-State))
   (define graph (inst make-graph Jug-State))
 
@@ -88,8 +89,7 @@ This single file shows how to:
                             (format "Congratulations! You made exactly ~a gallons!" target))))))
 
   (values
-   (graph g
-          #:edges
+   (graph #:edges
           (list
            (edge (format "Fill ~aG" left-cap) #:from playing #:to check
                  #:when (code (match-λ [(jug-state l _) (< l left-cap)]))
@@ -108,7 +108,7 @@ This single file shows how to:
                                   (message (format "Emptied the ~a-gallon jug." left-cap)))))
            (edge (format "Empty ~aG" right-cap) #:from playing #:to check
                  #:when (code (match-λ [(jug-state _ r) (< 0 r)]))
-                 #:trans (code (match-λ [(jug-state _ r) (jug-state 0 r)]))
+                 #:trans (code (match-λ [(jug-state l _) (jug-state l 0)]))
                  #:before (code (lambda (_)
                                   (message (format "Emptied the ~a-gallon jug." right-cap)))))
            (edge (format "Pour ~aG -> ~aG" left-cap right-cap) #:from playing #:to check
@@ -183,13 +183,14 @@ This single file shows how to:
   (: terminal-node? (-> Node-Info Boolean))
   (define (terminal-node? x) (eq? (node-info-type x) 'terminal))
 
+  (check-false (find-unsafety m terminal-node?
+                              #:invariants
+                              (list
+                               (invariant "bound"
+                                          (match-λ* [(list _ (jug-state l r))
+                                                      (and (<= 0 l 3)
+                                                           (<= 0 r 5))])))))
   (check-false (find-livelock m))
-  (check-false (find-deadlock m terminal-node?))
-  (check-false (find-false-terminal m terminal-node?))
-  (check-false (find-auto-conflict m))
-  (check-false (find-counterexample m (match-λ* [(list _ (jug-state l r))
-                                                  (and (<= 0 l 3)
-                                                       (<= 0 r 5))])))
 
   (: shortest-path (-> (Model Jug-State) (Option Journal)))
   (define (shortest-path m)
