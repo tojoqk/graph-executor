@@ -18,11 +18,11 @@
          Prompt-Result-Random
          Prompt-Info (rename-out [prompt-info* prompt-info]) prompt-info-content prompt-info-tags)
 
-(struct prompt-info ([content : String]
+(struct prompt-info ([content : Any]
                      [tags : (Listof Symbol)])
   #:type-name Prompt-Info)
 
-(: prompt-info* (-> String [#:tags (Listof Symbol)] Prompt-Info))
+(: prompt-info* (-> Any [#:tags (Listof Symbol)] Prompt-Info))
 (define (prompt-info* content #:tags [tags '()])
   (prompt-info content tags))
 

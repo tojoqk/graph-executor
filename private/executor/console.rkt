@@ -185,10 +185,10 @@
     [(restore-console-command? c) (restore-command (restore-console-command-proc c))]))
 
 (: console-choose/interactive (All (S) (case-> (-> Console-Config
-                                                   String (Pairof (Edge S) (Listof (Edge S)))
+                                                   Any (Pairof (Edge S) (Listof (Edge S)))
                                                    (U (Edge S) Command))
                                                (-> Console-Config
-                                                   String Null
+                                                   Any Null
                                                    Command))))
 (define (console-choose/interactive config pmt choices)
   (let ([out (open-output-string)])
@@ -238,8 +238,8 @@
               [(null? rst) (error 'console-choose/random "unreachble")]
               [else (loop rst (- r (edge-weight fst)))])))))
 
-(: console-choose (All (S) (case-> (-> (U 'interactive 'random) Console-Config String (Pairof (Edge S) (Listof (Edge S))) (U (Edge S) Command))
-                                   (-> 'interactive Console-Config String Null Command))))
+(: console-choose (All (S) (case-> (-> (U 'interactive 'random) Console-Config Any (Pairof (Edge S) (Listof (Edge S))) (U (Edge S) Command))
+                                   (-> 'interactive Console-Config Any Null Command))))
 (define (console-choose chooser config pmt choices)
   (case chooser
     [(interactive) (console-choose/interactive config pmt choices)]

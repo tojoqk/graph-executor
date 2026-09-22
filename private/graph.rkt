@@ -43,7 +43,7 @@
 (: current-graph-used-ids (Parameterof (Setof Symbol)))
 (define current-graph-used-ids (make-parameter ((inst set Symbol))))
 
-(: current-node-prompt (Parameterof String))
+(: current-node-prompt (Parameterof Any))
 (define current-node-prompt (make-parameter "Choose:"))
 
 (: make-graph-id (-> String Symbol))
@@ -80,7 +80,7 @@
                   [trans-code : (Code (-> S S))]
                   [before-code-expr : (Option Code-Expr)]
                   [after-code-expr : (Option Code-Expr)]
-                  [prompt-code : (Code (-> S String))]
+                  [prompt-code : (Code (-> S Any))]
                   [node-options : (Listof Node-Option)])
   #:transparent
   #:type-name Node)
@@ -109,7 +109,7 @@
 (define (node-trans-code-expr n)
   (%code-code-expr (node-trans-code n)))
 
-(: node-prompt (All (S) (-> (Node S) (-> S String))))
+(: node-prompt (All (S) (-> (Node S) (-> S Any))))
 (define (node-prompt n)
   (%code-value (node-prompt-code n)))
 
@@ -126,7 +126,7 @@
                       #:trans (Option (Code (-> S S)))
                       #:before (Option (Code (-> S Any)))
                       #:after (Option (Code (-> S Any)))
-                      #:prompt (Option (U String (Code (-> S String))))
+                      #:prompt (Option (U String (Code (-> S Any))))
                       #:options (Listof Node-Option)
                       (Node S))))
 (define (%make-node #:graph-name graph-name #:name name #:type type #:tags tags #:desc desc #:trans tr #:before before #:after after #:prompt pmt #:options opts)

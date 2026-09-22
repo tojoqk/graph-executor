@@ -25,7 +25,7 @@
 (struct auto-edge-record edge-record ()
   #:transparent
   #:type-name Auto-Edge-Record)
-(struct choice-edge-record edge-record ([prompt : String]
+(struct choice-edge-record edge-record ([prompt : Any]
                                         [choices : (Listof Edge-Info)]
                                         [extra : Any])
   #:transparent
