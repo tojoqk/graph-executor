@@ -10,7 +10,7 @@
   #:type-name Model)
 
 (: model* (All (S) (-> (-> (Values (Listof (Graph S)) (Node S) S))
-                       [#:default-node-prompt String] (Model S))))
+                       [#:default-node-prompt Any] (Model S))))
 (define (model* proc #:default-node-prompt [default-node-prompt "Choose:"])
   (parameterize ([current-graph-used-ids (set)]
                  [current-node-prompt default-node-prompt])
