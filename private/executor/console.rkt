@@ -171,8 +171,8 @@
 
 (: console-prompt/log (All (S) (-> (-> (Pairof Prompt-Value Any) Void)
                                    Prompt-Implementation)))
-(define ((console-prompt/log emit) title op)
-  (define-values (val extra) (console-prompt title op))
+(define ((console-prompt/log emit) content op)
+  (define-values (val extra) (console-prompt content op))
   (emit (cons val extra))
   (values val extra))
 

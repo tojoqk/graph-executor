@@ -19,7 +19,7 @@
   (let ([choices (third op)]
         [show (fourth op)]
         [out (open-output-string)])
-    (fprintf out "* ~a\n" (prompt-info-title info))
+    (fprintf out "* ~a\n" (prompt-info-content info))
     (for ([choice choices]
           [i : Positive-Integer (in-naturals 1)])
       (fprintf out "  - [~a] ~a\n" i (show choice)))
@@ -42,7 +42,7 @@
                                 (-> Prompt-Info (List 'natural) (Values Natural Any))
                                 (-> Prompt-Info (List 'positive-integer) (Values Positive-Integer Any))))
 (define (console-input-number info op)
-  (printf "* ~a\n" (prompt-info-title info))
+  (printf "* ~a\n" (prompt-info-content info))
   (let retry ()
     (printf "? ")
     (let ([line (read-line)])
@@ -66,7 +66,7 @@
 
 (: console-string (case-> (-> Prompt-Info (List 'string) (Values String Any))))
 (define (console-string info op)
-  (printf "* ~a\n" (prompt-info-title info))
+  (printf "* ~a\n" (prompt-info-content info))
   (let retry ()
     (printf "? ")
     (let ([value (read-line)])
@@ -79,7 +79,7 @@
                          (-> Prompt-Info (List 'between Natural Natural) (Values Natural Any))
                          (-> Prompt-Info (List 'between Integer Integer) (Values Integer Any))))
 (define (console-between info op)
-  (printf "* ~a\n" (prompt-info-title info))
+  (printf "* ~a\n" (prompt-info-content info))
   (let ([from (second op)]
         [to : Integer (third op)])
     (let retry ()
