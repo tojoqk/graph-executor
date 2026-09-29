@@ -21,7 +21,7 @@
   (check-equal? (message-content (delay 'test)) 'test))
 
 (: current-message (Parameterof Message))
-(define current-message (make-parameter displayln))
+(define current-message (make-parameter (compose displayln message-content)))
 
 (: message-without-trans Message)
 (define (message-without-trans _obj)
