@@ -3,7 +3,7 @@
 (module+ test
   (require typed/rackunit))
 
-(provide Prompt-Content Prompt-Type Prompt-Value prompt-value? Prompt-Op
+(provide Prompt-Type Prompt-Value prompt-value? Prompt-Op
          op-choose op-choose-predicate op-choose-choices op-choose-show
          op-string op-integer op-natural op-positive-integer
          op-between op-between-from op-between-to

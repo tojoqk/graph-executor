@@ -15,6 +15,7 @@
 (define (prompt-without-trans _info _op)
   (error 'prompt "called outside of trans"))
 
+(define-type Prompt-Content (U String (Promise Any)))
 (define-type (Prompt A)
   (case-> (->* (Prompt-Content (List 'choose (-> Any Boolean : #:+ A) (Listof (∩ A Prompt-Value)) (-> (∩ A Prompt-Value) String)))
                ((Listof Symbol)) (∩ A Prompt-Value))

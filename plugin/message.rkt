@@ -4,4 +4,4 @@
 
 (provide Message message current-message message-without-trans
          Message-Result message-result message-result-content
-         Message-Content message-content)
+         message-content)

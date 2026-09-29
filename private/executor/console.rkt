@@ -156,7 +156,7 @@
 
 (: console-step (All (S) (-> Console-Config S (Edge S) (-> (Pairof Prompt-Value Any) Void) S)))
 (define (console-step config st e emit)
-  (: console-message (-> Message-Content Void))
+  (: console-message Message)
   (define (console-message val)
     (displayln (message-content val)))
   (parameterize ([current-prompt (console-prompt/log emit)]
