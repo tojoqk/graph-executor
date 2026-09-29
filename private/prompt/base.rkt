@@ -1,5 +1,8 @@
 #lang typed/racket
 
+(module+ test
+  (require typed/rackunit))
+
 (provide Prompt-Content Prompt-Type Prompt-Value prompt-value? Prompt-Op
          op-choose op-choose-predicate op-choose-choices op-choose-show
          op-string op-integer op-natural op-positive-integer
@@ -29,7 +32,11 @@
   (let ([content (prompt-info-content info)])
     (if (promise? content)
         (force content)
-        (string? content))))
+        content)))
+
+(module+ test
+  (check-equal? (prompt-info-content* (prompt-info* "test")) "test")
+  (check-equal? (prompt-info-content* (prompt-info* (delay 'test))) 'test))
 
 (: prompt-info* (-> Prompt-Content [#:tags (Listof Symbol)] Prompt-Info))
 (define (prompt-info* content #:tags [tags '()])
