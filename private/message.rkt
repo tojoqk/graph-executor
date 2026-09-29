@@ -1,9 +1,24 @@
 #lang typed/racket
 
-(provide Message message current-message message-without-trans
-         Message-Result message-result message-result-message)
+(module+ test
+  (require typed/rackunit))
 
-(define-type Message (-> Any Void))
+(provide Message message current-message message-without-trans
+         Message-Result message-result message-result-message
+         Message-Content message-content)
+
+(define-type Message-Content (U String (Promise Any)))
+(define-type Message (-> Message-Content Void))
+
+(: message-content (-> Message-Content Any))
+(define (message-content content)
+  (if (promise? content)
+      (force content)
+      content))
+
+(module+ test
+  (check-equal? (message-content "test") "test")
+  (check-equal? (message-content (delay 'test)) 'test))
 
 (: current-message (Parameterof Message))
 (define current-message (make-parameter displayln))
