@@ -4,7 +4,7 @@
   (require typed/rackunit))
 
 (provide Message message current-message message-without-trans
-         Message-Result message-result message-result-message
+         Message-Result message-result message-result-content
          Message-Content message-content)
 
 (define-type Message-Content (U String (Promise Any)))
@@ -31,10 +31,10 @@
 (define (message obj)
   ((current-message) obj))
 
-(define-type Message-Result (List 'message Any))
-(: message-result (-> Any Message-Result))
+(define-type Message-Result (List 'message Message-Content))
+(: message-result (-> Message-Content Message-Result))
 (define (message-result x)
   (list 'message x))
 
-(: message-result-message (-> Message-Result Any))
-(define (message-result-message x) (second x))
+(: message-result-content (-> Message-Result Any))
+(define (message-result-content x) (message-content (second x)))
