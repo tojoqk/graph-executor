@@ -57,7 +57,7 @@
 (define (prompt-integer content [tags '()]) (prompt content (op-integer) tags))
 (: prompt-natural (->* (Prompt-Content) ((Listof Symbol)) Natural))
 (define (prompt-natural content [tags '()]) (prompt content (op-natural) tags))
-(: prompt-positive-integer (->* (String) ((Listof Symbol)) Positive-Integer))
+(: prompt-positive-integer (->* (Prompt-Content) ((Listof Symbol)) Positive-Integer))
 (define (prompt-positive-integer content [tags '()]) (prompt content (op-positive-integer) tags))
 (: prompt-between (->* (Prompt-Content Integer Integer)((Listof Symbol)) Integer))
 (define (prompt-between content from to [tags '()]) (prompt content (op-between from to) tags))
