@@ -345,8 +345,9 @@
            (define ne (next-edges gs st n))
            (define ne-type (car ne))
            (case ne-type
-             [(terminated auto-conflicted) (reachable-set (set-union (reachable-get) breadcrumbs))
-                                           (amb-fail)]
+             [(terminated) (reachable-set (set-union (reachable-get) breadcrumbs))
+                           (amb-fail)]
+             [(auto-conflicted) (error 'find-livelock "auto-conflicted: multiple auto-edges with same priority. Use find-unsafety to verify.")]
              [(auto choice) (define name
                               (amb-choose amb (map (inst edge-name S) (second ne))))
                             (define chosen-edge (find-edge (second ne) name))
@@ -390,8 +391,7 @@
            (define ne-type (car ne))
            (case ne-type
              [(terminated) (return (set-union reachable (list->set breadcrumbs)))]
-             [(auto-conflicted) (seen-set (set-add (seen-get) key))
-                                (amb-fail)]
+             [(auto-conflicted) (error 'find-livelock "auto-conflicted: multiple auto-edges with same priority. Use find-unsafety to verify.")]
              [(auto choice) (define name
                               (amb-choose amb (map (inst edge-name S) (second ne))))
                             (define chosen-edge (find-edge (second ne) name))
