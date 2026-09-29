@@ -1,6 +1,6 @@
 #lang typed/racket
 
-(provide Prompt-Type Prompt-Value prompt-value? Prompt-Op
+(provide Prompt-Content Prompt-Type Prompt-Value prompt-value? Prompt-Op
          op-choose op-choose-predicate op-choose-choices op-choose-show
          op-string op-integer op-natural op-positive-integer
          op-between op-between-from op-between-to
@@ -16,13 +16,22 @@
          Prompt-Result-Positive-Integer
          Prompt-Result-Between
          Prompt-Result-Random
-         Prompt-Info (rename-out [prompt-info* prompt-info]) prompt-info-content prompt-info-tags)
+         Prompt-Info (rename-out [prompt-info* prompt-info] [prompt-info-content* prompt-info-content]) prompt-info-tags)
 
-(struct prompt-info ([content : Any]
+(define-type Prompt-Content (U String (Promise Any)))
+
+(struct prompt-info ([content : Prompt-Content]
                      [tags : (Listof Symbol)])
   #:type-name Prompt-Info)
 
-(: prompt-info* (-> Any [#:tags (Listof Symbol)] Prompt-Info))
+(: prompt-info-content* (-> Prompt-Info Any))
+(define (prompt-info-content* info)
+  (let ([content (prompt-info-content info)])
+    (if (promise? content)
+        (force content)
+        (string? content))))
+
+(: prompt-info* (-> Prompt-Content [#:tags (Listof Symbol)] Prompt-Info))
 (define (prompt-info* content #:tags [tags '()])
   (prompt-info content tags))
 
