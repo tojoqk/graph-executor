@@ -330,6 +330,7 @@
          (let loop : #f ([n (model-node m)] [st (model-state m)] [j : Journal '()] [breadcrumbs : (Setof (Pairof Symbol S)) (set)])
            (define key `(,(node-id n) . ,st))
            (when (set-member? (reachable-get) key)
+             (reachable-set (set-union (reachable-get) breadcrumbs))
              (amb-fail))
            (when (set-member? breadcrumbs key)
              (when (checker-config-trace-display? config)
