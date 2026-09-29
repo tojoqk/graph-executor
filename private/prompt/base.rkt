@@ -12,13 +12,6 @@
          prompt-result-value prompt-result-extra prompt-result-info
          Prompt-Record prompt-record? prompt-record prompt-record-value prompt-record-extra
          Prompt-Result
-         Prompt-Result-Choose
-         Prompt-Result-String
-         Prompt-Result-Integer
-         Prompt-Result-Natural
-         Prompt-Result-Positive-Integer
-         Prompt-Result-Between
-         Prompt-Result-Random
          Prompt-Info (rename-out [prompt-info* prompt-info] [prompt-info-content* prompt-info-content]) prompt-info-tags)
 
 (define-type Prompt-Content (U String (Promise Any)))
@@ -116,14 +109,7 @@
           (-> Prompt-Info (List 'between Integer Integer) (Values Integer Any))
           (-> Prompt-Info (List 'random Positive-Integer) (Values Natural Any))))
 
-(: prompt-result-value (case-> (-> Prompt-Result-Choose Prompt-Value)
-                               (-> Prompt-Result-String String)
-                               (-> Prompt-Result-Integer Integer)
-                               (-> Prompt-Result-Natural Natural)
-                               (-> Prompt-Result-Positive-Integer Positive-Integer)
-                               (-> Prompt-Result-Between Integer)
-                               (-> Prompt-Result-Random Natural)
-                               (-> Prompt-Result Prompt-Value)))
+(: prompt-result-value (-> Prompt-Result Prompt-Value))
 (define (prompt-result-value pi) (car (fourth pi)))
 
 (: prompt-result-extra (-> Prompt-Result Any))
@@ -145,15 +131,3 @@
 (: prompt-result (-> Prompt-Op Prompt-Info Prompt-Record Prompt-Result))
 (define (prompt-result op info rec)
   (list 'prompt op info rec))
-
-(define-type Prompt-Result-Choose (List 'prompt (List 'choose Procedure (Listof Prompt-Value) Procedure)
-                                        String
-                                        (Pairof Prompt-Value Any)))
-(define-type Prompt-Result-String (List 'prompt (List 'string) String (Pairof String Any)))
-(define-type Prompt-Result-Integer (List 'prompt (List 'integer) String (Pairof Integer Any)))
-(define-type Prompt-Result-Natural (List 'prompt (List 'natural) String (Pairof Natural Any)))
-(define-type Prompt-Result-Positive-Integer (List 'prompt (List 'positive-integer) String (Pairof Positive-Integer Any)))
-(define-type Prompt-Result-Between  (U (List 'prompt (List 'between Natural Natural) String (Pairof Natural Any))
-                                     (List 'prompt (List 'between Positive-Integer Positive-Integer) String (Pairof Positive-Integer Any))
-                                     (List 'prompt (List 'between Integer Integer) String (Pairof Integer Any))))
-(define-type Prompt-Result-Random (List 'prompt (List 'random Positive-Integer) String (Pairof Natural Any)))
