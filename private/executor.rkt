@@ -167,7 +167,7 @@
     [(findf (lambda ([e : (Edge S)]) (string=? name (edge-name e))) es) => identity]
     [else (error 'find-edge "not found")]))
 
-(: emit-message (-> (-> Event Void) (-> Any Void)))
+(: emit-message (-> (-> Event Void) (-> Message-Content Void)))
 (define ((emit-message emit) msg)
   (emit (message-result msg)))
 
