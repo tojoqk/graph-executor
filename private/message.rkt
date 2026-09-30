@@ -21,7 +21,12 @@
   (check-equal? (message-content (delay 'test)) 'test))
 
 (: current-message (Parameterof Message))
-(define current-message (make-parameter (compose displayln message-content)))
+(define current-message (make-parameter
+                         (lambda ([payload : Message-Content])
+                           (let ([c (message-content payload)])
+                             (if (string? c)
+                                 (displayln c)
+                                 (println c))))))
 
 (: message-without-trans Message)
 (define (message-without-trans _obj)

@@ -158,7 +158,10 @@
 (define (console-step config st e emit)
   (: console-message Message)
   (define (console-message val)
-    (displayln (message-content val)))
+      (let ([c (message-content val)])
+        (if (string? c)
+            (displayln c)
+            (println c))))
   (parameterize ([current-prompt (console-prompt/log emit)]
                  [current-message console-message])
     ((node-trans (edge-to e))
