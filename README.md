@@ -73,6 +73,58 @@ This single file shows how to:
             left-cap (jug-state-left st) left-cap
             right-cap (jug-state-right st) right-cap))
 
+  (: can-fill-left-jug? (-> Jug-State Boolean))
+  (define (can-fill-left-jug? st) (< (jug-state-left st) left-cap))
+
+  (: can-fill-right-jug? (-> Jug-State Boolean))
+  (define (can-fill-right-jug? st) (< (jug-state-right st) right-cap))
+
+  (: can-empty-left-jug? (-> Jug-State Boolean))
+  (define (can-empty-left-jug? st) (> (jug-state-left st) 0))
+
+  (: can-empty-right-jug? (-> Jug-State Boolean))
+  (define (can-empty-right-jug? st) (> (jug-state-right st) 0))
+
+  (: can-pour-left-to-right? (-> Jug-State Boolean))
+  (define (can-pour-left-to-right? st)
+    (and (> (jug-state-left st) 0) (< (jug-state-right st) right-cap)))
+
+  (: can-pour-right-to-left? (-> Jug-State Boolean))
+  (define (can-pour-right-to-left? st)
+    (and (> (jug-state-right st) 0) (< (jug-state-left st) left-cap)))
+
+  (: goal-not-reached? (-> Jug-State Boolean))
+  (define (goal-not-reached? st)
+    (and (not (= (jug-state-left st) target))
+         (not (= (jug-state-right st) target))))
+
+  (: goal-reached? (-> Jug-State Boolean))
+  (define (goal-reached? st)
+    (or (= (jug-state-left st) target)
+        (= (jug-state-right st) target)))
+
+  (: fill-left-jug (-> Jug-State Jug-State))
+  (define (fill-left-jug st) (jug-state left-cap (jug-state-right st)))
+
+  (: fill-right-jug (-> Jug-State Jug-State))
+  (define (fill-right-jug st) (jug-state (jug-state-left st) right-cap))
+
+  (: empty-left-jug (-> Jug-State Jug-State))
+  (define (empty-left-jug st) (jug-state 0 (jug-state-right st)))
+
+  (: empty-right-jug (-> Jug-State Jug-State))
+  (define (empty-right-jug st) (jug-state (jug-state-left st) 0))
+
+  (: pour-left-to-right (-> Jug-State Jug-State))
+  (define (pour-left-to-right st)
+    (let ([a (min (jug-state-left st) (- right-cap (jug-state-right st)))])
+      (jug-state (- (jug-state-left st) a) (+ (jug-state-right st) a))))
+
+  (: pour-right-to-left (-> Jug-State Jug-State))
+  (define (pour-right-to-left st)
+    (let ([a (min (- left-cap (jug-state-left st)) (jug-state-right st))])
+      (jug-state (+ (jug-state-left st) a) (- (jug-state-right st) a))))
+
   (define-values (make-node make-graph) (graph-maker g))
   (define node (inst make-node Jug-State (U 'puzzle 'check 'terminal)))
   (define edge (inst make-edge Jug-State))
@@ -92,43 +144,37 @@ This single file shows how to:
    (graph #:edges
           (list
            (edge (format "Fill ~aG" left-cap) #:from playing #:to check
-                 #:when (code (match-λ [(jug-state l _) (< l left-cap)]))
-                 #:trans (code (match-λ [(jug-state _ r) (jug-state left-cap r)]))
+                 #:when (code can-fill-left-jug?)
+                 #:trans (code fill-left-jug)
                  #:before (code (lambda (_)
                                   (message (format "Filled the ~a-gallon jug." left-cap)))))
            (edge (format "Fill ~aG" right-cap) #:from playing #:to check
-                 #:when (code (match-λ [(jug-state _ r) (< r right-cap)]))
-                 #:trans (code (match-λ [(jug-state l _) (jug-state l right-cap)]))
+                 #:when (code can-fill-right-jug?)
+                 #:trans (code fill-right-jug)
                  #:before (code (lambda (_)
                                   (message (format "Filled the ~a-gallon jug." right-cap)))))
            (edge (format "Empty ~aG" left-cap) #:from playing #:to check
-                 #:when (code (match-λ [(jug-state l _) (< 0 l)]))
-                 #:trans (code (match-λ [(jug-state _ r) (jug-state 0 r)]))
+                 #:when (code can-empty-left-jug?)
+                 #:trans (code empty-left-jug)
                  #:before (code (lambda (_)
                                   (message (format "Emptied the ~a-gallon jug." left-cap)))))
            (edge (format "Empty ~aG" right-cap) #:from playing #:to check
-                 #:when (code (match-λ [(jug-state _ r) (< 0 r)]))
-                 #:trans (code (match-λ [(jug-state l _) (jug-state l 0)]))
+                 #:when (code can-empty-right-jug?)
+                 #:trans (code empty-right-jug)
                  #:before (code (lambda (_)
                                   (message (format "Emptied the ~a-gallon jug." right-cap)))))
            (edge (format "Pour ~aG -> ~aG" left-cap right-cap) #:from playing #:to check
-                 #:when (code (match-λ [(jug-state l r) (and (> l 0) (< r right-cap))]))
-                 #:trans (code (match-λ [(jug-state l r)
-                                          (define a (min l (- right-cap r)))
-                                          (jug-state (- l a) (+ r a))]))
+                 #:when (code can-pour-left-to-right?)
+                 #:trans (code pour-left-to-right)
                  #:before (code pour-left-to-right/message))
            (edge (format "Pour ~aG -> ~aG" right-cap left-cap) #:from playing #:to check
-                 #:when (code (match-λ [(jug-state l r) (and (> r 0) (< l left-cap))]))
-                 #:trans (code (match-λ [(jug-state l r)
-                                          (define a (min (- left-cap l) r))
-                                          (jug-state (+ l a) (- r a))]))
+                 #:when (code can-pour-right-to-left?)
+                 #:trans (code pour-right-to-left)
                  #:before (code pour-right-to-left/message))
            (edge "Not yet" #:mode 'auto #:from check #:to playing
-                 #:when (code (match-λ [(jug-state l r) (and (not (= l target))
-                                                              (not (= r target)))])))
+                 #:when (code goal-not-reached?))
            (edge "Clear!" #:mode 'auto #:from check #:to cleared
-                 #:when (code (match-λ [(jug-state l r) (or (= l target)
-                                                             (= r target))])))))
+                 #:when (code goal-reached?))))
    playing))
 
 (module+ model
