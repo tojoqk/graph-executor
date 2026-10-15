@@ -199,29 +199,28 @@
   (if (string? pmt)
       (displayln pmt)
       (println pmt))
-  (let ([out (open-output-string)])
-    (unless (null? choices)
-      (for ([choice choices]
-            [i : Positive-Integer (in-naturals 1)])
-        (printf "  - [~a] ~a\n" i (edge-name choice))))
-    (for ([cmd (%console-config-commands config)])
-      (when cmd (printf "  - [~a] ~a\n" (console-command-key cmd) (console-command-name cmd))))
-    (let retry ()
-      (display "? ")
-      (let ([line (read-line)])
-        (cond [(eof-object? line) (retry)]
-              [(string->number line)
-               => (lambda ([n : Number])
-                    (if (and (exact? n)
-                             (positive-integer? n)
-                             (<= n (length choices)))
-                        (list-ref choices (sub1 n))
-                        (retry)))]
-              [(findf (lambda ([cmd : Console-Command])
-                        (string=? (symbol->string (console-command-key cmd)) (string-trim line)))
-                      (%console-config-commands config))
-               => console-command->command]
-              [else (retry)])))))
+  (unless (null? choices)
+    (for ([choice choices]
+          [i : Positive-Integer (in-naturals 1)])
+      (printf "  - [~a] ~a\n" i (edge-name choice))))
+  (for ([cmd (%console-config-commands config)])
+    (when cmd (printf "  - [~a] ~a\n" (console-command-key cmd) (console-command-name cmd))))
+  (let retry ()
+    (display "? ")
+    (let ([line (read-line)])
+      (cond [(eof-object? line) (retry)]
+            [(string->number line)
+             => (lambda ([n : Number])
+                  (if (and (exact? n)
+                           (positive-integer? n)
+                           (<= n (length choices)))
+                      (list-ref choices (sub1 n))
+                      (retry)))]
+            [(findf (lambda ([cmd : Console-Command])
+                      (string=? (symbol->string (console-command-key cmd)) (string-trim line)))
+                    (%console-config-commands config))
+             => console-command->command]
+            [else (retry)]))))
 
 (: edge-weight (All (S) (-> (Edge S) Positive-Integer)))
 (define (edge-weight e)

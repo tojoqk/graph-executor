@@ -17,8 +17,7 @@
                       (Values Prompt-Value Any)))
 (define (console-choose info op)
   (let ([choices (third op)]
-        [show (fourth op)]
-        [out (open-output-string)])
+        [show (fourth op)])
     (let ([pmt (prompt-info-content info)])
       (display "* ")
       (if (string? pmt) (displayln pmt) (println pmt)))
