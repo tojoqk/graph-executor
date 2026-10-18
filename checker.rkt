@@ -77,23 +77,25 @@
                         #:bounded bounded
                         #:config config))
 
-(: find-deadlock (All (S) (-> (Model S) (-> Node-Info Any)
+(: find-deadlock (All (S) (-> (Model S)
                               [#:bound (Option Natural)]
                               [#:bounded (-> (Option Journal))]
                               [#:config Checker-Config]
                               (Option Journal))))
-(define (find-deadlock m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)] #:config [config (checker-config)])
+(define (find-deadlock m #:bound [bound #f] #:bounded [bounded (const #f)] #:config [config (checker-config)])
+  (define terminal-node? (model-terminal m))
   (%find-counterexample m (deadlock-condition terminal-node?)
                         #:bound bound
                         #:bounded bounded
                         #:config config))
 
-(: find-false-terminal (All (S) (-> (Model S) (-> Node-Info Any)
+(: find-false-terminal (All (S) (-> (Model S)
                                     [#:bound (Option Natural)]
                                     [#:bounded (-> (Option Journal))]
                                     [#:config Checker-Config]
                                     (Option Journal))))
-(define (find-false-terminal m terminal-node? #:bound [bound #f] #:bounded [bounded (const #f)] #:config [config (checker-config)])
+(define (find-false-terminal m #:bound [bound #f] #:bounded [bounded (const #f)] #:config [config (checker-config)])
+  (define terminal-node? (model-terminal m))
   (%find-counterexample m (false-terminal-condition terminal-node?)
                         #:bound bound
                         #:bounded bounded
@@ -158,17 +160,17 @@
     [else #t]))
 
 (: find-unsafety (All (S) (-> (Model S)
-                              (-> Node-Info Any)
                               [#:invariants (Listof (Invariant S))]
                               [#:bound (Option Natural)]
                               [#:bounded (-> (Option Unsafety))]
                               [#:config Checker-Config]
                               (Option Unsafety))))
-(define (find-unsafety m terminal-node?
+(define (find-unsafety m
                        #:invariants [invariants '()]
                        #:bound [bound #f]
                        #:bounded [bounded (const #f)]
                        #:config [config (checker-config)])
+  (define terminal-node? (model-terminal m))
   (let* ([deadlock-c (deadlock-condition terminal-node?)]
          [false-terminal-c (false-terminal-condition terminal-node?)]
          [lst (list* (lambda ([ne : (Next-Edge S)] [n : Node-Info] [st : S])

@@ -65,7 +65,8 @@
      (thunk
       (define-values (graph node-init) (id-graph "ID"))
       (define graphs (list graph))
-      (values graphs node-init '()))))
+      (values graphs node-init '()))
+     (lambda (_n) #f)))
 
   (: make-triangle-model (-> (Model Null)))
   (define (make-triangle-model)
@@ -73,7 +74,12 @@
      (thunk
       (define-values (graph node-init) (triangle-graph "TRIANGLE"))
       (define graphs (list graph))
-      (values graphs node-init '()))))
+      (values graphs node-init '()))
+     (lambda (_n) #f)))
+
+  (: ρ-terminal-node? (-> Node-Info Boolean))
+  (define (ρ-terminal-node? n)
+    (symbol=? (node-info-type n) 'terminal))
 
   (: make-ρ-model (-> (Model Null)))
   (define (make-ρ-model)
@@ -81,7 +87,8 @@
      (thunk
       (define-values (graph node-init) (ρ-graph "ρ"))
       (define graphs (list graph))
-      (values graphs node-init '())))))
+      (values graphs node-init '()))
+     ρ-terminal-node?)))
 
 (module+ test
   (require typed/rackunit)
@@ -96,12 +103,9 @@
                                             (choice "A->B")))
 
   (define ρ-m (make-ρ-model))
-  (: ρ-terminal-node? (-> Node-Info Boolean))
-  (define (ρ-terminal-node? n)
-    (symbol=? (node-info-type n) 'terminal))
   (check-equal? (find-livelock ρ-m) (list (choice "D->B")
                                            (choice "C->D")
                                            (choice "B->C")
                                            (choice "A->B")))
-  (check-false (find-deadlock ρ-m ρ-terminal-node?)))
+  (check-false (find-deadlock ρ-m)))
 

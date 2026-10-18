@@ -98,7 +98,8 @@
   (define bridge (inst make-bridge Street-State))
 
   (define on-street (node "Street Entry" #:type 'street))
-  (define bench (node "Bench (Rest)" #:type 'terminal))
+  (define bench (node "Bench (Rest)" #:type 'terminal
+                      #:tags '(bench)))
 
   (values
    (lambda (output output-edge)
@@ -140,13 +141,18 @@
 (module+ model
   (provide make-model)
 
+  (: terminal-node? (-> Node-Info Any))
+  (define (terminal-node? n)
+    (symbol=? (node-info-type n) 'terminal))
+
   (: make-model (-> (Model Any)))
   (define (make-model)
     (model
      (thunk
       (define-values (graphs node-init) (wire))
       (define state-init (street 300))
-      (values graphs node-init state-init)))))
+      (values graphs node-init state-init))
+     terminal-node?)))
 
 (module+ main
   (require racket/cmdline
@@ -169,12 +175,8 @@
   (require typed/rackunit)
   (require (submod ".." model))
 
-  (: terminal-node? (-> Node-Info Any))
-  (define (terminal-node? n)
-    (symbol=? (node-info-type n) 'terminal))
-
   (define m (make-model))
-  (check-false (find-unsafety m terminal-node?
+  (check-false (find-unsafety m
                               #:invariants
                               (list (invariant "No negative wallet"
                                                (negate (lambda (_n st)
@@ -183,7 +185,7 @@
   (check-false (find-livelock m))
 
   (check-equal? (find-witness m (lambda ([n : Node-Info] st)
-                                  (and (terminal-node? n)
+                                  (and (member 'bench (node-info-tags n))
                                        (street? st)
                                        (= (street-wallet st) 150))))
                 `(,(choice "Sit on Bench")
@@ -198,7 +200,7 @@
 
   (check-equal? (let loop : (Option Journal) ([depth : Natural 0])
                   (find-witness m (lambda ([n : Node-Info] st)
-                                    (and (terminal-node? n)
+                                    (and (member 'bench (node-info-tags n))
                                          (street? st)
                                          (= (street-wallet st) 150)))
                                 #:bound depth

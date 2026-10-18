@@ -2,4 +2,4 @@
 
 (require "../private/model.rkt")
 
-(provide Model model? model model-graphs model-node model-state)
+(provide Model model? model model-graphs model-node model-state model-terminal)

@@ -86,7 +86,8 @@
 
   (define playing (node "Playing" #:type 'puzzle #:prompt (code prompt-playing)))
   (define check   (node "Check Clear" #:type 'check))
-  (define cleared (node "Cleared!" #:type 'terminal #:trans (code show-cleared)))
+  (define cleared (node "Cleared!" #:type 'terminal #:trans (code show-cleared)
+                        #:tags '(cleared)))
 
   (values
    (graph #:edges
@@ -119,12 +120,15 @@
 
 (module+ model
   (provide make-model)
+  (: terminal-node? (-> Node-Info Boolean))
+  (define (terminal-node? x) (eq? (node-info-type x) 'terminal))
   (: make-model (-> (Listof Positive-Integer) Positive-Integer (Model Jug-State)))
   (define (make-model caps target)
     (model
      (thunk
       (define-values (graph node-init) (jug-graph "Water Jug Puzzle" caps target))
-      (values (list graph) node-init (caps->jug-state caps))))))
+      (values (list graph) node-init (caps->jug-state caps)))
+     terminal-node?)))
 
 (module+ main
   (require racket/cmdline
@@ -154,16 +158,13 @@
 
   (define m (make-model '(3 5 7) 1))
 
-  (: terminal-node? (-> Node-Info Boolean))
-  (define (terminal-node? x) (eq? (node-info-type x) 'terminal))
-
-  (check-false (find-unsafety m terminal-node?))
+  (check-false (find-unsafety m))
   (check-false (find-livelock m))
 
   (: shortest-path (-> (Model Jug-State) (Option Journal)))
   (define (shortest-path m)
     (let loop : (Option Journal) ([depth : Natural 0])
-      (find-witness m (lambda ([n : Node-Info] _st) (terminal-node? n))
+      (find-witness m (lambda ([n : Node-Info] _st) (member 'cleared (node-info-tags n)))
                     #:bound depth
                     #:bounded (thunk (loop (add1 depth))))))
 
