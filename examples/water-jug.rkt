@@ -59,8 +59,8 @@
          (< 0 (hash-ref st src))
          (< (hash-ref st dst) dst)))
 
-  (: is-cleared? (-> Jug-State Boolean))
-  (define (is-cleared? st)
+  (: cleared? (-> Jug-State Boolean))
+  (define (cleared? st)
     (and (memf (lambda ([cap : Positive-Integer])
                  (= (hash-ref st cap) target))
                caps)
@@ -114,8 +114,8 @@
                       #:to check
                       #:when (code (can-pour? cap1 cap2))
                       #:trans (code (pour cap1 cap2))))
-            ,(edge "Not yet" #:mode 'auto #:from check #:to playing #:when (code (negate is-cleared?)))
-            ,(edge "Clear!" #:mode 'auto #:from check #:to cleared #:when (code is-cleared?))))
+            ,(edge "Not yet" #:mode 'auto #:from check #:to playing #:when (code (negate cleared?)))
+            ,(edge "Clear!" #:mode 'auto #:from check #:to cleared #:when (code cleared?))))
    playing))
 
 (module+ model
