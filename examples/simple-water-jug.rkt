@@ -135,7 +135,7 @@
    playing))
 
 (module+ model
-  (provide make-model)
+  (provide terminal-node? make-model)
 
   (: terminal-node? (-> Node-Info Boolean))
   (define (terminal-node? x) (eq? (node-info-type x) 'terminal))
@@ -152,7 +152,7 @@
   (require racket/cmdline
            (submod ".." model))
 
-  (: mode (Boxof (U 'dot 'console 'random)))
+  (: mode (Boxof (U 'dot 'console 'random 'witness)))
   (define mode (box 'dot))
 
   (define program-name "water-jug")
@@ -162,12 +162,19 @@
    [("--dot") "Generate dot" (set-box! mode 'dot)]
    [("--console") "Run console" (set-box! mode 'console)]
    [("--random") "Run random" (set-box! mode 'random)]
+   [("--witness") "Generate dot (witness)" (set-box! mode 'witness)]
    #:args ()
    (define m (make-model 3 5 4))
    (case (unbox mode)
      [(dot) (render-dot m
                         #:config (dot-config #:global
                                              (dot-global-config #:rankdir 'LR)))]
+     [(witness)
+      (render-dot m
+                  #:journal (assert (find-witness m (lambda ([n : Node-Info] _st) (terminal-node? n)))
+                                    journal?)
+                  #:config (dot-config #:global
+                                       (dot-global-config #:rankdir 'LR)))]
      [(console)
       (writeln (console-run m #:config (console-config
                                         #:commands (list (quit-console-command 'q "Quit"))
