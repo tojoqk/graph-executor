@@ -107,10 +107,10 @@
       (case mode
         [(auto) (case s
                   [(default) (dot-edge-config #:color "red")]
-                  [(visited) (dot-edge-config #:color "orange")])]
+                  [(visited) (dot-edge-config #:style '("bold") #:color "orange")])]
         [(choice) (case s
                     [(default) (dot-edge-config #:color "blue")]
-                    [(visited) (dot-edge-config #:color "cyan")])]
+                    [(visited) (dot-edge-config #:style '("bold") #:color "cyan")])]
         [(annotation) (dot-edge-config #:style '("dashed") #:color "black")]))))
 
 (: default-dot-node-label-config (-> DotNode DotNodeStatus (U (List 'text String)
